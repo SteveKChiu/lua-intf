@@ -3,13 +3,13 @@ lua-intf
 
 `lua-intf` is a binding between C++11 and Lua language, it provides three different set of API in one package:
 
-+ Low level API as simple wrapper for lua C API
++ Low level API as simple wrapper for Lua C API
 + High level API to access Lua object
 + Export C++ class or function to Lua script
 
 `lua-intf` is inspired by [vinniefalco's LuaBridge](https://github.com/vinniefalco/LuaBridge) work, but has been rewritten to take advantage of C++11 features.
 
-Low level API as simple wrapper for lua C API
+Low level API as simple wrapper for Lua C API
 ---------------------------------------------
 
 This is a simple wrapper of one-to-one mapping for Lua C API, consider the following code:
@@ -37,7 +37,7 @@ This low level API is completely optional, and you can still use the C API, or m
 High level API to access Lua object
 -----------------------------------
 
-`LuaRef` is designed to provide easy access to Lua object, and in most cast you don't have to deal with lua stack like the low level API. For example, the above code can be rewritten as:
+`LuaRef` is designed to provide easy access to Lua object, and in most cast you don't have to deal with Lua stack like the low level API. For example, the above code can be rewritten as:
 
 	LuaRef func = LuaRef::fromGlobal("my_method");
 	func(1, "yes", true);
@@ -109,7 +109,7 @@ You can export the `Web` class by the following code:
 		})
 	.endClass();
 
-To access the exported `Web` class in lua:
+To access the exported `Web` class in Lua:
 
 	local w = web()								-- auto w = Web("");
 	w.url = "http://www.yahoo.com"				-- w.set_url("http://www.yahoo.com");
