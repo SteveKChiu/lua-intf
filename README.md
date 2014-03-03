@@ -1,9 +1,16 @@
 lua-intf
 ========
 
-LuaIntf is an interface binding between C++11 and Lua language, it provides three different set of API in one package:
+`lua-intf` is an interface binding between C++11 and Lua language, it provides three different set of API in one package:
 
-1. low level API as simple wrapper for lua C API
++ Low level API as simple wrapper for lua C API
++ High level API to access Lua object
++ Export C++ class or function to Lua script
+
+`lua-intf` is inspired by [vinniefalco's LuaBridge](https://github.com/vinniefalco/LuaBridge) work, but has been rewritten to take advantage of C++11 features.
+
+Low level API as simple wrapper for lua C API
+---------------------------------------------
 
 This is a simple wrapper of one-to-one mapping for Lua C API, consider the following code:
 
@@ -27,7 +34,8 @@ This low level API is completely optional, and you can still use the C API, or m
 
 `LuaState` does not manage `lua_State` life-cycle, you may take a look at `LuaContext` class for that purpose.
 
-2. high level API to access Lua object
+High level API to access Lua object
+-----------------------------------
 
 `LuaRef` is designed to provide easy access to Lua object, and in most cast you don't have to deal with lua stack like the low level API. For example, the above code can be rewritten as:
 
@@ -68,7 +76,8 @@ For C API lover, you can use the `Lua` helper too:
     lua_call(L, 3, 2);
 	LuaRef r(L, -2); 					// map r to lua stack index -2
 
-3. export C++ class/function to Lua script
+Export C++ class or function to Lua script
+------------------------------------------
 
 You can easily export C++ class or function for lua, consider the following C++ class:
 
@@ -115,5 +124,4 @@ To access the exported `Web` class in lua:
 	page = w:load("http://www.google.com")		// page = w.load("http://www.google.com");
 	local url = w.url							// auto url = w.url();
 
-LuaIntf is inspired by [vinniefalco's LuaBridge](https://github.com/vinniefalco/LuaBridge) work, but has been rewritten to take advantage of C++11 features.
 
