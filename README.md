@@ -1,7 +1,7 @@
 lua-intf
 ========
 
-`lua-intf` is an interface binding between C++11 and Lua language, it provides three different set of API in one package:
+`lua-intf` is a binding between C++11 and Lua language, it provides three different set of API in one package:
 
 + Low level API as simple wrapper for lua C API
 + High level API to access Lua object
@@ -109,7 +109,7 @@ You can export the `Web` class by the following code:
 
 		.addFunction("load", &Web::load, LUA_ARGS(_opt<std::string>))
 
-		.addFunction<std::function(std::string())>("lambda", [] {
+		.addFunction<std::function<std::string()>>("lambda", [] {
 			// you can use C++11 lambda expression here too
 			return "yes";
 		})
