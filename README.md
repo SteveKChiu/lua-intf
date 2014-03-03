@@ -90,7 +90,6 @@ You can easily export C++ class or function for lua, consider the following C++ 
 
 		std::string url() const;
 		void set_url(const std::string& url);
-
 		std::string resolve_url(const std::string& uri);
 
 		// doing reload if uri is empty
@@ -100,28 +99,22 @@ You can easily export C++ class or function for lua, consider the following C++ 
 You can export the `Web` class by the following code:
 
     LuaBinding(L).beginClass<Web>("web")
-
 		.addConstructor(LUA_ARGS(_opt<std::string>))
-
 		.addProperty("url", &Web::url, &Web::set_url)
-
 		.addFunction("resolve_url", &Web::resolve_url)
-
 		.addFunction("load", &Web::load, LUA_ARGS(_opt<std::string>))
-
 		.addFunction<std::function<std::string()>>("lambda", [] {
 			// you can use C++11 lambda expression here too
 			return "yes";
 		})
-
 	.endClass();
 
 To access the exported `Web` class in lua:
 
-	local w = web()								// auto w = Web("");
-	w.url = "http://www.yahoo.com"				// w.set_url("http://www.yahoo.com");
-	local page = w:load()						// auto page = w.load("");
-	page = w:load("http://www.google.com")		// page = w.load("http://www.google.com");
-	local url = w.url							// auto url = w.url();
+	local w = web()								-- auto w = Web("");
+	w.url = "http://www.yahoo.com"				-- w.set_url("http://www.yahoo.com");
+	local page = w:load()						-- auto page = w.load("");
+	page = w:load("http://www.google.com")		-- page = w.load("http://www.google.com");
+	local url = w.url							-- auto url = w.url();
 
 
