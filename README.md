@@ -7,6 +7,8 @@ lua-intf
 + High level API to access Lua object
 + Export C++ class or function to Lua script
 
+`lua-intf` has no other dependencies other than Lua and C++11. And by default it is headers-only library, so there is no makefile or other install instruction, just copy the source, include `LuaIntf.h`, and you are ready to go.
+
 `lua-intf` is inspired by [vinniefalco's LuaBridge](https://github.com/vinniefalco/LuaBridge) work, but has been rewritten to take advantage of C++11 features.
 
 Low level API as simple wrapper for Lua C API
@@ -117,4 +119,32 @@ To access the exported `Web` class in Lua:
 	page = w:load("http://www.google.com")		-- page = w.load("http://www.google.com");
 	local url = w.url							-- auto url = w.url();
 
+C++ object lifecycle
+--------------------
 
+`lua-intf` store C++ object via Lua `userdata`, and it stores the object in the following ways:
+
++ By value, the C++ object is stored inside `userdata`. So when Lua need to gc the `userdata`, the memory is automatically released. `lua-intf` will make sure the C++ destructor is called when that happend. C++ constructor or function returns value will create this kind of Lua object.
+
++ By pointer, only the pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the object is still alive. The object is owned by C++ code, it is important you do not pass newly allocated object that need to be deleted explicitly via pointer, otherwise there will be memory leak. C++ function returns pointer or reference will create this kind of Lua obejct.
+
++ BY shared pointer, the shared pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the shared pointer is destructed. C++ function returns shared pointer will create this kind of Lua obejct. A special version of `addConstructor` will also create shared pointer automatically.
+
+Using shared pointer
+--------------------
+
+If both C++ and Lua code need to access the same object, it is usually better to use shared pointer in both side, thus avoiding memory leak.
+
+You can use any kind of shared pointer class, as long as it overrides `operator ->` and `operator *`. Before you can use it, you need to register it with `lua-intf`:
+
+	namespace LuaIntf
+	{
+		LUA_USING_SHARED_PTR_TYPE(std::shared_ptr)
+	}
+
+For construting shared pointer inside Lua `userdata`, you can add the constructor by the following way:
+
+    LuaBinding(L).beginClass<Web>("web")
+		.addConstructor(LUA_SP(std::shared_ptr<Web>), LUA_ARGS(_opt<std::string>))
+		...
+	.endClass();
