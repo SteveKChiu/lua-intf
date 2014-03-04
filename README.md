@@ -211,7 +211,7 @@ C++ object lifecycle
 
 + By value, the C++ object is stored inside `userdata`. So when Lua need to gc the `userdata`, the memory is automatically released. `lua-intf` will make sure the C++ destructor is called when that happend. C++ constructor or function returns value will create this kind of Lua object.
 
-+ By pointer, only the pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the object is still alive. The object is owned by C++ code, it is important you do not pass newly allocated object that need to be deleted explicitly via pointer, otherwise there will be memory leak. C++ function returns pointer or reference will create this kind of Lua object.
++ By pointer, only the pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the object is still alive. The object is owned by C++ code, it is important the registered function do not return pointer to newly allocated object that need to be deleted explicitly, otherwise there will be memory leak. C++ function returns pointer or reference will create this kind of Lua object.
 
 + By shared pointer, the shared pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the shared pointer is destructed, that usually tell Lua is done with the object. If the object is referenced by other shared pointer, it will keep alive, otherwise it will de deleted as expected. C++ function returns shared pointer will create this kind of Lua object. A special version of `addConstructor` will also create shared pointer automatically.
 
@@ -220,7 +220,7 @@ Using shared pointer
 
 If both C++ and Lua code need to access the same object, it is usually better to use shared pointer in both side, thus avoiding memory leak.
 
-You can use any kind of shared pointer class, as long as it overrides `operator ->` and `operator *`. Before you can use it, you need to register it with `lua-intf`:
+You can use any kind of shared pointer class, as long as it overrides `operator ->`, `operator *` and have default and copy constructor. Before you can use it, you need to register it with `lua-intf`:
 
 	namespace LuaIntf
 	{
