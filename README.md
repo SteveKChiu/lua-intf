@@ -3,9 +3,9 @@ lua-intf
 
 `lua-intf` is a binding between C++11 and Lua language, it provides three different set of API in one package:
 
-+ Low level API as simple wrapper for Lua C API
-+ High level API to access Lua object
-+ Export C++ class or function to Lua script
++ `LuaState`, Low level API as simple wrapper for Lua C API
++ `LuaRef`, High level API to access Lua object
++ `LuaBinding`, Export C++ class or function to Lua script
 
 `lua-intf` has no other dependencies other than Lua and C++11. And by default it is headers-only library, so there is no makefile or other install instruction, just copy the source, include `LuaIntf.h`, and you are ready to go.
 
@@ -14,7 +14,7 @@ lua-intf
 Low level API as simple wrapper for Lua C API
 ---------------------------------------------
 
-This is a simple wrapper of one-to-one mapping for Lua C API, consider the following code:
+`LuaState` is a simple wrapper of one-to-one mapping for Lua C API, consider the following code:
 
 	lua_State* L = ...;
     lua_getglobal(L, "my_method");
@@ -41,12 +41,12 @@ High level API to access Lua object
 
 `LuaRef` is designed to provide easy access to Lua object, and in most cast you don't have to deal with Lua stack like the low level API. For example, the above code can be rewritten as:
 
-	LuaRef func = LuaRef::fromGlobal("my_method");
+	LuaRef func(L, "my_method");
 	func(1, "yes", true);
 
 Table access is as simple:
 
-	LuaRef table = LuaRef::fromGlobal("my_table");
+	LuaRef table(L, "my_table");
 	table["value"] = 15;
 	int value = table.get<int>("value");
 
@@ -128,7 +128,7 @@ C++ object lifecycle
 
 + By pointer, only the pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the object is still alive. The object is owned by C++ code, it is important you do not pass newly allocated object that need to be deleted explicitly via pointer, otherwise there will be memory leak. C++ function returns pointer or reference will create this kind of Lua obejct.
 
-+ BY shared pointer, the shared pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the shared pointer is destructed. C++ function returns shared pointer will create this kind of Lua obejct. A special version of `addConstructor` will also create shared pointer automatically.
++ By shared pointer, the shared pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the shared pointer is destructed, that usually tell Lua is done with the object. If the object is referenced by other shared pointer, it will keep alive, otherwise it will de deleted as expected. C++ function returns shared pointer will create this kind of Lua obejct. A special version of `addConstructor` will also create shared pointer automatically.
 
 Using shared pointer
 --------------------
@@ -142,9 +142,89 @@ You can use any kind of shared pointer class, as long as it overrides `operator 
 		LUA_USING_SHARED_PTR_TYPE(std::shared_ptr)
 	}
 
-For construting shared pointer inside Lua `userdata`, you can add the constructor by the following way:
+For construting shared pointer inside Lua `userdata`, you can add the constructor by adding LUA_SP macro and the actual shared pointer type, for example:
 
     LuaBinding(L).beginClass<Web>("web")
 		.addConstructor(LUA_SP(std::shared_ptr<Web>), LUA_ARGS(_opt<std::string>))
 		...
 	.endClass();
+
+Function calling convention
+---------------------------
+
+C++ function exported to Lua can follow one the two calling conventions:
+
++ Normal function, that return value will be the value seen on the Lua side.
+
++ Lua `CFunction` convention, that the first argument is `lua_State*` and the return type is `int`. And just like `CFunction` you need to manually push the result onto Lua stack, and return the number of results pushed.
+
+`lua-intf` extends `CFunction` convention by allowing more arguments besides `lua_State*`, the following functions will all follow the `CFunction` convention:
+
+	int func_1(lua_state* L);
+	int func_2(lua_state* L, const std::string& arg1, int arg2);	// allow arg1, arg2 to map to argiments
+	int func_3(LuaState lua, const std::string& arg1, int arg2);	// lua_State* and LuaState are inter-changable
+
+	// this is *NOT* CFunction but normal function
+	// the L can be placed anywhere, and it is stub to capture lua_State*, and do not contribute to actual Lua arguments
+	int funcs4(const std::string& arg1, lua_state* L);
+
+	class Object
+	{
+	public:
+		int func_1(lua_state* L);		// class method can follow CFunction convention too
+		int func_2(lua_state* L, const std::string& arg1, int arg2);	// allow arg1, arg2 to map to argiments
+		int func_3(LuaState lua, const std::string& arg1, int arg2);	// lua_State* and LuaState are inter-changable
+	};
+
+	// the follwoing can also be CFunction convention if it is added as class functions
+	// note the first argument must be the pointer type of the registered class
+	int obj_func_1(Object* obj, lua_state* L);
+	int obj_func_2(Object* obj, lua_state* L, const std::string& arg1, int arg2);
+	int obj_func_3(Object* obj, LuaState lua, const std::string& arg1, int arg2);
+
+For every function registration, `lua-intf` also support C++ `std::function<>` type, so you can use `std::bind` or lambda expression if needed.
+
+`lua-intf` make it possible to bind optional `_opt<ARG_TYPE>` or default arguments `_def<ARG_TYPE, DEF_VALUE>` for Lua. For example:
+
+	struct MyString
+	{
+		std::string indexOf(const std::string& str, int pos);
+		...
+	};
+
+	LuaBinding(L).beginClass<MyString>("mystring")
+
+		// this will make pos = 1 if it is not specified in Lua side
+		.addFunction("indexOf", &MyString::indexOf, LUA_ARGS(std::string, _def<int, 1>))
+
+	.endClass();
+
+It is also possible to return multiple results by telling which argument is for output `_out<ARG_TYPE>` or input-output `_ref<ARG_TYPE>` `_ref_opt<ARG_TYPE>` `_ref_def<ARG_TYPE, DEF_VALUE>`. For example:
+
+	static std::string match(const std::string& src, const std::string& pat, int pos, int* found_pos);
+
+	LuaBinding(L).beginModule("utils")
+
+		// this will return (string) (found_pos)
+		.addFunction("match", &match, LUA_ARGS(std::string, std::string, _def<int, 1>, _out<int>))
+
+	.endModule();
+
+Yet another way to return multiple results is to using `std::tuple<>`:
+
+	static std::tuple<std::string, int> match(const std::string& src, const std::string& pat, int pos);
+
+	LuaBinding(L).beginModule("utils")
+
+		// this will return (string) (found_pos)
+		.addFunction("match", &match)
+
+	.endModule();
+
+And the `std::tuple<>` works with `LuaRef` too, note the following code works with either definition (`_out<int>` or `std::tuple<>`):
+
+	LuaRef func(L, "utils.match");
+    std::string found;
+    int found_pos;
+    std::tie(found, found_pos) = func.call<std::tuple<std::string, int>>("this is test", "test");
+

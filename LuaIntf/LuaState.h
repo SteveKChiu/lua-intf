@@ -29,22 +29,37 @@
 
 //---------------------------------------------------------------------------
 
+/**
+ * Set LUAINTF_HEADERS_ONLY to 1 if you want this to be headers only library;
+ * otherwise you can to compile some of the .cpp file separately
+ */
 #ifndef LUAINTF_HEADERS_ONLY
 #define LUAINTF_HEADERS_ONLY 1
 #endif
 
+/**
+ * Set LUAINTF_BUILD_LUA_CXX to 1 if you compile Lua library code as C++;
+ * it is highly recommended to build Lua library as C++, so the exception handling
+ * will work correctly
+ */
 #ifndef LUAINTF_BUILD_LUA_CXX
 #define LUAINTF_BUILD_LUA_CXX 1
 #endif
 
+/**
+ * Set LUAINTF_UNSAFE_INT64 to 1 if you want to include partial int64_t support
+ */
 #ifndef LUAINTF_UNSAFE_INT64
 #define LUAINTF_UNSAFE_INT64 1
 #endif
 
-#if LUAINTF_HEADERS_ONLY
-#define LUA_INLINE inline
-#else
-#define LUA_INLINE
+/**
+ * Set LUAINTF_UNSAFE_INT64_CHECK to 1 if you want to check every pushed int64_t is safe,
+ * that is, it can be converted from/to lua_Number without loss).
+ * The check will throw Lua runtime error if the conversion is not safe.
+ */
+#ifndef LUAINTF_UNSAFE_INT64_CHECK
+#define LUAINTF_UNSAFE_INT64_CHECK 0
 #endif
 
 //---------------------------------------------------------------------------
@@ -66,6 +81,12 @@ extern "C"
 }
 #endif
 
+#if LUAINTF_HEADERS_ONLY
+#define LUA_INLINE inline
+#else
+#define LUA_INLINE
+#endif
+
 namespace LuaIntf
 {
 
@@ -76,46 +97,54 @@ namespace LuaIntf
 
 namespace Lua
 {
+    /**
+     * Push value onto Lua stack
+     */
     template <typename T>
     inline void push(lua_State* L, T&& v)
     {
         LuaType<T>::push(L, std::forward<T>(v));
     }
 
+    /**
+     * Push string value onto Lua stack
+     */
     inline void push(lua_State* L, const char* v, int len)
     {
         lua_pushlstring(L, v, len);
     }
 
+    /**
+     * Push nil onto Lua stack
+     */
     inline void push(lua_State* L, std::nullptr_t)
     {
         lua_pushnil(L);
     }
 
+    /**
+     * Get value from Lua stack, stack is not changed
+     */
     template <typename T>
     inline T get(lua_State* L, int index)
     {
         return LuaType<T>::get(L, index);
     }
 
-    template <typename T>
-    inline void get(lua_State* L, int index, T& r)
-    {
-        r = LuaType<T>::get(L, index);
-    }
-
+    /**
+     * Get value from Lua stack, stack is not changed,
+     * you can specify optional value if the value is nil or none
+     */
     template <typename T>
     inline T opt(lua_State* L, int index, const T& def)
     {
         return LuaType<T>::opt(L, index, def);
     }
 
-    template <typename T>
-    inline void opt(lua_State* L, int index, const T& def, T& r)
-    {
-        r = LuaType<T>::opt(L, index, def);
-    }
-
+    /**
+     * Pop the value from top of Lua stack,
+     * the top value of Lua stack is removed
+     */
     template <typename T>
     inline T pop(lua_State* L)
     {
@@ -124,6 +153,10 @@ namespace Lua
         return v;
     }
 
+    /**
+     * Pop the value from the given index of Lua stack,
+     * the value at the given index is removed
+     */
     template <typename T>
     inline T pop(lua_State* L, int index)
     {
@@ -132,40 +165,59 @@ namespace Lua
         return v;
     }
 
+    /**
+     * Push the named global onto Lua stack, the name may contains '.' to access field of table.
+     * If any sub-table does not exist, this function will return nil.
+     * If any value in the name path is not accessable (not a table or no __index meta-method),
+     * it may result in Lua error.
+     */
+    void pushGlobal(lua_State* L, const char* name);
+
+    /**
+     * Pop value from top of Lua stack, and set it to the named global,
+     * the name may contains '.' to access field of table.
+     * If any sub-table does not exist or is not accessable (not a table or no __index meta-method),
+     * it may result in Lua error.
+     */
+    void popToGlobal(lua_State* L, const char* name);
+
+    /**
+     * Get the named global, the Lua stack is not changed
+     */
     template <typename T>
     inline T getGlobal(lua_State* L, const char* name)
     {
-        lua_getglobal(L, name);
-        T v = LuaType<T>::get(L, -1);
-        lua_pop(L, 1);
-        return v;
+        pushGlobal(L, name);
+        return pop<T>(L);
     }
 
+    /**
+     * Set the named global to the specified value, the Lua stack is not changed
+     */
     template <typename T>
     inline void setGlobal(lua_State* L, const char* name, T&& v)
     {
         LuaType<T>::push(L, std::forward<T>(v));
-        lua_setglobal(L, name);
+        popToGlobal(L, name);
     }
 
-    inline void exec(lua_State* L, const char* lua_expr, int num_results = 0)
-    {
-        lua_pushcfunction(L, &LuaException::traceback);
+    /**
+     * Execute the given Lua expression,
+     * if you need to return result from the expression, you have to use Lua 'return' keywoard
+     * and specify the number of results to be returned
+     *
+     * @param L the lua state
+     * @param lua_expr the lua expression
+     * @param num_results the number of values to be returned from expression
+     */
+    void exec(lua_State* L, const char* lua_expr, int num_results = 0);
 
-        int err = luaL_loadstring(L, lua_expr);
-
-        if (err == LUA_OK) {
-            err = lua_pcall(L, 0, num_results, -2);
-        }
-
-        if (err != LUA_OK) {
-            lua_remove(L, -2);
-            throw LuaException(L);
-        }
-
-        lua_remove(L, -(num_results + 1));
-    }
-
+    /**
+     * Envaluate the given Lua expression, and return the value
+     *
+     * @param L the lua state
+     * @param lua_expr the lua expression
+     */
     template <typename T>
     inline T eval(lua_State* L, const char* lua_expr)
     {
@@ -205,8 +257,8 @@ public:
     bool operator == (const LuaState& that) const
         { return L == that.L; }
 
-    bool operator != (lua_State* l) const
-        { return L != l; }
+    bool operator != (lua_State* that) const
+        { return L != that; }
 
     bool operator != (const LuaState& that) const
         { return L != that.L; }
@@ -708,23 +760,11 @@ private:
     lua_State* L;
 };
 
-inline const char* LuaState::pushf(const char* fmt, ...) const
-{
-    va_list argp;
-    va_start(argp, fmt);
-    const char* ret = lua_pushvfstring(L, fmt, argp);
-    va_end(argp);
-    return ret;
-}
+//---------------------------------------------------------------------------
 
-inline int LuaState::error(const char* fmt, ...) const
-{
-    va_list argp;
-    va_start(argp, fmt);
-    lua_pushvfstring(L, fmt, argp);
-    va_end(argp);
-    return lua_error(L);
-}
+#if LUAINTF_HEADERS_ONLY
+#include "src/LuaState.cpp"
+#endif
 
 //---------------------------------------------------------------------------
 

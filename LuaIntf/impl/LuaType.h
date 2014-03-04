@@ -312,10 +312,12 @@ struct LuaUnsafeInt64Type
     static void push(lua_State* L, ValueType value)
     {
         lua_Number f = static_cast<lua_Number>(value);
+#if LUAINTF_UNSAFE_INT64_CHECK
         ValueType verify = static_cast<ValueType>(f);
         if (value != verify) {
             luaL_error(L, "unsafe cast from 64-bit int");
         }
+#endif
         lua_pushnumber(L, f);
     }
 

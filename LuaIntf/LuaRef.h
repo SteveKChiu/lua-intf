@@ -35,12 +35,14 @@
 namespace LuaIntf
 {
 
+class LuaRef;
+
 //---------------------------------------------------------------------------
 
 /**
  * Assignable and convertible result of bracket-style lookup
  */
-class LuaTableReference
+class LuaTableRef
 {
 public:
     /**
@@ -50,13 +52,16 @@ public:
      * @param table the table reference (no auto unref)
      * @param key the table key reference (it will be unref automatically)
      */
-    constexpr LuaTableReference(lua_State* state, int table, int key)
+    constexpr LuaTableRef(lua_State* state, int table, int key)
         : L(state)
         , m_table(table)
         , m_key(key)
         {}
 
-    LuaTableReference(const LuaTableReference& that)
+    /**
+     * Copy constructor
+     */
+    LuaTableRef(const LuaTableRef& that)
         : L(that.L)
         , m_table(that.m_table)
     {
@@ -64,7 +69,10 @@ public:
         m_key = luaL_ref(L, LUA_REGISTRYINDEX);
     }
 
-    LuaTableReference(LuaTableReference&& that)
+    /**
+     * Move constructor
+     */
+    LuaTableRef(LuaTableRef&& that)
         : L(that.L)
         , m_table(that.m_table)
         , m_key(that.m_key)
@@ -72,7 +80,10 @@ public:
         that.m_key = LUA_NOREF;
     }
 
-    ~LuaTableReference()
+    /**
+     * Destructor
+     */
+    ~LuaTableRef()
     {
         luaL_unref(L, LUA_REGISTRYINDEX, m_key);
     }
@@ -82,18 +93,7 @@ public:
      *
      * @param that reference from other table[key]
      */
-    LuaTableReference& operator = (const LuaTableReference& that)
-    {
-        assert(L == that.L);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_table);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, m_table);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, m_key);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_key);
-        lua_gettable(L, -4);
-        lua_settable(L, -3);
-        lua_pop(L, 2);
-        return *this;
-    }
+    LuaTableRef& operator = (const LuaTableRef& that);
 
     /**
      * Assign value for table[key]
@@ -102,7 +102,7 @@ public:
      * @throw LuaException if V are not convertible to Lua types
      */
     template <typename V>
-    LuaTableReference& operator = (const V& value)
+    LuaTableRef& operator = (const V& value)
     {
         lua_rawgeti(L, LUA_REGISTRYINDEX, m_table);
         lua_rawgeti(L, LUA_REGISTRYINDEX, m_key);
@@ -115,7 +115,7 @@ public:
     /**
      * Get value of table[key]
      *
-     * @return value of t[k] as type U
+     * @return value of t[k] as type V
      * @throw LuaException if V are not convertible to Lua types
      */
     template <typename V>
@@ -158,44 +158,22 @@ public:
      * @param table the lua table reference (no auto unref)
      * @param fetch_next true if fetch next entry first
      */
-    LuaTableIterator(lua_State* state, int table, bool fetch_next)
-        : L(state)
-        , m_table(table)
-        , m_key(LUA_NOREF)
-        , m_value(LUA_NOREF)
-    {
-        if (fetch_next) {
-            next();
-        }
-    }
+    LuaTableIterator(lua_State* state, int table, bool fetch_next);
 
-    LuaTableIterator(const LuaTableIterator& that)
-        : L(that.L)
-        , m_table(that.m_table)
-    {
-        lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_key);
-        m_key = luaL_ref(L, LUA_REGISTRYINDEX);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_value);
-        m_value = luaL_ref(L, LUA_REGISTRYINDEX);
-    }
+    /**
+     * Copy constructor
+     */
+    LuaTableIterator(const LuaTableIterator& that);
 
-    LuaTableIterator(LuaTableIterator&& that)
-        : L(that.L)
-        , m_table(that.m_table)
-        , m_key(that.m_key)
-        , m_value(that.m_table)
-    {
-        that.m_key = LUA_NOREF;
-        that.m_value = LUA_NOREF;
-    }
+    /**
+     * Move constructor
+     */
+    LuaTableIterator(LuaTableIterator&& that);
 
-    ~LuaTableIterator()
-    {
-        if (L) {
-            luaL_unref(L, LUA_REGISTRYINDEX, m_key);
-            luaL_unref(L, LUA_REGISTRYINDEX, m_value);
-        }
-    }
+    /**
+     * Destructor
+     */
+    ~LuaTableIterator();
 
     /**
      * Get entry (for loop inerator compatibility)
@@ -214,47 +192,20 @@ public:
         return *this;
     }
 
-    LuaTableIterator& operator = (const LuaTableIterator& that)
-    {
-        if (L) {
-            luaL_unref(L, LUA_REGISTRYINDEX, m_key);
-            luaL_unref(L, LUA_REGISTRYINDEX, m_value);
-        }
-        L = that.L;
-        m_table = that.m_table;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_key);
-        m_key = luaL_ref(L, LUA_REGISTRYINDEX);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_value);
-        m_value = luaL_ref(L, LUA_REGISTRYINDEX);
-        return *this;
-    }
+    /**
+     * Copy assignment
+     */
+    LuaTableIterator& operator = (const LuaTableIterator& that);
 
-    LuaTableIterator& operator = (LuaTableIterator&& that)
-    {
-        std::swap(L, that.L);
-        std::swap(m_table, that.m_table);
-        std::swap(m_key, that.m_key);
-        std::swap(m_value, that.m_value);
-        return *this;
-    }
+    /**
+     * Move assignment
+     */
+    LuaTableIterator& operator = (LuaTableIterator&& that);
 
     /**
      * Test whether the two iterator is at same position
      */
-    bool operator == (const LuaTableIterator& that) const
-    {
-        if (L != that.L || m_table != that.m_table) {
-            return false;
-        } else if (m_key == that.m_key) {
-            return true;
-        } else {
-            lua_rawgeti(L, LUA_REGISTRYINDEX, m_key);
-            lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_key);
-            bool ok = lua_rawequal(L, -1, -2);
-            lua_pop(L, 2);
-            return ok;
-        }
-    }
+    bool operator == (const LuaTableIterator& that) const;
 
     /**
      * Test whether the two iterator is at same position
@@ -287,22 +238,7 @@ public:
     }
 
 private:
-    void next()
-    {
-        if (!L) throw LuaException("invalid table reference");
-        lua_rawgeti(L, LUA_REGISTRYINDEX, m_table);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, m_key);
-        luaL_unref(L, LUA_REGISTRYINDEX, m_key);
-        luaL_unref(L, LUA_REGISTRYINDEX, m_value);
-        if (lua_next(L, -2)) {
-            m_value = luaL_ref(L, LUA_REGISTRYINDEX);
-            m_key = luaL_ref(L, LUA_REGISTRYINDEX);
-        } else {
-            m_value = LUA_NOREF;
-            m_key = LUA_NOREF;
-        }
-        lua_pop(L, 1);
-    }
+    void next();
 
 private:
     lua_State* L;
@@ -401,18 +337,7 @@ public:
      * @param nargs - number of arguments on stack
      * @param nresult - number of result on stack
      */
-    static void pcall(lua_State* L, int nargs, int nresult)
-    {
-        lua_pushcfunction(L, &LuaException::traceback);
-        lua_insert(L, -(nargs + 2));
-
-        if (lua_pcall(L, nargs, nresult, -(nargs + 2)) != LUA_OK) {
-            lua_remove(L, -2);
-            throw LuaException(L);
-        }
-
-        lua_remove(L, -(nresult + 1));
-    }
+    static void pcall(lua_State* L, int nargs, int nresult);
 
     /**
      * Create a new, empty table
@@ -422,27 +347,27 @@ public:
      * @param nrec pre-allocate space for this number of non-array elements
      * @return empty table
      */
-    static LuaRef createTable(LuaState L, int narr = 0, int nrec = 0)
+    static LuaRef createTable(lua_State* L, int narr = 0, int nrec = 0)
     {
         lua_createtable(L, narr, nrec);
         return popFromStack(L);
     }
 
     /**
-     * Get global table (_G)
+     * Get registry table
      */
-    static LuaRef globals(LuaState L)
+    static LuaRef registry(lua_State* L)
     {
-        lua_pushglobaltable(L);
-        return popFromStack(L);
+        return LuaRef(L, LUA_REGISTRYINDEX);
     }
 
     /**
-     * Get registry table
+     * Get global table (_G)
      */
-    static LuaRef registry(LuaState L)
+    static LuaRef globals(lua_State* L)
     {
-        return LuaRef(L, LUA_REGISTRYINDEX);
+        lua_pushglobaltable(L);
+        return popFromStack(L);
     }
 
     /**
@@ -467,6 +392,23 @@ public:
         m_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     }
 
+    /**
+     * Create reference to lua global
+     *
+     * @param L lua state
+     * @param name the global name, may contains '.' to access sub obejct
+     */
+    LuaRef(lua_State* state, const char* name)
+        : L(state)
+    {
+        if (!L) throw LuaException("invalid state");
+        Lua::pushGlobal(L, name);
+        m_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+    }
+
+    /**
+     * Copy constructor, this is still reference the same Lua object
+     */
     LuaRef(const LuaRef& that)
         : L(that.L)
     {
@@ -474,6 +416,9 @@ public:
         m_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     }
 
+    /**
+     * Move constructor, this is still reference the same Lua object
+     */
     LuaRef(LuaRef&& that)
         : L(that.L)
         , m_ref(that.m_ref)
@@ -481,6 +426,16 @@ public:
         that.m_ref = LUA_NOREF;
     }
 
+    /**
+     * Type conversion for LuaTableRef
+     */
+    LuaRef(const LuaTableRef& that)
+        : LuaRef(that.value<LuaRef>())
+        {}
+
+    /**
+     * Destructor, release the reference
+     */
     virtual ~LuaRef()
     {
         if (L) {
@@ -488,17 +443,14 @@ public:
         }
     }
 
-    LuaRef& operator = (const LuaRef& that)
-    {
-        if (L) {
-            luaL_unref(L, LUA_REGISTRYINDEX, m_ref);
-        }
-        L = that.L;
-        lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_ref);
-        m_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-        return *this;
-    }
+    /**
+     * Copy assignment, this only copy the reference, so both reference the same object
+     */
+    LuaRef& operator = (const LuaRef& that);
 
+    /**
+     * Move assignment, this only apply to the reference
+     */
     LuaRef& operator = (LuaRef&& that)
     {
         std::swap(L, that.L);
@@ -541,19 +493,7 @@ public:
     /**
      * Get the lua type id
      */
-    LuaTypeID type() const
-    {
-        if (m_ref == LUA_NOREF) {
-            return LuaTypeID::None;
-        } else if (m_ref == LUA_REFNIL) {
-            return LuaTypeID::Nil;
-        } else {
-            pushToStack();
-            int t = lua_type(L, -1);
-            lua_pop(L, 1);
-            return static_cast<LuaTypeID>(t);
-        }
-    }
+    LuaTypeID type() const;
 
     /**
      * Get the lua type name
@@ -570,71 +510,47 @@ public:
      * Check whether the reference is table
      * may throw LuaException if type is not matched
      */
-    LuaRef& checkTable()
+    const LuaRef& checkTable() const
     {
-        checkType(LuaTypeID::Table);
-        return *this;
+        return checkType(LuaTypeID::Table);
     }
 
     /**
      * Check whether the reference is function
      * may throw LuaException if type is not matched
      */
-    LuaRef& checkFunction()
+    const LuaRef& checkFunction() const
     {
-        checkType(LuaTypeID::Function);
-        return *this;
+        return checkType(LuaTypeID::Function);
     }
 
     /**
      * Check whether the reference is in given type
      * may throw LuaException if type is not matched
      */
-    void checkType(LuaTypeID type) const
+    const LuaRef& checkType(LuaTypeID type) const
     {
         pushToStack();
         luaL_checktype(L, -1, static_cast<int>(type));
         lua_pop(L, 1);
+        return *this;
     }
 
     /**
      * Test whether this reference is identical to the other reference (not via any metatable)
      */
-    bool isIdenticalTo(const LuaRef& r) const
-    {
-        pushToStack();
-        r.pushToStack();
-        bool b = lua_rawequal(L, -2, -1);
-        lua_pop(L, 2);
-        return b;
-    }
+    bool isIdenticalTo(const LuaRef& r) const;
 
     /**
      * Compare this reference to the other reference
      * @return 0 if equal; -1 is less than; 1 if greater than
      */
-    int compareTo(const LuaRef& r) const
-    {
-        pushToStack();
-        r.pushToStack();
-        int d = lua_compare(L, -2, -1, LUA_OPEQ)
-            ? 0
-            : (lua_compare(L, -2, -1, LUA_OPLT) ? -1 : 1);
-        lua_pop(L, 2);
-        return d;
-    }
+    int compareTo(const LuaRef& r) const;
 
     /**
      * Test whether this reference is equal to the other reference
      */
-    bool operator == (const LuaRef& r) const
-    {
-        pushToStack();
-        r.pushToStack();
-        bool b = lua_compare(L, -2, -1, LUA_OPEQ);
-        lua_pop(L, 2);
-        return b;
-    }
+    bool operator == (const LuaRef& r) const;
 
     /**
      * Test whether this reference is lua_nil
@@ -663,26 +579,12 @@ public:
     /**
      * Test whether this reference is less than the other reference
      */
-    bool operator < (const LuaRef& r) const
-    {
-        pushToStack();
-        r.pushToStack();
-        bool b = lua_compare(L, -2, -1, LUA_OPLT);
-        lua_pop(L, 2);
-        return b;
-    }
+    bool operator < (const LuaRef& r) const;
 
     /**
      * Test whether this reference is less than or equal to the other reference
      */
-    bool operator <= (const LuaRef& r) const
-    {
-        pushToStack();
-        r.pushToStack();
-        bool b = lua_compare(L, -2, -1, LUA_OPLE);
-        lua_pop(L, 2);
-        return b;
-    }
+    bool operator <= (const LuaRef& r) const;
 
     /**
      * Test whether this reference is greater than the other reference
@@ -841,29 +743,14 @@ public:
      *
      * @return this table's metatable or nil if none
      */
-    LuaRef getMetaTable() const
-    {
-        LuaRef meta;
-        pushToStack();
-        if (lua_getmetatable(L, -1)) {
-            meta = popFromStack(L);
-        }
-        lua_pop(L, 1);
-        return meta;
-    }
+    LuaRef getMetaTable() const;
 
     /**
      * Set this table's metatable
      *
      * @param meta new metatable
      */
-    void setMetaTable(const LuaRef& meta)
-    {
-        pushToStack();
-        meta.pushToStack();
-        lua_setmetatable(L, -2);
-        lua_pop(L, 1);
-    }
+    void setMetaTable(const LuaRef& meta);
 
     /**
      * Look up field in table in raw mode (not via metatable)
@@ -895,7 +782,7 @@ public:
     V rawget(const K& key, const V& def) const
     {
         pushToStack();
-        pushValue(L, key);
+        Lua::push(L, key);
         lua_rawget(L, -2);
         V v = Lua::opt<V>(L, -1, def);
         lua_pop(L, 2);
@@ -1138,10 +1025,10 @@ public:
      * @return assignable and convertible handle for specified key in this table
      */
     template <typename K>
-    LuaTableReference operator [] (const K& key)
+    LuaTableRef operator [] (const K& key)
     {
         Lua::push(L, key);
-        return LuaTableReference(L, m_ref, luaL_ref(L, LUA_REGISTRYINDEX));
+        return LuaTableRef(L, m_ref, luaL_ref(L, LUA_REGISTRYINDEX));
     }
 
     /**
@@ -1151,10 +1038,10 @@ public:
      * @return convertible handle for specified key in this table
      */
     template <typename K>
-    const LuaTableReference operator [] (const K& key) const
+    const LuaTableRef operator [] (const K& key) const
     {
         Lua::push(L, key);
-        return LuaTableReference(L, m_ref, luaL_ref(L, LUA_REGISTRYINDEX));
+        return LuaTableRef(L, m_ref, luaL_ref(L, LUA_REGISTRYINDEX));
     }
 
     /**
@@ -1174,12 +1061,18 @@ public:
     }
 
 private:
+    template <typename T>
+    static void fillResult(lua_State* L, int idx, T& r)
+    {
+        r = Lua::get<T>(L, idx, r);
+    }
+
     template <size_t N, typename... P>
     struct Result
     {
         static void fill(lua_State* L, std::tuple<P...>& args)
         {
-            Lua::get(L, sizeof...(P) - N + 1, std::get<sizeof...(P) - N>(args));
+            fillResult(L, sizeof...(P) - N + 1, std::get<sizeof...(P) - N>(args));
             Result<N - 1, P...>::fill(L, args);
         }
     };
@@ -1235,6 +1128,12 @@ struct LuaRefType
 template<> struct LuaType <LuaRef> : LuaRefType {};
 template<> struct LuaType <LuaRef&> : LuaRefType {};
 template<> struct LuaType <LuaRef const&> : LuaRefType {};
+
+//---------------------------------------------------------------------------
+
+#if LUAINTF_HEADERS_ONLY
+#include "src/LuaRef.cpp"
+#endif
 
 //---------------------------------------------------------------------------
 
