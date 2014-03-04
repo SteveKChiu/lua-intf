@@ -126,9 +126,9 @@ C++ object lifecycle
 
 + By value, the C++ object is stored inside `userdata`. So when Lua need to gc the `userdata`, the memory is automatically released. `lua-intf` will make sure the C++ destructor is called when that happend. C++ constructor or function returns value will create this kind of Lua object.
 
-+ By pointer, only the pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the object is still alive. The object is owned by C++ code, it is important you do not pass newly allocated object that need to be deleted explicitly via pointer, otherwise there will be memory leak. C++ function returns pointer or reference will create this kind of Lua obejct.
++ By pointer, only the pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the object is still alive. The object is owned by C++ code, it is important you do not pass newly allocated object that need to be deleted explicitly via pointer, otherwise there will be memory leak. C++ function returns pointer or reference will create this kind of Lua object.
 
-+ By shared pointer, the shared pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the shared pointer is destructed, that usually tell Lua is done with the object. If the object is referenced by other shared pointer, it will keep alive, otherwise it will de deleted as expected. C++ function returns shared pointer will create this kind of Lua obejct. A special version of `addConstructor` will also create shared pointer automatically.
++ By shared pointer, the shared pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the shared pointer is destructed, that usually tell Lua is done with the object. If the object is referenced by other shared pointer, it will keep alive, otherwise it will de deleted as expected. C++ function returns shared pointer will create this kind of Lua object. A special version of `addConstructor` will also create shared pointer automatically.
 
 Using shared pointer
 --------------------
@@ -142,7 +142,7 @@ You can use any kind of shared pointer class, as long as it overrides `operator 
 		LUA_USING_SHARED_PTR_TYPE(std::shared_ptr)
 	}
 
-For construting shared pointer inside Lua `userdata`, you can add the constructor by adding LUA_SP macro and the actual shared pointer type, for example:
+For constructing shared pointer inside Lua `userdata`, you can add the constructor by adding LUA_SP macro and the actual shared pointer type, for example:
 
     LuaBinding(L).beginClass<Web>("web")
 		.addConstructor(LUA_SP(std::shared_ptr<Web>), LUA_ARGS(_opt<std::string>))
