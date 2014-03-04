@@ -90,6 +90,11 @@ You can easily export C++ class or function for lua, consider the following C++ 
 		Web(const std::string& base_url);
 		~Web();
 
+		static void go_home();
+
+		static std::string home_url();
+		static void set_home_url(const std::string& url);
+
 		std::string url() const;
 		void set_url(const std::string& url);
 		std::string resolve_url(const std::string& uri);
@@ -100,12 +105,14 @@ You can easily export C++ class or function for lua, consider the following C++ 
 
 You can export the `Web` class by the following code:
 
-    LuaBinding(L).beginClass<Web>("web")
+    LuaBinding(L).beginClass<Web>("Web")
 		.addConstructor(LUA_ARGS(_opt<std::string>))
+		.addStaticProperty("home_url", &Web::home_url, &Web::set_home_url)
+		.addStaticFunction("go_home", &Web::go_home)
 		.addProperty("url", &Web::url, &Web::set_url)
 		.addFunction("resolve_url", &Web::resolve_url)
 		.addFunction("load", &Web::load, LUA_ARGS(_opt<std::string>))
-		.addFunction<std::function<std::string()>>("lambda", [] {
+		.addStaticFunction<std::function<std::string()>>("lambda", [] {
 			// you can use C++11 lambda expression here too
 			return "yes";
 		})
@@ -113,11 +120,89 @@ You can export the `Web` class by the following code:
 
 To access the exported `Web` class in Lua:
 
-	local w = web()								-- auto w = Web("");
+	local w = Web()								-- auto w = Web("");
 	w.url = "http://www.yahoo.com"				-- w.set_url("http://www.yahoo.com");
 	local page = w:load()						-- auto page = w.load("");
 	page = w:load("http://www.google.com")		-- page = w.load("http://www.google.com");
 	local url = w.url							-- auto url = w.url();
+
+Module and class
+----------------
+
+C++ class or functions exported are organized by module and class. The general layout of binding looks like:
+
+	LuaBinding(L)
+		.beginModule(string module_name)
+			.addFactory(function* func)
+			.addVariable(string property_name, VARIABLE_TYPE* var, bool writable = true)
+			.addProperty(string property_name, function* getter, function* setter)
+			.addFunction(string function_name, function* func)
+
+			.beginModule(string sub_module_name)
+				...
+			.endModule()
+
+			.beginClass<CXX_TYPE>(string class_name)
+				...
+			.endClass()
+
+			.beginExtendClass<CXX_TYPE, SUPER_CXX_TYPE>(string sub_class_name)
+				...
+			.endClass()
+		.endModule()
+
+		.beginClass<CXX_TYPE>(string class_name)
+			.addFactory(FUNCTION_TYPE func)		// you can only have one addFactory or addConstructor
+			.addConstructor(LUA_ARGS(...))
+			.addStaticVariable(string property_name, VARIABLE_TYPE* var, bool writable = true)
+			.addStaticProperty(string property_name, FUNCTION_TYPE getter, FUNCTION_TYPE setter)
+			.addStaticFunction(string function_name, FUNCTION_TYPE func)
+			.addVariable(string property_name, CXX_TYPE::FIELD_TYPE* var, bool writable = true)
+			.addProperty(string property_name, CXX_TYPE::FUNCTION_TYPE getter, CXX_TYPE::FUNCTION_TYPE setter)
+			.addFunction(string function_name, CXX_TYPE::FUNCTION_TYPE func)
+		.endClass()
+
+		.beginExtendClass<CXX_TYPE, SUPER_CXX_TYPE>(string sub_class_name)
+			...
+		.endClass()
+
+A module binding is like a package or namespace, it can also contains other sub-module or class. A module can have the following bindings:
+
++ factory function - bind to global or static C++ functions, or forward to sub-class constructor or sub-module factory
++ property - bind to global or static variable, or getter and setter functions, property can be read-only
++ function - bind to global or static function
+
+A class binding is modeled after C++ class, it models the const-ness correctly, so const object can not access non-const functions. It can have the following bindings:
+
++ constructor - bind to class constructor
++ factory function - bind to global or static function that return the class object
++ static property - bind to global or static variable, or getter and setter functions, property can be read-only
++ static function - bind to global or static function
++ member property - bind to member fields, or member getter and setter functions, property can be read-only
++ member function - bind to member functions
+
+For module and class, you can only have one constructor or factory function. To access the factory or constructor in Lua script, you call the module or class name like a function, for example the above `Web` class:
+
+	local w = Web("http://www.google.com")
+
+The static or module property is accessible by module/class name, it is just like table field:
+
+	local url = Web.home_url
+	Web.home_url = "http://www.google.com"
+
+The static function can be called by the following, note the '.' syntax and class name:
+
+	Web.go_home()
+
+The member property is associated with object, so it is accessible by variable:
+
+	local session = Web("http://www.google.com")
+	local url = session.url
+	session.url = "http://www.google.com"
+
+The member function can be called by the following, note the ':' syntax and object name:
+
+	session:load("http://www.yahoo.com")
 
 C++ object lifecycle
 --------------------
@@ -182,7 +267,16 @@ C++ function exported to Lua can follow one the two calling conventions:
 	int obj_func_2(Object* obj, lua_state* L, const std::string& arg1, int arg2);
 	int obj_func_3(Object* obj, LuaState lua, const std::string& arg1, int arg2);
 
-For every function registration, `lua-intf` also support C++ `std::function<>` type, so you can use `std::bind` or lambda expression if needed.
+For every function registration, `lua-intf` also support C++11 `std::function<>` type, so you can use `std::bind` or lambda expression if needed. Note you have to declare the function type with `std::function<>`
+
+    LuaBinding(L).beginClass<Web>("Web")
+		.addStaticFunction<std::function<std::string()>>("lambda", [] {
+			// you can use C++11 lambda expression here too
+			return "yes";
+		})
+		.addStaticFunction<std::function<std::string()>>("bind",
+			std::bind(&Web::url, other_web_object))
+	.endClass();
 
 `lua-intf` make it possible to bind optional `_opt<ARG_TYPE>` or default arguments `_def<ARG_TYPE, DEF_VALUE>` for Lua. For example:
 
@@ -201,12 +295,12 @@ For every function registration, `lua-intf` also support C++ `std::function<>` t
 
 It is also possible to return multiple results by telling which argument is for output `_out<ARG_TYPE>` or input-output `_ref<ARG_TYPE>` `_ref_opt<ARG_TYPE>` `_ref_def<ARG_TYPE, DEF_VALUE>`. For example:
 
-	static std::string match(const std::string& src, const std::string& pat, int pos, int* found_pos);
+	static std::string match(const std::string& src, const std::string& pat, int pos, int& found_pos);
 
 	LuaBinding(L).beginModule("utils")
 
 		// this will return (string) (found_pos)
-		.addFunction("match", &match, LUA_ARGS(std::string, std::string, _def<int, 1>, _out<int>))
+		.addFunction("match", &match, LUA_ARGS(std::string, std::string, _def<int, 1>, _out<int&>))
 
 	.endModule();
 
@@ -227,4 +321,19 @@ And the `std::tuple<>` works with `LuaRef` too, note the following code works wi
     std::string found;
     int found_pos;
     std::tie(found, found_pos) = func.call<std::tuple<std::string, int>>("this is test", "test");
+
+If your C++ function is overloaded, pass `&funcion` is not enough, you have to explicitly cast it to proper type:
+
+	static int test(string, int);
+	static string test(string);
+
+	LuaBinding(L).beginModule("utils")
+
+		// this will bind int test(string, int)
+		.addFunction("test_1", static_cast<int(*)(string, int)>(&test))
+
+		// this will bind string test(string), by using our LUA_FN macro
+		.addFunction("test_2", LUA_FN(string, test, string))
+
+	.endModule();
 
