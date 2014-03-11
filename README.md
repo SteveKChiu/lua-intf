@@ -3,82 +3,14 @@ lua-intf
 
 `lua-intf` is a binding between C++11 and Lua language, it provides three different set of API in one package:
 
-+ `LuaState`, Low level API as simple wrapper for Lua C API
-+ `LuaRef`, High level API to access Lua object
 + `LuaBinding`, Export C++ class or function to Lua script
++ `LuaRef`, High level API to access Lua object
++ `LuaState`, Low level API as simple wrapper for Lua C API
 
 `lua-intf` has no dependencies other than Lua and C++11. And by default it is headers-only library, so there is no makefile or other install instruction, just copy the source, include `LuaIntf.h`, and you are ready to go.
 
 `lua-intf` is inspired by [vinniefalco's LuaBridge](https://github.com/vinniefalco/LuaBridge) work, but has been rewritten to take advantage of C++11 features.
 
-Low level API as simple wrapper for Lua C API
----------------------------------------------
-
-`LuaState` is a simple wrapper of one-to-one mapping for Lua C API, consider the following code:
-
-	lua_State* L = ...;
-    lua_getglobal(L, "module");
-    lua_getfield(L, -1, "method");
-    lua_pushintteger(L, 1);
-    lua_pushstring(L, "yes");
-    lua_pushboolean(L, true);
-    lua_call(L, 3, 0);
-
-It can be effectively rewritten as:
-
-	LuaState lua = L;
-    lua.getGlobal("module");
-    lua.getField(-1, "method");
-	lua.push(1);
-	lua.push("yes");
-	lua.push(true);
-	lua.call(3, 0);
-
-This low level API is completely optional, and you can still use the C API, or mix the usage. `LuaState` is designed to be a lightweight wrapper, and has very little overhead (if not as fast as the C API), and mostly can be auto-casting to or from `lua_State*`.
-
-`LuaState` does not manage `lua_State*` life-cycle, you may take a look at `LuaContext` class for that purpose.
-
-High level API to access Lua object
------------------------------------
-
-`LuaRef` is designed to provide easy access to Lua object, and in most case you don't have to deal with Lua stack like the low level API. For example, the above code can be rewritten as:
-
-	LuaRef func(L, "module.method");
-	func(1, "yes", true);
-
-Table access is as simple:
-
-	LuaRef table(L, "my_table");
-	table["value"] = 15;
-	int value = table.get<int>("value");
-
-	for (auto& e : table) {
-		std::string key = e.key<std::string>();
-		LuaRef value = e.value<LuaRef>();
-		...
-	}
-
-And you can mix it with the low level API:
-
-	LuaState lua = L;
-	LuaRef v = ...;
-	lua.getGlobal("my_method");
-	lua.push(1);
-	lua.push(v); 						// push v to lua stack
-	lua.push(true);
-	lua.call(3, 1);
-	LuaRef r = LuaRef::popFromStack(L); // pop value from lua stack
-
-For C API user, you can use the `Lua` helper too:
-
-	lua_State* L = ...;
-	LuaRef v = ...;
-    lua_getglobal(L, "my_method");
-    Lua::push(L, 1);
-    Lua::push(L, v);					// push v to lua stack
-    Lua::push(L, true);
-    lua_call(L, 3, 2);
-	LuaRef r(L, -2); 					// map r to lua stack index -2
 
 Export C++ class or function to Lua script
 ------------------------------------------
@@ -252,9 +184,6 @@ C++ function exported to Lua can follow one the two calling conventions:
 	// allow arg1, arg2 to map to argiments
 	int func_2(lua_state* L, const std::string& arg1, int arg2);
 
-	// lua_State* and LuaState are inter-changable
-	int func_3(LuaState lua, const std::string& arg1, int arg2);
-
 	// this is *NOT* CFunction but normal function
 	// the L can be placed anywhere, and it is stub to capture lua_State*,
 	// and do not contribute to actual Lua arguments
@@ -268,16 +197,12 @@ C++ function exported to Lua can follow one the two calling conventions:
 
 		// allow arg1, arg2 to map to argiments
 		int func_2(lua_state* L, const std::string& arg1, int arg2);
-
-		// lua_State* and LuaState are inter-changable
-		int func_3(LuaState lua, const std::string& arg1, int arg2);
 	};
 
 	// the follwoing can also be CFunction convention if it is added as class functions
 	// note the first argument must be the pointer type of the registered class
 	int obj_func_1(Object* obj, lua_state* L);
 	int obj_func_2(Object* obj, lua_state* L, const std::string& arg1, int arg2);
-	int obj_func_3(Object* obj, LuaState lua, const std::string& arg1, int arg2);
 
 For every function registration, `lua-intf` also support C++11 `std::function<>` type, so you can use `std::bind` or lambda expression if needed. Note you have to declare the function type with `std::function<>`
 
@@ -349,3 +274,68 @@ If your C++ function is overloaded, pass `&funcion` is not enough, you have to e
 
 	.endModule();
 
+High level API to access Lua object
+-----------------------------------
+
+`LuaRef` is designed to provide easy access to Lua object, and in most case you don't have to deal with Lua stack like the low level API. For example, the following code are equivalent:
+
+	lua_State* L = ...;
+    lua_getglobal(L, "module");
+    lua_getfield(L, -1, "method");
+    lua_pushintteger(L, 1);
+    lua_pushstring(L, "yes");
+    lua_pushboolean(L, true);
+    lua_call(L, 3, 0);
+
+	LuaRef func(L, "module.method");
+	func(1, "yes", true);
+
+Table access is as simple:
+
+	LuaRef table(L, "my_table");
+	table["value"] = 15;
+	int value = table.get<int>("value");
+
+	for (auto& e : table) {
+		std::string key = e.key<std::string>();
+		LuaRef value = e.value<LuaRef>();
+		...
+	}
+
+And you can mix it with the low level API:
+
+	lua_State* L = ...;
+	LuaRef v = ...;
+    lua_getglobal(L, "my_method");
+    Lua::push(L, 1);					// the same as lua_pushinteger
+    Lua::push(L, v);					// push v to lua stack
+    Lua::push(L, true);					// the same as lua_pushboolean
+    lua_call(L, 3, 2);
+	LuaRef r(L, -2); 					// map r to lua stack index -2
+
+Low level API as simple wrapper for Lua C API
+---------------------------------------------
+
+`LuaState` is a simple wrapper of one-to-one mapping for Lua C API, consider the following code:
+
+	lua_State* L = ...;
+    lua_getglobal(L, "module");
+    lua_getfield(L, -1, "method");
+    lua_pushintteger(L, 1);
+    lua_pushstring(L, "yes");
+    lua_pushboolean(L, true);
+    lua_call(L, 3, 0);
+
+It can be effectively rewritten as:
+
+	LuaState lua = L;
+    lua.getGlobal("module");
+    lua.getField(-1, "method");
+	lua.push(1);
+	lua.push("yes");
+	lua.push(true);
+	lua.call(3, 0);
+
+This low level API is completely optional, and you can still use the C API, or mix the usage. `LuaState` is designed to be a lightweight wrapper, and has very little overhead (if not as fast as the C API), and mostly can be auto-casting to or from `lua_State*`. In the `LuaBinding`, `LuaState` and `lua_State*` are inter-changeable, you can pick the coding style you like most.
+
+`LuaState` does not manage `lua_State*` life-cycle, you may take a look at `LuaContext` class for that purpose.
