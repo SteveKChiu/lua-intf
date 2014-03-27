@@ -124,7 +124,9 @@ public:
         lua_rawgeti(L, LUA_REGISTRYINDEX, m_table);
         lua_rawgeti(L, LUA_REGISTRYINDEX, m_key);
         lua_gettable(L, -2);
-        return Lua::pop<V>(L);
+        V v = Lua::get<V>(L, -1);
+        lua_pop(L, 2);
+        return v;
     }
 
 private:
