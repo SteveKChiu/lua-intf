@@ -277,7 +277,7 @@ If your C++ function is overloaded, pass `&funcion` is not enough, you have to e
 High level API to access Lua object
 -----------------------------------
 
-`LuaRef` is designed to provide easy access to Lua object, and in most case you don't have to deal with Lua stack like the low level API. For example, the following code are equivalent:
+`LuaRef` is designed to provide easy access to Lua object, and in most case you don't have to deal with Lua stack like the low level API. For example:
 
 	lua_State* L = ...;
     lua_getglobal(L, "module");
@@ -286,6 +286,8 @@ High level API to access Lua object
     lua_pushstring(L, "yes");
     lua_pushboolean(L, true);
     lua_call(L, 3, 0);
+
+The above code can be rewritten as:
 
 	LuaRef func(L, "module.method");
 	func(1, "yes", true);
