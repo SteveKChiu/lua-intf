@@ -31,7 +31,7 @@
 
 /**
  * Set LUAINTF_HEADERS_ONLY to 1 if you want this to be headers only library;
- * otherwise you can to compile some of the .cpp file separately
+ * otherwise you need to compile some of the .cpp file separately
  */
 #ifndef LUAINTF_HEADERS_ONLY
 #define LUAINTF_HEADERS_ONLY 1
@@ -204,7 +204,14 @@ namespace Lua
     /**
      * Execute the given Lua expression,
      * if you need to return result from the expression, you have to use Lua 'return' keywoard
-     * and specify the number of results to be returned
+     * and specify the number of results to be returned. For example:
+     *
+     * Lua::exec(L, "return x + y", 1);
+     * int r = Lua::pop<int>(L);
+     *
+     * The same code can be rewritten by using eval:
+     *
+     * int r = Lua::eval<int>("x + y");
      *
      * @param L the lua state
      * @param lua_expr the lua expression
