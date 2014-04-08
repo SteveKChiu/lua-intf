@@ -60,7 +60,7 @@ struct CppInvokeMethod <FN, void, P...>
         CppDispatchMethod<FN, void, std::tuple<P...>, sizeof...(P)>::call(func, args);
     }
 
-    static int push(lua_State* L, const FN& func, std::tuple<P...>& args)
+    static int push(lua_State*, const FN& func, std::tuple<P...>& args)
     {
         call(func, args);
         return 0;
@@ -75,7 +75,7 @@ struct CppInvokeMethod <FN, int, lua_State*, P...>
         return CppDispatchMethod<FN, int, std::tuple<lua_State*, P...>, sizeof...(P) + 1>::call(func, args);
     }
 
-    static int push(lua_State* L, const FN& func, std::tuple<lua_State*, P...>& args)
+    static int push(lua_State*, const FN& func, std::tuple<lua_State*, P...>& args)
     {
         return call(func, args);
     }
@@ -89,7 +89,7 @@ struct CppInvokeMethod <FN, int, LuaState, P...>
         return CppDispatchMethod<FN, int, std::tuple<LuaState, P...>, sizeof...(P) + 1>::call(func, args);
     }
 
-    static int push(lua_State* L, const FN& func, std::tuple<LuaState, P...>& args)
+    static int push(lua_State*, const FN& func, std::tuple<LuaState, P...>& args)
     {
         return call(func, args);
     }
@@ -204,7 +204,7 @@ struct CppInvokeClassMethod <T, IS_PROXY, FN, void, P...>
         CppDispatchClassMethod<T, IS_PROXY, FN, void, std::tuple<P...>, sizeof...(P)>::call(t, func, args);
     }
 
-    static int push(lua_State* L, T* t, const FN& func, std::tuple<P...>& args)
+    static int push(lua_State*, T* t, const FN& func, std::tuple<P...>& args)
     {
         call(t, func, args);
         return 0;
@@ -219,7 +219,7 @@ struct CppInvokeClassMethod <T, IS_PROXY, FN, int, lua_State*, P...>
         return CppDispatchClassMethod<T, IS_PROXY, FN, int, std::tuple<lua_State*, P...>, sizeof...(P) + 1>::call(t, func, args);
     }
 
-    static int push(lua_State* L, T* t, const FN& func, std::tuple<lua_State*, P...>& args)
+    static int push(lua_State*, T* t, const FN& func, std::tuple<lua_State*, P...>& args)
     {
         return call(t, func, args);
     }
@@ -233,7 +233,7 @@ struct CppInvokeClassMethod <T, IS_PROXY, FN, int, LuaState, P...>
         return CppDispatchClassMethod<T, IS_PROXY, FN, int, std::tuple<LuaState, P...>, sizeof...(P) + 1>::call(t, func, args);
     }
 
-    static int push(lua_State* L, T* t, const FN& func, std::tuple<LuaState, P...>& args)
+    static int push(lua_State*, T* t, const FN& func, std::tuple<LuaState, P...>& args)
     {
         return call(t, func, args);
     }

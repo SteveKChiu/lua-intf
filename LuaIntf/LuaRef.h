@@ -1095,7 +1095,7 @@ private:
         pushArg(L, std::forward<P>(p)...);
     }
 
-    static void pushArg(lua_State* L)
+    static void pushArg(lua_State*)
     {
         // template terminate function, do nothing
     }
