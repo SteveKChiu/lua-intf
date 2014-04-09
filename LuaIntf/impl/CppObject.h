@@ -427,7 +427,7 @@ struct LuaCppObjectFactory <SP, T, true, true>
         if (!obj->isSharedPtr()) {
             luaL_error(L, "is not shared object");
         }
-        return static_cast<CppObjectSharedPtr<SP, T>>(obj)->sharedPtr();
+        return static_cast<CppObjectSharedPtr<SP, T>*>(obj)->sharedPtr();
     }
 };
 
