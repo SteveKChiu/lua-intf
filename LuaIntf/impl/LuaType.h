@@ -343,29 +343,32 @@ struct LuaValueType <unsigned long long, lua_Number> : LuaUnsafeInt64Type <unsig
 
 //---------------------------------------------------------------------------
 
-#define LUA_USING_VALUE_TYPE(T, V) \
+#define LUA_USING_VALUE_TYPE_EXT(T, V) \
     template <> struct LuaType <T> : LuaValueType <T, V> {}; \
     template <> struct LuaType <T&> : LuaValueType <T, V> {}; \
     template <> struct LuaType <T const&> : LuaValueType <T, V> {};
 
-LUA_USING_VALUE_TYPE(bool, bool)
-LUA_USING_VALUE_TYPE(char, char)
-LUA_USING_VALUE_TYPE(unsigned char, lua_Integer)
-LUA_USING_VALUE_TYPE(short, lua_Integer)
-LUA_USING_VALUE_TYPE(unsigned short, lua_Integer)
-LUA_USING_VALUE_TYPE(int, lua_Integer)
-LUA_USING_VALUE_TYPE(unsigned int, lua_Unsigned)
-LUA_USING_VALUE_TYPE(long, lua_Integer)
-LUA_USING_VALUE_TYPE(unsigned long, lua_Unsigned)
-LUA_USING_VALUE_TYPE(float, lua_Number)
-LUA_USING_VALUE_TYPE(double, lua_Number)
-LUA_USING_VALUE_TYPE(lua_CFunction, lua_CFunction)
-LUA_USING_VALUE_TYPE(std::string, std::string)
-LUA_USING_VALUE_TYPE(const char*, const char*)
-LUA_USING_VALUE_TYPE(char*, const char*)
-LUA_USING_VALUE_TYPE(LuaString, LuaString)
+#define LUA_USING_VALUE_TYPE(T) \
+    LUA_USING_VALUE_TYPE_EXT(T, T)
+
+LUA_USING_VALUE_TYPE(bool)
+LUA_USING_VALUE_TYPE(char)
+LUA_USING_VALUE_TYPE_EXT(unsigned char, lua_Integer)
+LUA_USING_VALUE_TYPE_EXT(short, lua_Integer)
+LUA_USING_VALUE_TYPE_EXT(unsigned short, lua_Integer)
+LUA_USING_VALUE_TYPE_EXT(int, lua_Integer)
+LUA_USING_VALUE_TYPE_EXT(unsigned int, lua_Unsigned)
+LUA_USING_VALUE_TYPE_EXT(long, lua_Integer)
+LUA_USING_VALUE_TYPE_EXT(unsigned long, lua_Unsigned)
+LUA_USING_VALUE_TYPE_EXT(float, lua_Number)
+LUA_USING_VALUE_TYPE_EXT(double, lua_Number)
+LUA_USING_VALUE_TYPE(lua_CFunction)
+LUA_USING_VALUE_TYPE(std::string)
+LUA_USING_VALUE_TYPE(const char*)
+LUA_USING_VALUE_TYPE_EXT(char*, const char*)
+LUA_USING_VALUE_TYPE(LuaString)
 
 #if LUAINTF_UNSAFE_INT64
-    LUA_USING_VALUE_TYPE(long long, lua_Number)
-    LUA_USING_VALUE_TYPE(unsigned long long, lua_Number)
+    LUA_USING_VALUE_TYPE_EXT(long long, lua_Number)
+    LUA_USING_VALUE_TYPE_EXT(unsigned long long, lua_Number)
 #endif
