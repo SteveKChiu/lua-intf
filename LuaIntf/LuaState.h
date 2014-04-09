@@ -166,6 +166,66 @@ namespace Lua
     }
 
     /**
+     * Push STL-style list as Lua table onto Lua stack.
+     */
+    template <typename LIST>
+    inline void pushList(lua_State* L, const LIST& list)
+    {
+        lua_newtable(L);
+        int i = 1;
+        for (auto& v : list) {
+            push(L, v);
+            lua_rawseti(L, -2, i++);
+        }
+    }
+
+    /**
+     * Get STL-style list from Lua table at the given index.
+     */
+    template <typename LIST>
+    inline LIST getList(lua_State* L, int index)
+    {
+        luaL_checktype(L, index, LUA_TTABLE);
+        LIST list;
+        int n = luaL_len(L, index);
+        for (int i = 1; i <= n; i++) {
+            lua_rawgeti(L, index, i);
+            list += pop<typename LIST::value_type>(L);
+        }
+        return list;
+    }
+
+    /**
+     * Push STL-style map as Lua table onto Lua stack.
+     */
+    template <typename MAP>
+    inline void pushMap(lua_State* L, const MAP& map)
+    {
+        lua_newtable(L);
+        for (auto it = map.begin(); it != map.end(); ++it) {
+            push(L, it.key());
+            push(L, it.value());
+            lua_settable(L, -3);
+        }
+    }
+
+    /**
+     * Get STL-style map from Lua table at the given index.
+     */
+    template <typename MAP>
+    inline MAP getMap(lua_State* L, int index)
+    {
+        luaL_checktype(L, index, LUA_TTABLE);
+        MAP map;
+        lua_pushnil(L);
+        while (lua_next(L, index)) {
+            typename MAP::key_type key = get<typename MAP::key_type>(L, -2);
+            map[key] = pop<typename MAP::mapped_type>(L);
+        }
+        return map;
+    }
+
+    /**
      * Push the named global onto Lua stack, the name may contains '.' to access field of table.
      * If any sub-table does not exist, this function will return nil.
      * If any value in the name path is not accessable (not a table or no __index meta-method),
