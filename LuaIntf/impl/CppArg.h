@@ -45,7 +45,7 @@ template <typename T, T DEF>
 struct _ref_def {};
 
 #define LUA_SP(p) static_cast<p*>(nullptr)
-#define LUA_ARGS_TYPE(...) _arg(*)(__VA_ARGS__)
+#define LUA_ARGS_TYPE(...) LuaIntf::_arg(*)(__VA_ARGS__)
 #define LUA_ARGS(...) static_cast<LUA_ARGS_TYPE(__VA_ARGS__)>(nullptr)
 
 #define LUA_FN(r, m, ...) static_cast<r(*)(__VA_ARGS__)>(&m)
