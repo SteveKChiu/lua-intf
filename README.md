@@ -138,23 +138,23 @@ The member function can be called by the following, note the ':' syntax and obje
 
 	session:load("http://www.yahoo.com")
 
-C++ object lifecycle
---------------------
+C++ object life-cycle
+---------------------
 
 `lua-intf` store C++ object via Lua `userdata`, and it stores the object in the following ways:
 
-+ By value, the C++ object is stored inside `userdata`. So when Lua need to gc the `userdata`, the memory is automatically released. `lua-intf` will make sure the C++ destructor is called when that happend. C++ constructor or function returns value will create this kind of Lua object.
++ By value, the C++ object is stored inside `userdata`. So when Lua need to gc the `userdata`, the memory is automatically released. `lua-intf` will make sure the C++ destructor is called when that happened. C++ constructor or function returns value will create this kind of Lua object.
 
 + By pointer, only the pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the object is still alive. The object is owned by C++ code, it is important the registered function do not return pointer to newly allocated object that need to be deleted explicitly, otherwise there will be memory leak. C++ function returns pointer or reference will create this kind of Lua object.
 
-+ By shared pointer, the shared pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the shared pointer is destructed, that usually means Lua is done with the object. If the object is still referenced by other shared pointer, it will keep alive, otherwise it will de deleted as expected. C++ function returns shared pointer will create this kind of Lua object. A special version of `addConstructor` will also create shared pointer automatically.
++ By shared pointer, the shared pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the shared pointer is destructed, that usually means Lua is done with the object. If the object is still referenced by other shared pointer, it will keep alive, otherwise it will be deleted as expected. C++ function returns shared pointer will create this kind of Lua object. A special version of `addConstructor` will also create shared pointer automatically.
 
 Using shared pointer
 --------------------
 
 If both C++ and Lua code need to access the same object, it is usually better to use shared pointer in both side, thus avoiding memory leak.
 
-You can use any kind of shared pointer class, as long as it overrides `operator ->`, `operator *` and have default and copy constructor. Before you can use it, you need to register it with `lua-intf`:
+You can use any kind of shared pointer class, as long as it overrides `operator ->`, `operator *`, `operator bool` and have default and copy constructor. Before you can use it, you need to register it with `lua-intf`:
 
 	namespace LuaIntf
 	{
@@ -181,13 +181,13 @@ C++ function exported to Lua can follow one the two calling conventions:
 
 	int func_1(lua_state* L);
 
-	// allow arg1, arg2 to map to argiments
+	// allow arg1, arg2 to map to arguments
 	int func_2(lua_state* L, const std::string& arg1, int arg2);
 
 	// this is *NOT* CFunction but normal function
 	// the L can be placed anywhere, and it is stub to capture lua_State*,
 	// and do not contribute to actual Lua arguments
-	int funcs4(const std::string& arg1, lua_state* L);
+	int func_3(const std::string& arg1, lua_state* L);
 
 	class Object
 	{
@@ -195,11 +195,11 @@ C++ function exported to Lua can follow one the two calling conventions:
 		// class method can follow CFunction convention too
 		int func_1(lua_state* L);
 
-		// allow arg1, arg2 to map to argiments
+		// allow arg1, arg2 to map to arguments
 		int func_2(lua_state* L, const std::string& arg1, int arg2);
 	};
 
-	// the follwoing can also be CFunction convention if it is added as class functions
+	// the following can also be CFunction convention if it is added as class functions
 	// note the first argument must be the pointer type of the registered class
 	int obj_func_1(Object* obj, lua_state* L);
 	int obj_func_2(Object* obj, lua_state* L, const std::string& arg1, int arg2);
@@ -274,6 +274,62 @@ If your C++ function is overloaded, pass `&funcion` is not enough, you have to e
 
 	.endModule();
 
+Custom type mapping
+-------------------
+
+It is possible to add primitive type mapping to the `lua-intf`, all you need to do is to add template specialization to LuaValueType. You need to define `ValueType` type, `void push(lua_State* L, const ValueType& v)`, `ValueType get(lua_State* L, int index)` and `ValueType opt(lua_State* L, int index, const ValueType& def)` functions. For example, to add Qt `QString` mapping to Lua string:
+
+	namespace LuaIntf
+	{
+
+	template <>
+	struct LuaValueType <QString>
+	{
+	    typedef QString ValueType;
+
+	    static void push(lua_State* L, const ValueType& str)
+	    {
+	        if (str.isEmpty()) {
+	            lua_pushliteral(L, "");
+	        } else {
+	            QByteArray buf = str.toUtf8();
+	            lua_pushlstring(L, buf.data(), buf.length());
+	        }
+	    }
+
+	    static ValueType get(lua_State* L, int index)
+	    {
+	        size_t len;
+	        const char* p = luaL_checklstring(L, index, &len);
+	        return QString::fromUtf8(p, len);
+	    }
+
+	    static ValueType opt(lua_State* L, int index, const ValueType& def)
+	    {
+	        if (lua_isnoneornil(L, index)) {
+	            return def;
+	        } else {
+	            size_t len;
+	            const char* p = luaL_checklstring(L, index, &len);
+	            return QString::fromUtf8(p, len);
+	        }
+	    }
+	};
+
+	LUA_USING_VALUE_TYPE(QString)
+
+	} // namespace LuaIntf
+
+After that, you are able to push QString onto or get QString from Lua stack directly:
+
+	QString s = ...;
+	Lua::push(L, s);
+
+	...
+
+	s = Lua::pop<QString>(L);
+
+
 High level API to access Lua object
 -----------------------------------
 
@@ -338,6 +394,6 @@ It can be effectively rewritten as:
 	lua.push(true);
 	lua.call(3, 0);
 
-This low level API is completely optional, and you can still use the C API, or mix the usage. `LuaState` is designed to be a lightweight wrapper, and has very little overhead (if not as fast as the C API), and mostly can be auto-casting to or from `lua_State*`. In the `LuaBinding`, `LuaState` and `lua_State*` are inter-changeable, you can pick the coding style you like most.
+This low level API is completely optional, and you can still use the C API, or mix the usage. `LuaState` is designed to be a lightweight wrapper, and has very little overhead (if not as fast as the C API), and mostly can be auto-casting to or from `lua_State*`. In the `lua-intf`, `LuaState` and `lua_State*` are inter-changeable, you can pick the coding style you like most.
 
 `LuaState` does not manage `lua_State*` life-cycle, you may take a look at `LuaContext` class for that purpose.
