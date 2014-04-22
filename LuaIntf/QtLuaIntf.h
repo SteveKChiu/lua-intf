@@ -55,6 +55,20 @@ namespace Lua
             lua_settable(L, -3);
         }
     }
+
+    /**
+     * Push QHash as Lua table onto Lua stack.
+     */
+    template <typename K, typename V>
+    inline void pushMap(lua_State* L, const QHash<K, V>& map)
+    {
+        lua_newtable(L);
+        for (auto it = map.begin(); it != map.end(); ++it) {
+            push(L, it.key());
+            push(L, it.value());
+            lua_settable(L, -3);
+        }
+    }
 }
 
 //---------------------------------------------------------------------------
