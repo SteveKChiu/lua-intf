@@ -1136,7 +1136,7 @@ template<> struct LuaType <LuaRef const&> : LuaRefType {};
 namespace Lua
 {
     template <typename LIST>
-    inline LIST getList(LuaRef table)
+    inline LIST getList(const LuaRef& table)
     {
         table.pushToStack();
         LIST list = getList<LIST>(table.state(), -1);
@@ -1145,7 +1145,7 @@ namespace Lua
     }
 
     template <typename MAP>
-    inline MAP getMap(LuaRef table)
+    inline MAP getMap(const LuaRef& table)
     {
         table.pushToStack();
         MAP map = getMap<MAP>(table.state(), -1);

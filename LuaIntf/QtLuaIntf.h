@@ -30,7 +30,6 @@
 //---------------------------------------------------------------------------
 
 #include "LuaIntf.h"
-#include <QByteArray>
 #include <QVariant>
 
 namespace LuaIntf
@@ -42,6 +41,20 @@ namespace Lua
 {
     void pushVariant(lua_State* L, const QVariant& v);
     QVariant getVariant(lua_State* L, int index);
+
+    /**
+     * Push QMap as Lua table onto Lua stack.
+     */
+    template <typename K, typename V>
+    inline void pushMap(lua_State* L, const QMap<K, V>& map)
+    {
+        lua_newtable(L);
+        for (auto it = map.begin(); it != map.end(); ++it) {
+            push(L, it.key());
+            push(L, it.value());
+            lua_settable(L, -3);
+        }
+    }
 }
 
 //---------------------------------------------------------------------------

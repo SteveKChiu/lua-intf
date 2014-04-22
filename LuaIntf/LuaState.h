@@ -190,7 +190,7 @@ namespace Lua
         int n = luaL_len(L, index);
         for (int i = 1; i <= n; i++) {
             lua_rawgeti(L, index, i);
-            list += pop<typename LIST::value_type>(L);
+            list.push_back(pop<typename LIST::value_type>(L));
         }
         return list;
     }
@@ -203,8 +203,8 @@ namespace Lua
     {
         lua_newtable(L);
         for (auto it = map.begin(); it != map.end(); ++it) {
-            push(L, it.key());
-            push(L, it.value());
+            push(L, it->first);
+            push(L, it->second);
             lua_settable(L, -3);
         }
     }
