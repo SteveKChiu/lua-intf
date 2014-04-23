@@ -333,15 +333,6 @@ public:
     }
 
     /**
-     * Call function on stack, and throw LuaException if failed
-     *
-     * @param L - the lua state
-     * @param nargs - number of arguments on stack
-     * @param nresult - number of result on stack
-     */
-    static void pcall(lua_State* L, int nargs, int nresult);
-
-    /**
      * Create a new, empty table
      *
      * @param L lua state
@@ -672,72 +663,25 @@ public:
     template <typename... P>
     void operator () (P&&... args)
     {
-        call<P...>(std::forward<P>(args)...);
+        Call<void, P...>::invoke(L, *this, std::forward<P>(args)...);
     }
 
     /**
-     * Call this function and without return value
+     * Call this function and get return value(s),
+     * put types of expected return types in the template param.
      *
-     * @param args arguments to pass to function
-     */
-    template <typename... P>
-    void call(P&&... args)
-    {
-        lua_pushcfunction(L, &LuaException::traceback);
-        pushToStack();
-        pushArg(L, std::forward<P>(args)...);
-        if (lua_pcall(L, sizeof...(P), 0, -int(sizeof...(P) + 2)) != LUA_OK) {
-            lua_remove(L, -2);
-            throw LuaException(L);
-        }
-        lua_pop(L, 1);
-    }
-
-    /**
-     * Call this function and get one return value
+     * To return multiple values from Lua function, use std::tuple as return type:
      *
-     * @param args arguments to pass to function
-     * @return value of function
-     */
-    template <typename R, typename... P>
-    R call(P&&... args)
-    {
-        lua_pushcfunction(L, &LuaException::traceback);
-        pushToStack();
-        pushArg(L, std::forward<P>(args)...);
-        if (lua_pcall(L, sizeof...(P), 1, -int(sizeof...(P) + 2)) != LUA_OK) {
-            lua_remove(L, -2);
-            throw LuaException(L);
-        }
-        R v = Lua::get<R>(L, -1);
-        lua_pop(L, 2);
-        return v;
-    }
-
-    /**
-     * Call this function and get return value(s)
-     * put types of expected return types in the template param
-     *
-     * std::tuple<int, int> ret = call<int, int>(arg1, arg2)
+     * int a, b;
+     * std::tie(a, b) = ref.call<std::tuple<int, int>>(arg1, arg2);
      *
      * @param args arguments to pass to function
      * @return values of function
      */
-    template <typename... R, typename... P>
-    typename std::enable_if<sizeof...(R) >= 2, std::tuple<R...>>::type
-    call(P&&... args)
+    template <typename R, typename... P>
+    R call(P&&... args)
     {
-        lua_pushcfunction(L, &LuaException::traceback);
-        pushToStack();
-        pushArg(L, std::forward<P>(args)...);
-        if (lua_pcall(L, sizeof...(P), sizeof...(R), -int(sizeof...(P) + sizeof...(R) + 2)) != LUA_OK) {
-            lua_remove(L, -2);
-            throw LuaException(L);
-        }
-        std::tuple<R...> ret;
-        Result<sizeof...(R), R...>::fill(L, ret);
-        lua_pop(L, sizeof...(R) + 1);
-        return ret;
+        return Call<R, P...>::invoke(L, *this, std::forward<P>(args)...);
     }
 
     /**
@@ -1063,10 +1007,63 @@ public:
     }
 
 private:
+    template <typename R, typename... P>
+    struct Call
+    {
+        static R invoke(lua_State* L, const LuaRef& f, P&&... args)
+        {
+            lua_pushcfunction(L, &LuaException::traceback);
+            f.pushToStack();
+            pushArg(L, std::forward<P>(args)...);
+            if (lua_pcall(L, sizeof...(P), 1, -int(sizeof...(P) + 2)) != LUA_OK) {
+                lua_remove(L, -2);
+                throw LuaException(L);
+            }
+            R v = Lua::get<R>(L, -1);
+            lua_pop(L, 2);
+            return v;
+        }
+    };
+
+    template <typename... P>
+    struct Call <void, P...>
+    {
+        static void invoke(lua_State* L, const LuaRef& f, P&&... args)
+        {
+            lua_pushcfunction(L, &LuaException::traceback);
+            f.pushToStack();
+            pushArg(L, std::forward<P>(args)...);
+            if (lua_pcall(L, sizeof...(P), 0, -int(sizeof...(P) + 2)) != LUA_OK) {
+                lua_remove(L, -2);
+                throw LuaException(L);
+            }
+            lua_pop(L, 1);
+        }
+    };
+
+    template <typename... R, typename... P>
+    struct Call <std::tuple<R...>, P...>
+    {
+        static std::tuple<R...> invoke(lua_State* L, const LuaRef& f, P&&... args)
+        {
+            lua_pushcfunction(L, &LuaException::traceback);
+            f.pushToStack();
+            pushArg(L, std::forward<P>(args)...);
+            if (lua_pcall(L, sizeof...(P), sizeof...(R), -int(sizeof...(P) + sizeof...(R) + 2)) != LUA_OK) {
+                lua_remove(L, -2);
+                throw LuaException(L);
+            }
+            std::tuple<R...> ret;
+            Result<sizeof...(R), R...>::fill(L, ret);
+            lua_pop(L, int(sizeof...(R) + 1));
+            return ret;
+        }
+    };
+
     template <typename T>
     static void fillResult(lua_State* L, int idx, T& r)
     {
-        r = Lua::get<T>(L, idx, r);
+        r = Lua::get<T>(L, idx);
     }
 
     template <size_t N, typename... P>

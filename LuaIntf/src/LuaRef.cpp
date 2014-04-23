@@ -139,19 +139,6 @@ LUA_INLINE void LuaTableIterator::next()
     lua_pop(L, 1);
 }
 
-LUA_INLINE void LuaRef::pcall(lua_State* L, int nargs, int nresult)
-{
-    lua_pushcfunction(L, &LuaException::traceback);
-    lua_insert(L, -(nargs + 2));
-
-    if (lua_pcall(L, nargs, nresult, -(nargs + 2)) != LUA_OK) {
-        lua_remove(L, -2);
-        throw LuaException(L);
-    }
-
-    lua_remove(L, -(nresult + 1));
-}
-
 LUA_INLINE LuaRef& LuaRef::operator = (const LuaRef& that)
 {
     if (L) {
