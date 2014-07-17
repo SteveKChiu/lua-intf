@@ -29,63 +29,11 @@
 
 //---------------------------------------------------------------------------
 
-/**
- * Set LUAINTF_HEADERS_ONLY to 1 if you want this to be headers only library;
- * otherwise you need to compile some of the .cpp file separately
- */
-#ifndef LUAINTF_HEADERS_ONLY
-#define LUAINTF_HEADERS_ONLY 1
-#endif
-
-/**
- * Set LUAINTF_BUILD_LUA_CXX to 1 if you compile Lua library code as C++;
- * it is highly recommended to build Lua library as C++, so the exception handling
- * will work correctly
- */
-#ifndef LUAINTF_BUILD_LUA_CXX
-#define LUAINTF_BUILD_LUA_CXX 1
-#endif
-
-/**
- * Set LUAINTF_UNSAFE_INT64 to 1 if you want to include partial int64_t support
- */
-#ifndef LUAINTF_UNSAFE_INT64
-#define LUAINTF_UNSAFE_INT64 1
-#endif
-
-/**
- * Set LUAINTF_UNSAFE_INT64_CHECK to 1 if you want to check every pushed int64_t is safe,
- * that is, it can be converted from/to lua_Number without loss).
- * The check will throw Lua runtime error if the conversion is not safe.
- */
-#ifndef LUAINTF_UNSAFE_INT64_CHECK
-#define LUAINTF_UNSAFE_INT64_CHECK 0
-#endif
-
-//---------------------------------------------------------------------------
-
 #include <cassert>
 #include <cstring>
 #include <string>
 #include <exception>
-
-#if !LUAINTF_BUILD_LUA_CXX
-extern "C"
-{
-#endif
-
-#include "lualib.h"
-#include "lauxlib.h"
-
-#if !LUAINTF_BUILD_LUA_CXX
-}
-#endif
-
-#if LUAINTF_HEADERS_ONLY
-#define LUA_INLINE inline
-#else
-#define LUA_INLINE
-#endif
+#include "LuaCompat.h"
 
 namespace LuaIntf
 {
@@ -518,8 +466,10 @@ public:
 
 // comparison and arithmetic functions
 
+#if LUA_VERSION_NUM >= 502
     void arith(int op) const
         { lua_arith(L, op); }
+#endif
 
     bool rawequal(int idx1, int idx2) const
         { return lua_rawequal(L, idx1, idx2); }
@@ -657,17 +607,32 @@ public:
 
 // `load' and `call' functions (load and run Lua code)
 
+#if LUA_VERSION_NUM == 501
+    void call(int num_args, int num_results) const
+        { lua_call(L, num_args, num_results); }
+#else
     void call(int num_args, int num_results, int ctx = 0, lua_CFunction k = nullptr) const
         { lua_callk(L, num_args, num_results, ctx, k); }
+#endif
 
+#if LUA_VERSION_NUM == 501
+    int pcall(int num_args, int num_results, int err_func_idx) const
+        { return lua_pcall(L, num_args, num_results, err_func_idx); }
+#else
     int pcall(int num_args, int num_results, int err_func_idx, int ctx = 0, lua_CFunction k = nullptr) const
         { return lua_pcallk(L, num_args, num_results, err_func_idx, ctx, k); }
+#endif
 
     bool callMeta(int idx, const char* field) const
         { return luaL_callmeta(L, idx, field); }
 
+#if LUA_VERSION_NUM == 501
+    int load(lua_Reader reader, void* dt, const char* chunk_name) const
+        { return lua_load(L, reader, dt, chunk_name); }
+#else
     int load(lua_Reader reader, void* dt, const char* chunk_name, const char* mode = nullptr) const
         { return lua_load(L, reader, dt, chunk_name, mode); }
+#endif
 
     int loadFile(const char* filename, const char* mode = nullptr) const
         { return luaL_loadfilex(L, filename, mode); }
@@ -681,8 +646,10 @@ public:
     void openLibs() const
         { luaL_openlibs(L); }
 
+#if LUA_VERSION_NUM >= 502
     void require(const char* mod_name, lua_CFunction open_func, bool set_global = true) const
         { luaL_requiref(L, mod_name, open_func, set_global); }
+#endif
 
     bool doFile(const char* filename) const
         { return luaL_dofile(L, filename); }
@@ -701,11 +668,21 @@ public:
 
 // coroutine functions
 
+#if LUA_VERSION_NUM == 501
+    int yield(int num_results) const
+        { return lua_yield(L, num_results); }
+#else
     int yield(int num_results, int ctx = 0, lua_CFunction k = nullptr) const
         { return lua_yieldk(L, num_results, ctx, k); }
+#endif
 
+#if LUA_VERSION_NUM == 501
+    int resume(const LuaState&, int num_args) const
+        { return lua_resume(L, num_args); }
+#else
     int resume(const LuaState& from, int num_args) const
         { return lua_resume(L, from.L, num_args); }
+#endif
 
     int status() const
         { return lua_status(L); }
