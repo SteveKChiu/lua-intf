@@ -47,7 +47,7 @@ public:
     /**
      * Create a new Lua state
      *
-     * Keep in mind that this does not import the in-built libraries.
+     * Keep in mind that this does not import the standard libraries.
      *
      * @see importLibs()
      */
@@ -63,10 +63,10 @@ public:
     /**
      * Create a new wrapper for an existing state
      *
-     *  Wraps an existing lua_State. The underlying state will not be closed when this object is destroyed.
-     *  This constructor is useful if your lua_State is not managed by your code.
+     * Wraps an existing lua_State. The underlying state will not be closed when this object is destroyed.
+     * This constructor is useful if your lua_State is not managed by your code.
      *
-     *  @param state lua_State object to wrap
+     * @param state lua_State object to wrap
      */
     explicit LuaContext(lua_State* state)
         : L(state)
@@ -84,7 +84,7 @@ public:
     }
 
     /**
-     * No copy is allowed
+     * Copy is not allowed
      */
     LuaContext(const LuaContext&) = delete;
 
@@ -92,6 +92,14 @@ public:
      * Copy assignment is not allowed
      */
     LuaContext& operator = (const LuaContext&) = delete;
+
+    /**
+     * Implicit conversion for lua_State*
+     */
+    operator lua_State* () const
+    {
+        return L;
+    }
 
     /**
      * get underlying lua_State
