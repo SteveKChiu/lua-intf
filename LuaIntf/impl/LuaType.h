@@ -225,16 +225,16 @@ struct LuaValueType <T, const char*>
 };
 
 template <size_t N>
-    struct LuaType <char[N]> : LuaValueType <const char*> {};
+struct LuaType <char[N]> : LuaValueType <const char*> {};
 
 template <size_t N>
-    struct LuaType <char(&)[N]> : LuaValueType <const char*> {};
+struct LuaType <char(&)[N]> : LuaValueType <const char*> {};
 
 template <size_t N>
-    struct LuaType <const char[N]> : LuaValueType <const char*> {};
+struct LuaType <const char[N]> : LuaValueType <const char*> {};
 
 template <size_t N>
-    struct LuaType <const char(&)[N]> : LuaValueType <const char*> {};
+struct LuaType <const char(&)[N]> : LuaValueType <const char*> {};
 
 //---------------------------------------------------------------------------
 

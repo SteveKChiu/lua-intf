@@ -24,6 +24,18 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
+template <typename FN>
+struct CppLambdaTraits
+    : public CppLambdaTraits<decltype(&FN::operator())> {};
+
+template <typename FN, typename R, typename... P>
+struct CppLambdaTraits<R(FN::*)(P...) const>
+{
+    typedef std::function<R(P...)> FunctionType;
+};
+
+//----------------------------------------------------------------------------
+
 template <typename FN, typename R, typename TUPLE, size_t N, size_t... INDEX>
 struct CppDispatchMethod
     : CppDispatchMethod<FN, R, TUPLE, N - 1, N - 1, INDEX...> {};

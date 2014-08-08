@@ -109,13 +109,13 @@ A module binding is like a package or namespace, it can also contain other sub-m
 A class binding is modeled after C++ class, it models the const-ness correctly, so const object can not access non-const functions. It can have the following bindings:
 
 + constructor - bind to class constructor
-+ factory function - bind to global or static function that return the class object
++ factory function - bind to global or static function that return the newly created object
 + static property - bind to global or static variable, or getter and setter functions, property can be read-only
 + static function - bind to global or static function
 + member property - bind to member fields, or member getter and setter functions, property can be read-only
 + member function - bind to member functions
 
-For module and class, you can only have one constructor or factory function. To access the factory or constructor in Lua script, you call the module or class name like a function, for example the above `Web` class:
+For module and class, you can have only one constructor or factory function. To access the factory or constructor in Lua script, you call the module or class name like a function, for example the above `Web` class:
 
 	local w = Web("http://www.google.com")
 
@@ -143,18 +143,24 @@ C++ object life-cycle
 
 `lua-intf` store C++ object via Lua `userdata`, and it stores the object in the following ways:
 
-+ By value, the C++ object is stored inside `userdata`. So when Lua need to gc the `userdata`, the memory is automatically released. `lua-intf` will make sure the C++ destructor is called when that happened. C++ constructor or function returns value will create this kind of Lua object.
++ By value, the C++ object is stored inside `userdata`. So when Lua need to gc the `userdata`, the memory is automatically released. `lua-intf` will make sure the C++ destructor is called when that happened. C++ constructor or function returns object struct will create this kind of Lua object.
 
-+ By pointer, only the pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the object is still alive. The object is owned by C++ code, it is important the registered function do not return pointer to newly allocated object that need to be deleted explicitly, otherwise there will be memory leak. C++ function returns pointer or reference will create this kind of Lua object.
++ By pointer, only the pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the object is still alive. The object is owned by C++ code, it is important the registered function does not return pointer to newly allocated object that need to be deleted explicitly, otherwise there will be memory leak. C++ function returns pointer or reference to object will create this kind of Lua object.
 
 + By shared pointer, the shared pointer is stored inside `userdata`. So when Lua need to gc the `userdata`, the shared pointer is destructed, that usually means Lua is done with the object. If the object is still referenced by other shared pointer, it will keep alive, otherwise it will be deleted as expected. C++ function returns shared pointer will create this kind of Lua object. A special version of `addConstructor` will also create shared pointer automatically.
 
 Using shared pointer
 --------------------
 
-If both C++ and Lua code need to access the same object, it is usually better to use shared pointer in both side, thus avoiding memory leak.
+If both C++ and Lua code need to access the same object, it is usually better to use shared pointer in both side, thus avoiding memory leak. You can use any kind of shared pointer class, as long as it provides:
 
-You can use any kind of shared pointer class, as long as it overrides `operator ->`, `operator *`, `operator bool` and have default and copy constructor. Before you can use it, you need to register it with `lua-intf`:
++ `operator ->`
++ `operator *`
++ `operator bool` 
++ default constructor
++ copy constructor
+
+Before you can use it, you need to register it with `lua-intf`, take `std::shared_ptr` for example:
 
 	namespace LuaIntf
 	{
@@ -179,12 +185,13 @@ C++ function exported to Lua can follow one the two calling conventions:
 
 `lua-intf` extends `CFunction` convention by allowing more arguments besides `lua_State*`, the following functions will all follow the `CFunction` convention:
 
+	// regular CFunction convention
 	int func_1(lua_state* L);
 
-	// allow arg1, arg2 to map to arguments
+	// CFunction convention, but allow arg1, arg2 to map to arguments
 	int func_2(lua_state* L, const std::string& arg1, int arg2);
 
-	// this is *NOT* CFunction but normal function
+	// this is *NOT* CFunction
 	// the L can be placed anywhere, and it is stub to capture lua_State*,
 	// and do not contribute to actual Lua arguments
 	int func_3(const std::string& arg1, lua_state* L);
@@ -195,7 +202,7 @@ C++ function exported to Lua can follow one the two calling conventions:
 		// class method can follow CFunction convention too
 		int func_1(lua_state* L);
 
-		// allow arg1, arg2 to map to arguments
+		// class CFunction convention, but allow arg1, arg2 to map to arguments
 		int func_2(lua_state* L, const std::string& arg1, int arg2);
 	};
 
@@ -204,14 +211,14 @@ C++ function exported to Lua can follow one the two calling conventions:
 	int obj_func_1(Object* obj, lua_state* L);
 	int obj_func_2(Object* obj, lua_state* L, const std::string& arg1, int arg2);
 
-For every function registration, `lua-intf` also support C++11 `std::function<>` type, so you can use `std::bind` or lambda expression if needed. Note you have to declare the function type with `std::function<>`
+For every function registration, `lua-intf` also support C++11 `std::function` type, so you can use `std::bind` or lambda expression if needed. You can use lambda expression freely without giving full std::function declaration.
 
     LuaBinding(L).beginClass<Web>("Web")
-		.addStaticFunction<std::function<std::string()>>("lambda", [] {
+		.addStaticFunction("lambda", [] {
 			// you can use C++11 lambda expression here too
 			return "yes";
 		})
-		.addStaticFunction<std::function<std::string()>>("bind",
+		.addStaticFunction("bind",
 			std::bind(&Web::url, other_web_object))
 	.endClass();
 
@@ -241,7 +248,7 @@ It is also possible to return multiple results by telling which argument is for 
 
 	.endModule();
 
-Yet another way to return multiple results is to use `std::tuple<>`:
+Yet another way to return multiple results is to use `std::tuple`:
 
 	static std::tuple<std::string, int> match(const std::string& src, const std::string& pat, int pos);
 
@@ -252,7 +259,7 @@ Yet another way to return multiple results is to use `std::tuple<>`:
 
 	.endModule();
 
-And the `std::tuple<>` works with `LuaRef` too, note the following code works with either definition (`_out<int>` or `std::tuple<>`) or the normal Lua function:
+And the `std::tuple` works with `LuaRef` too, note the following code works with either definition (`_out<int>` or `std::tuple`) or the normal Lua function:
 
 	LuaRef func(L, "utils.match");
     std::string found;
@@ -277,7 +284,14 @@ If your C++ function is overloaded, pass `&funcion` is not enough, you have to e
 Custom type mapping
 -------------------
 
-It is possible to add primitive type mapping to the `lua-intf`, all you need to do is to add template specialization to LuaValueType. You need to define `ValueType` type, `void push(lua_State* L, const ValueType& v)`, `ValueType get(lua_State* L, int index)` and `ValueType opt(lua_State* L, int index, const ValueType& def)` functions. For example, to add Qt `QString` mapping to Lua string:
+It is possible to add primitive type mapping to the `lua-intf`, all you need to do is to add template specialization to LuaValueType. You need to:
+
++ typedef `LuaValueType` type
++ `void push(lua_State* L, const ValueType& v)`
++ `ValueType get(lua_State* L, int index)`
++ `ValueType opt(lua_State* L, int index, const ValueType& def)` 
+
+For example, to add Qt `QString` mapping to Lua string:
 
 	namespace LuaIntf
 	{

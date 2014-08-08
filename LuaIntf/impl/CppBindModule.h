@@ -74,9 +74,12 @@ struct CppBindVariable
 
 //----------------------------------------------------------------------------
 
-template <typename FN, int IARG, typename R, typename... P>
+template <int CHK, typename FN, int IARG, typename R, typename... P>
 struct CppBindMethodBase
 {
+    static_assert(CHK != 1 || (!std::is_same<R, void>::value && sizeof...(P) == 0), "the specified function is not getter function");
+    static_assert(CHK != -1 || (std::is_same<R, void>::value && sizeof...(P) == 1), "the specified function is not setter function");
+
     /**
      * lua_CFunction to call a function
      *
@@ -101,30 +104,38 @@ struct CppBindMethodBase
     }
 };
 
-template <typename FN, typename ARGS = FN, int IARG = 1>
+template <typename FN, typename ARGS = FN, int IARG = 1, int CHK = 0>
 struct CppBindMethod;
 
-template <typename R, typename... P, int IARG>
-struct CppBindMethod <R(*)(P...), R(*)(P...), IARG>
-    : CppBindMethodBase <R(*)(P...), IARG, R, P...> {};
+template <typename R, typename... P, int IARG, int CHK>
+struct CppBindMethod <R(*)(P...), R(*)(P...), IARG, CHK>
+    : CppBindMethodBase <CHK, R(*)(P...), IARG, R, P...> {};
 
-template <typename R, typename... P, int IARG>
-struct CppBindMethod <std::function<R(P...)>, std::function<R(P...)>, IARG>
-    : CppBindMethodBase <std::function<R(P...)>, IARG, R, P...> {};
+template <typename R, typename... P, int IARG, int CHK>
+struct CppBindMethod <std::function<R(P...)>, std::function<R(P...)>, IARG, CHK>
+    : CppBindMethodBase <CHK, std::function<R(P...)>, IARG, R, P...> {};
 
-template <typename R, typename... A, typename... P, int IARG>
-struct CppBindMethod <R(*)(A...), _arg(*)(P...), IARG>
-    : CppBindMethodBase <R(*)(A...), IARG, R, P...>
+template <typename R, typename... A, typename... P, int IARG, int CHK>
+struct CppBindMethod <R(*)(A...), _arg(*)(P...), IARG, CHK>
+    : CppBindMethodBase <CHK, R(*)(A...), IARG, R, P...>
 {
     static_assert(sizeof...(A) == sizeof...(P), "the number of arguments and argument-specs do not match");
 };
 
-template <typename R, typename... A, typename... P, int IARG>
-struct CppBindMethod <std::function<R(A...)>, _arg(*)(P...), IARG>
-    : CppBindMethodBase <std::function<R(A...)>, IARG, R, P...>
+template <typename R, typename... A, typename... P, int IARG, int CHK>
+struct CppBindMethod <std::function<R(A...)>, _arg(*)(P...), IARG, CHK>
+    : CppBindMethodBase <CHK, std::function<R(A...)>, IARG, R, P...>
 {
     static_assert(sizeof...(A) == sizeof...(P), "the number of arguments and argument-specs do not match");
 };
+
+template <typename FN, int IARG, int CHK>
+struct CppBindMethod <FN, FN, IARG, CHK>
+    : CppBindMethod <typename CppLambdaTraits<FN>::FunctionType, typename CppLambdaTraits<FN>::FunctionType, IARG, CHK> {};
+
+template <typename FN, typename... P, int IARG, int CHK>
+struct CppBindMethod <FN, _arg(*)(P...), IARG, CHK>
+    : CppBindMethod <typename CppLambdaTraits<FN>::FunctionType, _arg(*)(P...), IARG, CHK> {};
 
 //----------------------------------------------------------------------------
 
@@ -147,7 +158,7 @@ struct CppBindModuleMetaMethod
     static int newIndex(lua_State* L);
 
     /**
-     * Forward __call to sub class or module
+     * Forward __call to sub class or module.
      * The name of sub class/module is in upvalue(1)
      */
     static int forwardCall(lua_State* L);
@@ -190,21 +201,21 @@ private:
 
 public:
     /**
-     * Copy constructor
+     * Copy constructor.
      */
     CppBindModule(const CppBindModule& that)
         : m_meta(that.m_meta)
         {}
 
     /**
-     * Move constructor for temporaries
+     * Move constructor for temporaries.
      */
     CppBindModule(CppBindModule&& that)
         : m_meta(std::move(that.m_meta))
         {}
 
     /**
-     * Copy assignment
+     * Copy assignment.
      */
     CppBindModule& operator = (const CppBindModule& that)
     {
@@ -213,7 +224,7 @@ public:
     }
 
     /**
-     * Move assignment for temporaries
+     * Move assignment for temporaries.
      */
     CppBindModule& operator = (CppBindModule&& that)
     {
@@ -227,7 +238,7 @@ public:
     static CppBindModule bind(lua_State* L);
 
     /**
-     * The underlying lua state
+     * The underlying lua state.
      */
     lua_State* L() const
     {
@@ -235,7 +246,7 @@ public:
     }
 
     /**
-     * The underlying meta table
+     * The underlying meta table.
      */
     LuaRef meta() const
     {
@@ -270,40 +281,26 @@ public:
     }
 
     /**
-     * Add or replace a static property member.
-     *
-     * If the set function is null, the property is read-only.
-     */
-    template <typename TG, typename TS>
-    CppBindModule& addProperty(const char* name, TG (*get)(), void (*set)(TS) = nullptr)
-    {
-        setGetter(name, LuaRef::createFunction(L(), &CppBindMethod<TG(*)()>::call, get));
-        if (set) {
-            setSetter(name, LuaRef::createFunction(L(), &CppBindMethod<void(*)(TS)>::call, set));
-        } else {
-            setReadOnly(name);
-        }
-        return *this;
-    }
-
-    /**
      * Add or replace a read-write property.
      */
-    template <typename T>
-    CppBindModule& addProperty(const char* name, const std::function<T()>& get, const std::function<void(const T&)>& set)
+    template <typename FG, typename FS>
+    CppBindModule& addProperty(const char* name, const FG& get, const FS& set)
     {
-        setGetter(name, LuaRef::createFunction(L(), &CppBindMethod<std::function<T()>>::call, get));
-        setSetter(name, LuaRef::createFunction(L(), &CppBindMethod<std::function<void(const T&)>>::call, set));
+        static_assert(!std::is_function<FG>::value, "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FS>::value, "function pointer is needed, please prepend & to function name");
+        setGetter(name, LuaRef::createFunction(L(), &CppBindMethod<FG, FG, 1, 1>::call, get));
+        setSetter(name, LuaRef::createFunction(L(), &CppBindMethod<FS, FS, 1, -1>::call, set));
         return *this;
     }
 
     /**
      * Add or replace a read-only property.
      */
-    template <typename T>
-    CppBindModule& addProperty(const char* name, const std::function<T()>& get)
+    template <typename FN>
+    CppBindModule& addProperty(const char* name, const FN& get)
     {
-        setGetter(name, LuaRef::createFunction(L(), &CppBindMethod<std::function<T()>>::call, get));
+        static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
+        setGetter(name, LuaRef::createFunction(L(), &CppBindMethod<FN, FN, 1, 1>::call, get));
         setReadOnly(name);
         return *this;
     }
@@ -332,7 +329,7 @@ public:
     }
 
     /**
-     * Add or replace a factory function, that use lua "__call"
+     * Add or replace a factory function.
      */
     template <typename FN>
     CppBindModule& addFactory(const FN& proc)
@@ -343,7 +340,7 @@ public:
     }
 
     /**
-     * Add or replace a factory function, that use lua "__call", user can specify augument spec.
+     * Add or replace a factory function, user can specify augument spec.
      */
     template <typename FN, typename ARGS>
     CppBindModule& addFactory(const FN& proc, ARGS)
@@ -354,7 +351,7 @@ public:
     }
 
     /**
-     * Add or replace a factory function, that forward "__call" to sub module factory (or class constructor)
+     * Add or replace a factory function, that forward call to sub module factory (or class constructor).
      */
     CppBindModule& addFactory(const char* name)
     {
@@ -391,7 +388,7 @@ private:
  *
  * It is recommended to put your module inside the global, and
  * then add your classes and functions to it, rather than adding many classes
- * and functions directly to the global
+ * and functions directly to the global.
  */
 inline CppBindModule LuaBinding(lua_State* L)
 {

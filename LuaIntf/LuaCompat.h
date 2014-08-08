@@ -31,7 +31,7 @@
 
 /**
  * Set LUAINTF_HEADERS_ONLY to 1 if you want this to be headers only library;
- * otherwise you need to compile some of the .cpp file separately
+ * otherwise you need to compile some of the .cpp file separately.
  */
 #ifndef LUAINTF_HEADERS_ONLY
 #define LUAINTF_HEADERS_ONLY 1
@@ -40,14 +40,14 @@
 /**
  * Set LUAINTF_BUILD_LUA_CXX to 1 if you compile Lua library code as C++;
  * it is highly recommended to build Lua library as C++, so the exception handling
- * will work correctly
+ * will work correctly.
  */
 #ifndef LUAINTF_BUILD_LUA_CXX
 #define LUAINTF_BUILD_LUA_CXX 1
 #endif
 
 /**
- * Set LUAINTF_UNSAFE_INT64 to 1 if you want to include partial int64_t support
+ * Set LUAINTF_UNSAFE_INT64 to 1 if you want to include partial int64_t support.
  */
 #ifndef LUAINTF_UNSAFE_INT64
 #define LUAINTF_UNSAFE_INT64 1
@@ -55,8 +55,8 @@
 
 /**
  * Set LUAINTF_UNSAFE_INT64_CHECK to 1 if you want to check every pushed int64_t is safe,
- * that is, it can be converted from/to lua_Number without loss).
- * The check will throw Lua runtime error if the conversion is not safe.
+ * that is, it can be converted from/to lua_Number without loss.
+ * This check will throw Lua runtime error if the conversion is not safe.
  */
 #ifndef LUAINTF_UNSAFE_INT64_CHECK
 #define LUAINTF_UNSAFE_INT64_CHECK 0
