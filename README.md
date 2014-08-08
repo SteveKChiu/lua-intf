@@ -46,7 +46,7 @@ You can export the `Web` class by the following code:
 		.addProperty("url", &Web::url, &Web::set_url)
 		.addFunction("resolve_url", &Web::resolve_url)
 		.addFunction("load", &Web::load, LUA_ARGS(_opt<std::string>))
-		.addStaticFunction<std::function<std::string()>>("lambda", [] {
+		.addStaticFunction("lambda", [] {
 			// you can use C++11 lambda expression here too
 			return "yes";
 		})
