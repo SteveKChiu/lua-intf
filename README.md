@@ -286,10 +286,10 @@ Custom type mapping
 
 It is possible to add primitive type mapping to the `lua-intf`, all you need to do is to add template specialization to LuaValueType. You need to:
 
-+ typedef `LuaValueType` type
-+ `void push(lua_State* L, const ValueType& v)`
-+ `ValueType get(lua_State* L, int index)`
-+ `ValueType opt(lua_State* L, int index, const ValueType& def)` 
++ typedef `ValueType` type
++ provide `void push(lua_State* L, const ValueType& v)`
++ provide `ValueType get(lua_State* L, int index)`
++ provide `ValueType opt(lua_State* L, int index, const ValueType& def)` 
 
 For example, to add Qt `QString` mapping to Lua string:
 
