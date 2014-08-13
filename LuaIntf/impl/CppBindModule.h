@@ -358,7 +358,7 @@ public:
      */
     CppBindModule& addFactory(const char* name)
     {
-        m_meta.rawset("__call", LuaRef::createFunctionWithArgs(state(), &CppBindModuleMetaMethod::forwardCall, name));
+        m_meta.rawset("__call", LuaRef::createFunctionWithUpvalues(state(), &CppBindModuleMetaMethod::forwardCall, name));
         return *this;
     }
 

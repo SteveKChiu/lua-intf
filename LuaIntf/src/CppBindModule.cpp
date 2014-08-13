@@ -150,7 +150,7 @@ LUA_INLINE void CppBindModule::setSetter(const char* name, const LuaRef& setter)
 
 LUA_INLINE void CppBindModule::setReadOnly(const char* name)
 {
-    setSetter(name, LuaRef::createFunctionWithArgs(L(), &CppBindModuleMetaMethod::errorReadOnly, name));
+    setSetter(name, LuaRef::createFunctionWithUpvalues(state(), &CppBindModuleMetaMethod::errorReadOnly, name));
 }
 
 LUA_INLINE CppBindModule CppBindModule::bind(lua_State* L)
@@ -163,14 +163,15 @@ LUA_INLINE CppBindModule CppBindModule::beginModule(const char* name)
     LuaRef ref = m_meta.rawget<LuaRef>(name);
     if (ref != nullptr) return CppBindModule(ref);
 
+    lua_State* L = state();
     std::string type_name = "module<" + getFullName(m_meta, name) + ">";
-    LuaRef module = LuaRef::createTable(L());
+    LuaRef module = LuaRef::createTable(L);
     module.setMetaTable(module);
 
     module.rawset("__index", &CppBindModuleMetaMethod::index);
     module.rawset("__newindex", &CppBindModuleMetaMethod::newIndex);
-    module.rawset("___getters", LuaRef::createTable(L()));
-    module.rawset("___setters", LuaRef::createTable(L()));
+    module.rawset("___getters", LuaRef::createTable(L));
+    module.rawset("___setters", LuaRef::createTable(L));
     module.rawset("___type", type_name);
     module.rawset("___parent", m_meta);
     m_meta.rawset(name, module);

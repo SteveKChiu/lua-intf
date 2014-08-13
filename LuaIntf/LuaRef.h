@@ -260,27 +260,27 @@ class LuaRef
 {
 public:
     /**
-     * Create new lua_CFunction with args as upvalue
+     * Create new lua_CFunction with multiple upvalues.
      *
      * @param L lua state
      * @param proc the lua_CFunction
-     * @param ref the object as upvalue(1)
+     * @param upvalues as upvalues(n) to the lua_CFunction
      */
     template <typename... P>
-    static LuaRef createFunctionWithArgs(lua_State* L, lua_CFunction proc, P&&... args)
+    static LuaRef createFunctionWithUpvalues(lua_State* L, lua_CFunction proc, P&&... upvalues)
     {
-        pushArg(L, std::forward<P>(args)...);
+        pushArg(L, std::forward<P>(upvalues)...);
         lua_pushcclosure(L, proc, sizeof...(P));
         return popFromStack(L);
     }
 
     /**
-     * Create new lua_CFunction with allocated userdata as upvalue(1)
+     * Create new lua_CFunction with allocated userdata as upvalue(1).
      *
      * @param L lua state
      * @param proc the lua_CFunction
      * @param userdata_size the size of userdata to allocate
-     * @param out_userdata [out] the pointer to allocated userdata
+     * @param out_userdata [out] the pointer to allocated userdata, can be nullptr if not needed
      */
     static LuaRef createFunctionWithNewData(lua_State* L, lua_CFunction proc, size_t userdata_size, void** out_userdata)
     {
@@ -291,8 +291,13 @@ public:
     }
 
     /**
-     * Create new lua_CFunction with allocated cpp object as upvalue(1)
-     * The cpp object is constructed inside userdata (in place)
+     * Create new lua_CFunction with allocated cpp object as upvalue(1).
+     * The cpp object is constructed by the constructor that matches the given arguments;
+     * the object is allocated inside userdata (in place).
+     *
+     * @param L lua state
+     * @param proc the lua_CFunction
+     * @param args the arguments to the constructor
      */
     template <typename T, typename... P>
     static LuaRef createFunctionWithNewObj(lua_State* L, lua_CFunction proc, P&&... args)
@@ -309,7 +314,7 @@ public:
      *
      * @param L lua state
      * @param proc the lua_CFunction
-     * @param context the context pointer as upvalue(1)
+     * @param ptr the context pointer as upvalue(1)
      */
     static LuaRef createFunctionWithPtr(lua_State* L, lua_CFunction proc, void* ptr)
     {
@@ -320,7 +325,11 @@ public:
 
     /**
      * Create new lua_CFunction with allocated object as upvalue(1)
-     * The object is copied to userdata (using copy constructor)
+     * The object is copied to userdata (by using copy constructor)
+     *
+     * @param L lua state
+     * @param proc the lua_CFunction
+     * @param cpp the data to be copied to the
      */
     template <typename T>
     static LuaRef createFunction(lua_State* L, lua_CFunction proc, const T& cpp)

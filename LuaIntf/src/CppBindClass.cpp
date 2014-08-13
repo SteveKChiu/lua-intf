@@ -282,7 +282,7 @@ LUA_INLINE void CppBindClassBase::setStaticSetter(const char* name, const LuaRef
 
 LUA_INLINE void CppBindClassBase::setStaticReadOnly(const char* name)
 {
-    setStaticSetter(name, LuaRef::createFunctionWithArgs(L(), &CppBindClassMetaMethod::errorReadOnly, name));
+    setStaticSetter(name, LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorReadOnly, name));
 }
 
 LUA_INLINE void CppBindClassBase::setMemberGetter(const char* name, const LuaRef& getter)
@@ -292,14 +292,14 @@ LUA_INLINE void CppBindClassBase::setMemberGetter(const char* name, const LuaRef
 
 LUA_INLINE void CppBindClassBase::setMemberSetter(const char* name, const LuaRef& setter)
 {
-    LuaRef err = LuaRef::createFunctionWithArgs(L(), &CppBindClassMetaMethod::errorConstMismatch, name);
+    LuaRef err = LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorConstMismatch, name);
     m_meta.rawget<LuaRef>("___class").rawget<LuaRef>("___setters").rawset(name, setter);
     m_meta.rawget<LuaRef>("___const").rawget<LuaRef>("___setters").rawset(name, err);
 }
 
 LUA_INLINE void CppBindClassBase::setMemberReadOnly(const char* name)
 {
-    LuaRef err = LuaRef::createFunctionWithArgs(L(), &CppBindClassMetaMethod::errorReadOnly, name);
+    LuaRef err = LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorReadOnly, name);
     m_meta.rawget<LuaRef>("___class").rawget<LuaRef>("___setters").rawset(name, err);
     m_meta.rawget<LuaRef>("___const").rawget<LuaRef>("___setters").rawset(name, err);
 }
@@ -308,7 +308,7 @@ LUA_INLINE void CppBindClassBase::setMemberFunction(const char* name, const LuaR
 {
     m_meta.rawget<LuaRef>("___class").rawset(name, proc);
     m_meta.rawget<LuaRef>("___const").rawset(name,
-        is_const ? proc : LuaRef::createFunctionWithArgs(L(), &CppBindClassMetaMethod::errorConstMismatch, name));
+        is_const ? proc : LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorConstMismatch, name));
 }
 
 LUA_INLINE CppBindModule CppBindClassBase::endClass()
