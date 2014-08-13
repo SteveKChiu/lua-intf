@@ -90,8 +90,11 @@ struct CppBindClassDestructor
 template <int CHK, typename T, bool IS_PROXY, bool IS_CONST, typename FN, typename R, typename... P>
 struct CppBindClassMethodBase
 {
-    static_assert(CHK != 1 || (!std::is_same<R, void>::value && sizeof...(P) == 0), "the specified function is not getter function");
-    static_assert(CHK != -1 || (std::is_same<R, void>::value && sizeof...(P) == 1), "the specified function is not setter function");
+    static_assert(CHK != 1 || (!std::is_same<R, void>::value && sizeof...(P) == 0),
+        "the specified function is not getter function");
+
+    static_assert(CHK != -1 || (std::is_same<R, void>::value && sizeof...(P) == 1),
+        "the specified function is not setter function");
 
     static constexpr bool IsConst = IS_CONST;
 
@@ -337,7 +340,7 @@ public:
     /**
      * The underlying lua state.
      */
-    lua_State* L() const
+    lua_State* state() const
     {
         return m_meta.state();
     }
@@ -452,9 +455,9 @@ public:
     template <typename V>
     CppBindClass<T>& addStaticVariable(const char* name, V* v, bool writable = true)
     {
-        setStaticGetter(name, LuaRef::createFunctionWithPtr(L(), &CppBindVariable<V>::get, v));
+        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, v));
         if (writable) {
-            setStaticSetter(name, LuaRef::createFunctionWithPtr(L(), &CppBindVariable<V>::set, v));
+            setStaticSetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::set, v));
         } else {
             setStaticReadOnly(name);
         }
@@ -469,8 +472,8 @@ public:
     {
         static_assert(!std::is_function<FG>::value, "function pointer is needed, please prepend & to function name");
         static_assert(!std::is_function<FS>::value, "function pointer is needed, please prepend & to function name");
-        setStaticGetter(name, LuaRef::createFunction(L(), &CppBindMethod<FG, FG, 1, 1>::call, get));
-        setStaticSetter(name, LuaRef::createFunction(L(), &CppBindMethod<FS, FS, 1, -1>::call, set));
+        setStaticGetter(name, LuaRef::createFunction(state(), &CppBindMethod<FG, FG, 1, 1>::call, get));
+        setStaticSetter(name, LuaRef::createFunction(state(), &CppBindMethod<FS, FS, 1, -1>::call, set));
         return *this;
     }
 
@@ -481,7 +484,7 @@ public:
     CppBindClass<T>& addStaticProperty(const char* name, const FN& get)
     {
         static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
-        setStaticGetter(name, LuaRef::createFunction(L(), &CppBindMethod<FN, FN, 1, 1>::call, get));
+        setStaticGetter(name, LuaRef::createFunction(state(), &CppBindMethod<FN, FN, 1, 1>::call, get));
         setStaticReadOnly(name);
         return *this;
     }
@@ -493,7 +496,7 @@ public:
     CppBindClass<T>& addStaticFunction(const char* name, const FN& proc)
     {
         static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
-        m_meta.rawset(name, LuaRef::createFunction(L(), &CppBindMethod<FN>::call, proc));
+        m_meta.rawset(name, LuaRef::createFunction(state(), &CppBindMethod<FN>::call, proc));
         return *this;
     }
 
@@ -504,7 +507,7 @@ public:
     CppBindClass<T>& addStaticFunction(const char* name, const FN& proc, ARGS)
     {
         static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
-        m_meta.rawset(name, LuaRef::createFunction(L(), &CppBindMethod<FN, ARGS>::call, proc));
+        m_meta.rawset(name, LuaRef::createFunction(state(), &CppBindMethod<FN, ARGS>::call, proc));
         return *this;
     }
 
@@ -556,7 +559,7 @@ public:
     CppBindClass<T>& addFactory(const FN& proc)
     {
         static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
-        m_meta.rawset("__call", LuaRef::createFunction(L(), &CppBindMethod<FN, FN, 2>::call, proc));
+        m_meta.rawset("__call", LuaRef::createFunction(state(), &CppBindMethod<FN, FN, 2>::call, proc));
         return *this;
     }
 
@@ -575,7 +578,7 @@ public:
     CppBindClass<T>& addFactory(const FN& proc, ARGS)
     {
         static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
-        m_meta.rawset("__call", LuaRef::createFunction(L(), &CppBindMethod<FN, ARGS, 2>::call, proc));
+        m_meta.rawset("__call", LuaRef::createFunction(state(), &CppBindMethod<FN, ARGS, 2>::call, proc));
         return *this;
     }
 
@@ -585,9 +588,9 @@ public:
     template <typename V>
     CppBindClass<T>& addVariable(const char* name, V T::* v, bool writable = true)
     {
-        setMemberGetter(name, LuaRef::createFunction(L(), &CppBindClassVariable<T, V>::get, v));
+        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::get, v));
         if (writable) {
-            setMemberSetter(name, LuaRef::createFunction(L(), &CppBindClassVariable<T, V>::set, v));
+            setMemberSetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::set, v));
         } else {
             setMemberReadOnly(name);
         }
@@ -602,8 +605,8 @@ public:
     {
         static_assert(!std::is_function<FG>::value, "function pointer is needed, please prepend & to function name");
         static_assert(!std::is_function<FS>::value, "function pointer is needed, please prepend & to function name");
-        setMemberGetter(name, LuaRef::createFunction(L(), &CppBindClassMethod<T, FG, FG, 1>::call, get));
-        setMemberSetter(name, LuaRef::createFunction(L(), &CppBindClassMethod<T, FS, FS, -1>::call, set));
+        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassMethod<T, FG, FG, 1>::call, get));
+        setMemberSetter(name, LuaRef::createFunction(state(), &CppBindClassMethod<T, FS, FS, -1>::call, set));
         return *this;
     }
 
@@ -614,7 +617,7 @@ public:
     CppBindClass<T>& addProperty(const char* name, const FN& get)
     {
         static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
-        setMemberGetter(name, LuaRef::createFunction(L(), &CppBindClassMethod<T, FN, FN, 1>::call, get));
+        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassMethod<T, FN, FN, 1>::call, get));
         setMemberReadOnly(name);
         return *this;
     }
@@ -627,7 +630,7 @@ public:
     {
         static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
         using CppBind = CppBindClassMethod<T, FN>;
-        setMemberFunction(name, LuaRef::createFunction(L(), &CppBind::call, proc), CppBind::IsConst);
+        setMemberFunction(name, LuaRef::createFunction(state(), &CppBind::call, proc), CppBind::IsConst);
         return *this;
     }
 
@@ -639,7 +642,7 @@ public:
     {
         static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
         using CppBind = CppBindClassMethod<T, FN, ARGS>;
-        setMemberFunction(name, LuaRef::createFunction(L(), &CppBind::call, proc), CppBind::IsConst);
+        setMemberFunction(name, LuaRef::createFunction(state(), &CppBind::call, proc), CppBind::IsConst);
         return *this;
     }
 
