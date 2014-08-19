@@ -243,7 +243,7 @@ LUA_INLINE bool CppBindClassBase::buildMetaTable(LuaRef& meta, LuaRef& parent, c
     clazz_static.rawset("___type", "static_" + type_name);
     clazz_static.rawset("___class", clazz);
     clazz_static.rawset("___const", clazz_const);
-    clazz_static.rawset("___parent", parent);
+    clazz_static.rawset("___module", parent);
     clazz_static.rawset(CppBindClassMetaMethod::signature(), type_static);
 
     LuaRef registry(L, LUA_REGISTRYINDEX);
@@ -313,5 +313,5 @@ LUA_INLINE void CppBindClassBase::setMemberFunction(const char* name, const LuaR
 
 LUA_INLINE CppBindModule CppBindClassBase::endClass()
 {
-    return CppBindModule(m_meta.rawget<LuaRef>("___parent"));
+    return CppBindModule(m_meta.rawget<LuaRef>("___module"));
 }
