@@ -481,7 +481,7 @@ public:
      */
     bool isTable() const
     {
-        return type() == LuaTypeID::Table;
+        return type() == LuaTypeID::TABLE;
     }
 
     /**
@@ -489,7 +489,7 @@ public:
      */
     bool isFunction() const
     {
-        return type() == LuaTypeID::Function;
+        return type() == LuaTypeID::FUNCTION;
     }
 
     /**
@@ -514,7 +514,7 @@ public:
      */
     const LuaRef& checkTable() const
     {
-        return checkType(LuaTypeID::Table);
+        return checkType(LuaTypeID::TABLE);
     }
 
     /**
@@ -523,7 +523,7 @@ public:
      */
     const LuaRef& checkFunction() const
     {
-        return checkType(LuaTypeID::Function);
+        return checkType(LuaTypeID::FUNCTION);
     }
 
     /**

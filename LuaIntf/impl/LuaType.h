@@ -26,16 +26,16 @@
 
 enum class LuaTypeID
 {
-    None = LUA_TNONE,
-    Nil = LUA_TNIL,
-    String = LUA_TSTRING,
-    Number = LUA_TNUMBER,
-    Thread = LUA_TTHREAD,
-    Boolean = LUA_TBOOLEAN,
-    Function = LUA_TFUNCTION,
-    Table = LUA_TTABLE,
-    Userdata = LUA_TUSERDATA,
-    LightUserdata = LUA_TLIGHTUSERDATA
+    NONE = LUA_TNONE,
+    NIL = LUA_TNIL,
+    STRING = LUA_TSTRING,
+    NUMBER = LUA_TNUMBER,
+    THREAD = LUA_TTHREAD,
+    BOOLEAN = LUA_TBOOLEAN,
+    FUNCTION = LUA_TFUNCTION,
+    TABLE = LUA_TTABLE,
+    USERDATA = LUA_TUSERDATA,
+    LIGHTUSERDATA = LUA_TLIGHTUSERDATA
 };
 
 template <typename T>

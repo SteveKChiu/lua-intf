@@ -153,9 +153,9 @@ LUA_INLINE LuaRef& LuaRef::operator = (const LuaRef& that)
 LUA_INLINE LuaTypeID LuaRef::type() const
 {
     if (m_ref == LUA_NOREF) {
-        return LuaTypeID::None;
+        return LuaTypeID::NONE;
     } else if (m_ref == LUA_REFNIL) {
-        return LuaTypeID::Nil;
+        return LuaTypeID::NIL;
     } else {
         pushToStack();
         int t = lua_type(L, -1);
