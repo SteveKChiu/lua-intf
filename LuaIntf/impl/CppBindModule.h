@@ -242,9 +242,14 @@ public:
     }
 
     /**
-     * Open the global CppBindModule.
+     * Open the global CppBindModule. Bind it to a global variable.
      */
     static CppBindModule bind(lua_State* L);
+
+    /**
+     * Open the global CppBindModule. Bind it to a local variable.
+     */
+    static CppBindModule bind(LuaRef &mod);
 
     /**
      * The underlying lua state.
@@ -400,7 +405,8 @@ private:
 //---------------------------------------------------------------------------
 
 /**
- * Retrieve the root CppBindModule.
+ * Retrieve the root CppBindModule. Module binds to a global variable (lua
+ * 5.0 style)
  *
  * It is recommended to put your module inside the global, and
  * then add your classes and functions to it, rather than adding many classes
@@ -410,3 +416,22 @@ inline CppBindModule LuaBinding(lua_State* L)
 {
     return CppBindModule::bind(L);
 }
+
+/**
+ * Retrieve the root CppBindModule. Module binds to a local LuaRef value.
+ *
+ * This can be used to implement Lua 5.1 module style:
+ *
+ *     extern "C" int luaopen_modname(lua_State *L) {
+ *         LuaRef mod = LuaRef::createTable(L);
+ *         LuaBinding(mod)
+ *             ...;
+ *         mod.pushToStack();
+ *         return 1;
+ *     }
+ */
+inline CppBindModule LuaBinding(LuaRef &mod)
+{
+    return CppBindModule::bind(mod);
+}
+
