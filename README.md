@@ -138,6 +138,19 @@ The member function can be called by the following, note the ':' syntax and obje
 
 	session:load("http://www.yahoo.com")
 
+Integrate with Lua module system
+--------------------------------
+
+The lua module system don't register modules in global variables. So you'll need to pass a local reference to `LuaBinding`. For example:
+
+    extern "C" int luaopen_modname(lua_State *L) {
+        LuaRef mod = LuaRef::createTable(L);
+        LuaBinding(mod)
+            ...;
+        mod.pushToStack();
+        return 1;
+    }
+
 C++ object life-cycle
 ---------------------
 
