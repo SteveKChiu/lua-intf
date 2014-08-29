@@ -143,7 +143,7 @@ Integrate with Lua module system
 
 The lua module system don't register modules in global variables. So you'll need to pass a local reference to `LuaBinding`. For example:
 
-    extern "C" int luaopen_modname(lua_State *L) {
+    extern "C" int luaopen_modname(lua_State* L) {
         LuaRef mod = LuaRef::createTable(L);
         LuaBinding(mod)
             ...;
@@ -294,6 +294,53 @@ If your C++ function is overloaded, pass `&funcion` is not enough, you have to e
 
 	.endModule();
 
+Lua for-loop interation function
+--------------------------------
+
+To make it easier to implement for-loop interation function for Lua, `lua-intf` has a helper class `CppFunctor`.  To use this, user need to inherit CppFunctor, and override run method and optional descructor. Then call pushToStack to create the functor object on lua stack.
+
+    class MyIterator : public CppFunctor
+    {
+        MyIterator(...) 
+        { 
+            ... 
+        }
+        
+        virtual ~MyIterator() 
+        { 
+            ... 
+        }
+        
+        // the for-loop will call this function for each step until it return 0
+        virtual int run(lua_State* L) override
+        { 
+            ... 
+            // return the number of variables for each step of for-loop
+            // or return 0 to end the for-loop
+            return 2; 
+        }
+    }
+
+    int xpairs(lua_State* L)
+    {
+        CppFunctor::pushToStack(L, new MyIterator(...));
+        return 1;
+    }
+
+To register the for-loop interation function:
+
+    LuaBinding(L).beginModule("utils")
+
+		.addFunction("xpairs", &xpairs)
+
+	.endModule();
+
+To use the interation function in Lua code:
+
+    for x, y in utils.xpairs(...) do
+        ...
+    end
+    
 Custom type mapping
 -------------------
 
