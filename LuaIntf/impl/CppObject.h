@@ -281,7 +281,7 @@ private:
         {}
 
     explicit CppObjectSharedPtr(const SP& sp)
-        : CppObject(&*sp)
+        : CppObject(const_cast<T*>(&*sp))
         , m_sp(sp)
         {}
 
