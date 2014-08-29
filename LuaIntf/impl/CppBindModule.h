@@ -249,7 +249,7 @@ public:
     /**
      * Open the global CppBindModule. Bind it to a local variable.
      */
-    static CppBindModule bind(LuaRef &mod);
+    static CppBindModule bind(LuaRef& mod);
 
     /**
      * The underlying lua state.
@@ -422,7 +422,7 @@ inline CppBindModule LuaBinding(lua_State* L)
  *
  * This can be used to implement Lua 5.1 module style:
  *
- *     extern "C" int luaopen_modname(lua_State *L) {
+ *     extern "C" int luaopen_modname(lua_State* L) {
  *         LuaRef mod = LuaRef::createTable(L);
  *         LuaBinding(mod)
  *             ...;
@@ -430,7 +430,7 @@ inline CppBindModule LuaBinding(lua_State* L)
  *         return 1;
  *     }
  */
-inline CppBindModule LuaBinding(LuaRef &mod)
+inline CppBindModule LuaBinding(LuaRef& mod)
 {
     return CppBindModule::bind(mod);
 }

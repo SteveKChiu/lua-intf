@@ -158,7 +158,7 @@ LUA_INLINE CppBindModule CppBindModule::bind(lua_State* L)
     return CppBindModule(LuaRef::globals(L));
 }
 
-LUA_INLINE CppBindModule CppBindModule::bind(LuaRef &mod)
+LUA_INLINE CppBindModule CppBindModule::bind(LuaRef& mod)
 {
     return CppBindModule(mod);
 }
