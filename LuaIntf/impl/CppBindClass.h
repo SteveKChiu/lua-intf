@@ -598,7 +598,7 @@ public:
     /**
      * Add or replace a data member.
      */
-    template <typename V>
+    template <typename V, typename std::enable_if<!std::is_const<V>::value>::type* = nullptr>
     CppBindClass<T>& addVariable(const char* name, V T::* v, bool writable = true)
     {
         setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::get, v));
@@ -607,6 +607,17 @@ public:
         } else {
             setMemberReadOnly(name);
         }
+        return *this;
+    }
+
+    /**
+     * Add or replace a const read-only data member.
+     */
+    template <typename V, typename std::enable_if<std::is_const<V>::value>::type* = nullptr>
+    CppBindClass<T>& addVariable(const char* name, V T::* v)
+    {
+        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::get, v));
+        setMemberReadOnly(name);
         return *this;
     }
 
