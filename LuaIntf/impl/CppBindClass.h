@@ -116,7 +116,7 @@ struct CppBindClassMethodBase
             T* obj = CppObject::get<T>(L, 1, IS_CONST);
             CppArgInput<P...>::get(L, 2, args);
 
-            int n = CppInvokeClassMethod<T, IS_PROXY, FN, R, typename CppArg<P>::ValueType...>::push(L, obj, fn, args);
+            int n = CppInvokeClassMethod<T, IS_PROXY, FN, R, typename CppArg<P>::PasserType...>::push(L, obj, fn, args);
             return n + CppArgOutput<P...>::push(L, args);
         } catch (std::exception& e) {
             return luaL_error(L, e.what());

@@ -45,7 +45,7 @@ struct CppDispatchMethod<FN, R, TUPLE, 0, INDEX...>
 {
     static R call(const FN& func, TUPLE& args)
     {
-        return func(std::get<INDEX>(args)...);
+        return func(std::get<INDEX>(args).unwrap()...);
     }
 };
 
@@ -146,12 +146,12 @@ struct CppDispatchClassConstructor <T, TUPLE, 0, INDEX...>
 {
     static T* call(TUPLE& args)
     {
-        return new T(std::get<INDEX>(args)...);
+        return new T(std::get<INDEX>(args).unwrap()...);
     }
 
     static T* call(void* mem, TUPLE& args)
     {
-        return new (mem) T(std::get<INDEX>(args)...);
+        return new (mem) T(std::get<INDEX>(args).unwrap()...);
     }
 };
 
@@ -180,7 +180,7 @@ struct CppDispatchClassMethod <T, false, FN, R, TUPLE, 0, INDEX...>
 {
     static R call(T* t, const FN& fn, TUPLE& args)
     {
-        return (const_cast<T*>(t)->*fn)(std::get<INDEX>(args)...);
+        return (const_cast<T*>(t)->*fn)(std::get<INDEX>(args).unwrap()...);
     }
 };
 

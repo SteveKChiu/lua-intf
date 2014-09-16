@@ -99,7 +99,7 @@ struct CppBindMethodBase
             typename CppArgTuple<P...>::Type args;
             CppArgInput<P...>::get(L, IARG, args);
 
-            int n = CppInvokeMethod<FN, R, typename CppArg<P>::ValueType...>::push(L, fn, args);
+            int n = CppInvokeMethod<FN, R, typename CppArg<P>::PasserType...>::push(L, fn, args);
             return n + CppArgOutput<P...>::push(L, args);
         } catch (std::exception& e) {
             return luaL_error(L, e.what());

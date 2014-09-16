@@ -54,10 +54,61 @@ struct _ref_def {};
 //---------------------------------------------------------------------------
 
 template <typename T>
+struct CppArgPasser
+{
+    T& unwrap() {
+      return value;
+    }
+  
+    const T& unwrap() const {
+      return value;
+    }
+  
+    void wrap(T unwrapped) {
+      value = unwrapped;
+    }
+
+    T value;
+};
+
+template <typename T>
+struct CppArgPasser<T *>
+{
+    CppArgPasser() {}
+  
+    T* unwrap() const {
+      return value;
+    }
+  
+    void wrap(T* unwrapped) {
+      value = unwrapped;
+    }
+
+    T* value;
+};
+
+template <typename T>
+struct CppArgPasser<T &>
+{
+    CppArgPasser() {}
+  
+    T& unwrap() const {
+      return *value;
+    }
+  
+    void wrap(T& unwrapped) {
+      value = &unwrapped;
+    }
+
+    T* value;
+};
+
+template <typename T>
 struct CppArgTraits
 {
     typedef T Type;
     typedef typename LuaType<T>::ValueType ValueType;
+    typedef CppArgPasser<ValueType> PasserType;
     static constexpr bool IsInput = true;
     static constexpr bool IsOutput = false;
     static constexpr bool IsOptonal = false;
@@ -120,6 +171,7 @@ struct CppArgTraits <lua_State*>
 {
     typedef lua_State* Type;
     typedef lua_State* ValueType;
+    typedef CppArgPasser<ValueType> PasserType;
     static constexpr bool IsInput = false;
     static constexpr bool IsOutput = false;
     static constexpr bool IsOptonal = false;
@@ -131,6 +183,7 @@ struct CppArgTraits <LuaState>
 {
     typedef LuaState Type;
     typedef LuaState ValueType;
+    typedef CppArgPasser<ValueType> PasserType;
     static constexpr bool IsInput = false;
     static constexpr bool IsOutput = false;
     static constexpr bool IsOptonal = false;
@@ -145,7 +198,7 @@ struct CppArgTraitsInput;
 template <typename Traits, bool IsOptional, bool IsDefault>
 struct CppArgTraitsInput <Traits, false, IsOptional, IsDefault>
 {
-    static int get(lua_State*, int, typename Traits::ValueType&)
+    static int get(lua_State*, int, typename Traits::PasserType&)
     {
         return 0;
     }
@@ -154,9 +207,9 @@ struct CppArgTraitsInput <Traits, false, IsOptional, IsDefault>
 template <typename Traits, bool IsDefault>
 struct CppArgTraitsInput <Traits, true, false, IsDefault>
 {
-    static int get(lua_State* L, int index, typename Traits::ValueType& r)
+    static int get(lua_State* L, int index, typename Traits::PasserType& r)
     {
-        r = LuaType<typename Traits::Type>::get(L, index);
+        r.wrap(LuaType<typename Traits::Type>::get(L, index));
         return 1;
     }
 };
@@ -164,9 +217,9 @@ struct CppArgTraitsInput <Traits, true, false, IsDefault>
 template <typename Traits>
 struct CppArgTraitsInput <Traits, true, true, false>
 {
-    static int get(lua_State* L, int index, typename Traits::ValueType& r)
+    static int get(lua_State* L, int index, typename Traits::PasserType& r)
     {
-        r = LuaType<typename Traits::Type>::opt(L, index, typename Traits::ValueType());
+        r.wrap(LuaType<typename Traits::Type>::opt(L, index, typename Traits::ValueType()));
         return 1;
     }
 };
@@ -174,9 +227,9 @@ struct CppArgTraitsInput <Traits, true, true, false>
 template <typename Traits>
 struct CppArgTraitsInput <Traits, true, true, true>
 {
-    static int get(lua_State* L, int index, typename Traits::ValueType& r)
+    static int get(lua_State* L, int index, typename Traits::PasserType& r)
     {
-        r = LuaType<typename Traits::Type>::opt(L, index, Traits::DefaultValue);
+        r.wrap(LuaType<typename Traits::Type>::opt(L, index, Traits::DefaultValue));
         return 1;
     }
 };
@@ -205,6 +258,7 @@ struct CppArgTraitsOutput <Traits, true>
     }
 };
 
+
 //---------------------------------------------------------------------------
 
 template <typename T>
@@ -213,15 +267,16 @@ struct CppArg
     typedef CppArgTraits<T> Traits;
     typedef typename Traits::Type Type;
     typedef typename Traits::ValueType ValueType;
+    typedef typename Traits::PasserType PasserType;
 
-    static int get(lua_State* L, int index, ValueType& r)
+    static int get(lua_State* L, int index, PasserType& r)
     {
         return CppArgTraitsInput<Traits, Traits::IsInput, Traits::IsOptonal, Traits::IsDefault>::get(L, index, r);
     }
 
-    static int push(lua_State* L, const ValueType& f)
+    static int push(lua_State* L, const PasserType& f)
     {
-        return CppArgTraitsOutput<Traits, Traits::IsOutput>::push(L, f);
+        return CppArgTraitsOutput<Traits, Traits::IsOutput>::push(L, f.unwrap());
     }
 };
 
@@ -231,10 +286,11 @@ struct CppArg <lua_State*>
     typedef CppArgTraits<lua_State*> Traits;
     typedef typename Traits::Type Type;
     typedef typename Traits::ValueType ValueType;
+    typedef typename Traits::PasserType PasserType;
 
-    static int get(lua_State* L, int, lua_State*& r)
+    static int get(lua_State* L, int, PasserType& r)
     {
-        r = L;
+        r.wrap(L);
         return 0;
     }
 
@@ -250,10 +306,11 @@ struct CppArg <LuaState>
     typedef CppArgTraits<LuaState> Traits;
     typedef typename Traits::Type Type;
     typedef typename Traits::ValueType ValueType;
+    typedef typename Traits::PasserType PasserType;
 
-    static int get(lua_State* L, int, LuaState& r)
+    static int get(lua_State* L, int, PasserType& r)
     {
-        r = L;
+        r.wrap(L);
         return 0;
     }
 
@@ -268,7 +325,7 @@ struct CppArg <LuaState>
 template <typename... P>
 struct CppArgTuple
 {
-    typedef std::tuple<typename CppArg<P>::ValueType...> Type;
+    typedef std::tuple<typename CppArg<P>::PasserType...> Type;
 };
 
 //---------------------------------------------------------------------------

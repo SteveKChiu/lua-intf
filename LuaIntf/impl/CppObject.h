@@ -437,12 +437,12 @@ struct LuaCppObjectFactory <SP, T, true, true>
 /**
  * CppObject conversions for reference or value type
  */
-template <typename T, bool IS_REF, bool IS_CONST>
+template <typename T, typename T1, bool IS_REF, bool IS_CONST>
 struct LuaCppObject
 {
     static_assert(std::is_class<T>::value, "type is not class, need template specialization");
 
-    typedef T ValueType;
+    typedef T1 ValueType;
     typedef typename CppObjectTraits<T>::ObjectType ObjectType;
 
     static constexpr bool IsShared = CppObjectTraits<T>::IsSharedPtr;
@@ -470,13 +470,13 @@ struct LuaCppObject
 };
 
 template <typename T>
-struct LuaType : LuaCppObject <T, false, false> {};
+struct LuaType : LuaCppObject <T, T, false, false> {};
 
 template <typename T>
-struct LuaType <T &> : LuaCppObject <T, true, false> {};
+struct LuaType <T &> : LuaCppObject <T, T &, true, false> {};
 
 template <typename T>
-struct LuaType <T const&> : LuaCppObject <T, true, true> {};
+struct LuaType <T const&> : LuaCppObject <T, T const &, true, true> {};
 
 //---------------------------------------------------------------------------
 
