@@ -282,7 +282,7 @@ public:
     /**
      * Add or replace a non-const variable.
      */
-    template <typename V, typename std::enable_if<!std::is_const<V>::value>::type* = nullptr>
+    template <typename V>
     CppBindModule& addVariable(const char* name, V* v, bool writable = true)
     {
         setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, v));
@@ -297,8 +297,8 @@ public:
     /**
      * Add or replace a const read-only variable.
      */
-    template <typename V, typename std::enable_if<std::is_const<V>::value>::type* = nullptr>
-    CppBindModule& addVariable(const char* name, V* v)
+    template <typename V>
+    CppBindModule& addVariable(const char* name, const V* v)
     {
         setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, const_cast<typename std::remove_const<V>::type *>(v)));
         setReadOnly(name);
