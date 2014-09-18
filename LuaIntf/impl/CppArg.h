@@ -294,7 +294,7 @@ struct CppArg <lua_State*>
         return 0;
     }
 
-    static int push(lua_State*, lua_State*)
+    static int push(lua_State*, const PasserType& r)
     {
         return 0;
     }
@@ -314,7 +314,7 @@ struct CppArg <LuaState>
         return 0;
     }
 
-    static int push(lua_State*, LuaState)
+    static int push(lua_State*, const PasserType& r)
     {
         return 0;
     }

@@ -189,7 +189,7 @@ struct CppDispatchClassMethod <T, true, FN, R, TUPLE, 0, INDEX...>
 {
     static R call(T* t, const FN& fn, TUPLE& args)
     {
-        return fn(const_cast<T*>(t), std::get<INDEX>(args)...);
+        return fn(const_cast<T*>(t), std::get<INDEX>(args).unwrap()...);
     }
 };
 
