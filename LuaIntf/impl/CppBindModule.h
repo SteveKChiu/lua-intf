@@ -300,7 +300,7 @@ public:
     template <typename V>
     CppBindModule& addVariable(const char* name, const V* v)
     {
-        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, const_cast<typename std::remove_const<V>::type *>(v)));
+        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, const_cast<V *>(v)));
         setReadOnly(name);
         return *this;
     }
