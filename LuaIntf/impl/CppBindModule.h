@@ -280,7 +280,8 @@ public:
     CppBindModule endModule();
 
     /**
-     * Add or replace a non-const variable.
+     * Add or replace a non-const data member with optional setter, but only if
+     * the type of the data member is copy assignable.
      */
     template <typename V>
     typename std::enable_if<std::is_copy_assignable<V>::value, CppBindModule&>::type addVariable(const char* name, V* v, bool writable = true)

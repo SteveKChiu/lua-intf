@@ -596,7 +596,8 @@ public:
     }
 
     /**
-     * Add or replace a data member.
+     * Add or replace a non-const data member with optional setter, but only if
+     * the type of the data member is copy assignable.
      */
     template <typename V>
     typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T>&>::type addVariable(const char* name, V T::* v, bool writable = true)
