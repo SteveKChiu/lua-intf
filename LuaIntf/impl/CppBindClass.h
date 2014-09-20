@@ -599,7 +599,7 @@ public:
      * Add or replace a data member.
      */
     template <typename V>
-    CppBindClass<T>& addVariable(const char* name, V T::* v, bool writable = true)
+    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T>&>::type addVariable(const char* name, V T::* v, bool writable = true)
     {
         setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::get, v));
         if (writable) {

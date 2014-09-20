@@ -283,7 +283,7 @@ public:
      * Add or replace a non-const variable.
      */
     template <typename V>
-    CppBindModule& addVariable(const char* name, V* v, bool writable = true)
+    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindModule&>::type addVariable(const char* name, V* v, bool writable = true)
     {
         setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, v));
         if (writable) {
