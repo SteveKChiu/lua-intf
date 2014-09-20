@@ -247,7 +247,7 @@ struct CppBindClassVariable
         try {
             const T* obj = CppObject::get<T>(L, 1, true);
             auto mp = static_cast<V T::**>(lua_touserdata(L, lua_upvalueindex(1)));
-            LuaType<V>::push(L, obj->**mp);
+            LuaType<V&>::push(L, obj->**mp);
             return 1;
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
