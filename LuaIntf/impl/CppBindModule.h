@@ -42,7 +42,7 @@ struct CppBindVariable
             auto ptr = static_cast<const T*>(lua_touserdata(L, lua_upvalueindex(1)));
             assert(ptr);
 
-            pushVariable(L, ptr);
+            LuaType<T&>::push(L, *ptr);
             return 1;
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
@@ -69,28 +69,6 @@ struct CppBindVariable
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
         }
-    }
-  
-protected:
-  
-    /**
-     * Push class types by pointer to avoid unnecessary copy and potential
-     * lack of copy-constructor.
-     */
-    template <typename T1 = T>
-    static typename std::enable_if<std::is_class<T1>::value>::type pushVariable(lua_State* L, const T* ptr)
-    {
-        LuaType<T*>::push(L, ptr);
-    }
-
-    /**
-     * Push non-class types by value since there is no pointer specialization
-     * for them, and it's generally as cheap or cheaper to push them by value.
-     */
-    template <typename T1 = T>
-    static typename std::enable_if<!std::is_class<T1>::value>::type pushVariable(lua_State* L, const T* ptr)
-    {
-        LuaType<T>::push(L, *ptr);
     }
 };
 
