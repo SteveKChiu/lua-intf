@@ -54,53 +54,45 @@ struct _ref_def {};
 //---------------------------------------------------------------------------
 
 template <typename T>
-struct CppArgPasser
+struct CppArgHolder
 {
-    T& unwrap() {
-      return value;
+    T& value() 
+    {
+        return holder;
     }
   
-    const T& unwrap() const {
-      return value;
+    const T& value() const 
+    {
+        return holder;
     }
   
-    void wrap(T unwrapped) {
-      value = unwrapped;
+    void hold(const T& v) 
+    {
+        holder = v;
     }
 
-    T value;
+    T holder;
 };
 
 template <typename T>
-struct CppArgPasser<T *>
+struct CppArgHolder<T&>
 {
-    CppArgPasser() {}
-  
-    T* unwrap() const {
-      return value;
-    }
-  
-    void wrap(T* unwrapped) {
-      value = unwrapped;
+    T& value() 
+    {
+        return *holder;
     }
 
-    T* value;
-};
-
-template <typename T>
-struct CppArgPasser<T &>
-{
-    CppArgPasser() {}
-  
-    T& unwrap() const {
-      return *value;
+    const T& value() const 
+    {
+        return *holder;
     }
   
-    void wrap(T& unwrapped) {
-      value = &unwrapped;
+    void hold(T& v) 
+    {
+        holder = &v;
     }
 
-    T* value;
+    T* holder;
 };
 
 template <typename T>
@@ -108,11 +100,11 @@ struct CppArgTraits
 {
     typedef T Type;
     typedef typename LuaType<T>::ValueType ValueType;
-    typedef CppArgPasser<ValueType> PasserType;
+    typedef CppArgHolder<ValueType> HolderType;
     static constexpr bool IsInput = true;
     static constexpr bool IsOutput = false;
     static constexpr bool IsOptonal = false;
-    static constexpr bool IsDefault = false;
+    static constexpr bool HasDefault = false;
 };
 
 template <typename T>
@@ -125,7 +117,7 @@ template <typename T, T DEF>
 struct CppArgTraits <_def<T, DEF>> : CppArgTraits <T>
 {
     static constexpr bool IsOptonal = true;
-    static constexpr bool IsDefault = true;
+    static constexpr bool HasDefault = true;
     static constexpr T DefaultValue = DEF;
 };
 
@@ -162,7 +154,7 @@ struct CppArgTraits <_ref_def<T, DEF>> : CppArgTraits <T>
         "argument with ref spec must be non-const reference type");
     static constexpr bool IsOptonal = true;
     static constexpr bool IsOutput = true;
-    static constexpr bool IsDefault = true;
+    static constexpr bool HasDefault = true;
     static constexpr T DefaultValue = DEF;
 };
 
@@ -171,11 +163,11 @@ struct CppArgTraits <lua_State*>
 {
     typedef lua_State* Type;
     typedef lua_State* ValueType;
-    typedef CppArgPasser<ValueType> PasserType;
+    typedef CppArgHolder<ValueType> HolderType;
     static constexpr bool IsInput = false;
     static constexpr bool IsOutput = false;
     static constexpr bool IsOptonal = false;
-    static constexpr bool IsDefault = false;
+    static constexpr bool HasDefault = false;
 };
 
 template <>
@@ -183,33 +175,33 @@ struct CppArgTraits <LuaState>
 {
     typedef LuaState Type;
     typedef LuaState ValueType;
-    typedef CppArgPasser<ValueType> PasserType;
+    typedef CppArgHolder<ValueType> HolderType;
     static constexpr bool IsInput = false;
     static constexpr bool IsOutput = false;
     static constexpr bool IsOptonal = false;
-    static constexpr bool IsDefault = false;
+    static constexpr bool HasDefault = false;
 };
 
 //---------------------------------------------------------------------------
 
-template <typename Traits, bool IsInput, bool IsOptional, bool IsDefault>
+template <typename Traits, bool IsInput, bool IsOptional, bool HasDefault>
 struct CppArgTraitsInput;
 
-template <typename Traits, bool IsOptional, bool IsDefault>
-struct CppArgTraitsInput <Traits, false, IsOptional, IsDefault>
+template <typename Traits, bool IsOptional, bool HasDefault>
+struct CppArgTraitsInput <Traits, false, IsOptional, HasDefault>
 {
-    static int get(lua_State*, int, typename Traits::PasserType&)
+    static int get(lua_State*, int, typename Traits::HolderType&)
     {
         return 0;
     }
 };
 
-template <typename Traits, bool IsDefault>
-struct CppArgTraitsInput <Traits, true, false, IsDefault>
+template <typename Traits, bool HasDefault>
+struct CppArgTraitsInput <Traits, true, false, HasDefault>
 {
-    static int get(lua_State* L, int index, typename Traits::PasserType& r)
+    static int get(lua_State* L, int index, typename Traits::HolderType& r)
     {
-        r.wrap(LuaType<typename Traits::Type>::get(L, index));
+        r.hold(LuaType<typename Traits::Type>::get(L, index));
         return 1;
     }
 };
@@ -217,9 +209,9 @@ struct CppArgTraitsInput <Traits, true, false, IsDefault>
 template <typename Traits>
 struct CppArgTraitsInput <Traits, true, true, false>
 {
-    static int get(lua_State* L, int index, typename Traits::PasserType& r)
+    static int get(lua_State* L, int index, typename Traits::HolderType& r)
     {
-        r.wrap(LuaType<typename Traits::Type>::opt(L, index, typename Traits::ValueType()));
+        r.hold(LuaType<typename Traits::Type>::opt(L, index, typename Traits::ValueType()));
         return 1;
     }
 };
@@ -227,9 +219,9 @@ struct CppArgTraitsInput <Traits, true, true, false>
 template <typename Traits>
 struct CppArgTraitsInput <Traits, true, true, true>
 {
-    static int get(lua_State* L, int index, typename Traits::PasserType& r)
+    static int get(lua_State* L, int index, typename Traits::HolderType& r)
     {
-        r.wrap(LuaType<typename Traits::Type>::opt(L, index, Traits::DefaultValue));
+        r.hold(LuaType<typename Traits::Type>::opt(L, index, Traits::DefaultValue));
         return 1;
     }
 };
@@ -258,7 +250,6 @@ struct CppArgTraitsOutput <Traits, true>
     }
 };
 
-
 //---------------------------------------------------------------------------
 
 template <typename T>
@@ -267,16 +258,16 @@ struct CppArg
     typedef CppArgTraits<T> Traits;
     typedef typename Traits::Type Type;
     typedef typename Traits::ValueType ValueType;
-    typedef typename Traits::PasserType PasserType;
+    typedef typename Traits::HolderType HolderType;
 
-    static int get(lua_State* L, int index, PasserType& r)
+    static int get(lua_State* L, int index, HolderType& r)
     {
-        return CppArgTraitsInput<Traits, Traits::IsInput, Traits::IsOptonal, Traits::IsDefault>::get(L, index, r);
+        return CppArgTraitsInput<Traits, Traits::IsInput, Traits::IsOptonal, Traits::HasDefault>::get(L, index, r);
     }
 
-    static int push(lua_State* L, const PasserType& f)
+    static int push(lua_State* L, const HolderType& f)
     {
-        return CppArgTraitsOutput<Traits, Traits::IsOutput>::push(L, f.unwrap());
+        return CppArgTraitsOutput<Traits, Traits::IsOutput>::push(L, f.value());
     }
 };
 
@@ -286,15 +277,15 @@ struct CppArg <lua_State*>
     typedef CppArgTraits<lua_State*> Traits;
     typedef typename Traits::Type Type;
     typedef typename Traits::ValueType ValueType;
-    typedef typename Traits::PasserType PasserType;
+    typedef typename Traits::HolderType HolderType;
 
-    static int get(lua_State* L, int, PasserType& r)
+    static int get(lua_State* L, int, HolderType& r)
     {
-        r.wrap(L);
+        r.hold(L);
         return 0;
     }
 
-    static int push(lua_State*, const PasserType& r)
+    static int push(lua_State*, const HolderType& r)
     {
         return 0;
     }
@@ -306,15 +297,15 @@ struct CppArg <LuaState>
     typedef CppArgTraits<LuaState> Traits;
     typedef typename Traits::Type Type;
     typedef typename Traits::ValueType ValueType;
-    typedef typename Traits::PasserType PasserType;
+    typedef typename Traits::HolderType HolderType;
 
-    static int get(lua_State* L, int, PasserType& r)
+    static int get(lua_State* L, int, HolderType& r)
     {
-        r.wrap(L);
+        r.hold(L);
         return 0;
     }
 
-    static int push(lua_State*, const PasserType& r)
+    static int push(lua_State*, const HolderType& r)
     {
         return 0;
     }
@@ -325,7 +316,7 @@ struct CppArg <LuaState>
 template <typename... P>
 struct CppArgTuple
 {
-    typedef std::tuple<typename CppArg<P>::PasserType...> Type;
+    typedef std::tuple<typename CppArg<P>::HolderType...> Type;
 };
 
 //---------------------------------------------------------------------------

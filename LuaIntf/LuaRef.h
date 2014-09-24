@@ -302,7 +302,8 @@ public:
     template <typename T, typename... P>
     static LuaRef createFunctionWithNewObj(lua_State* L, lua_CFunction proc, P&&... args)
     {
-        static_assert(!std::is_function<T>::value, "function declaration is not allowed, use function pointer if needed");
+        static_assert(!std::is_function<T>::value,
+            "function declaration is not allowed, use function pointer if needed");
         void* userdata;
         LuaRef f = createFunctionWithNewData(L, proc, sizeof(T), &userdata);
         new (userdata) T(std::forward<P>(args)...);
@@ -334,7 +335,8 @@ public:
     template <typename T>
     static LuaRef createFunction(lua_State* L, lua_CFunction proc, const T& cpp)
     {
-        static_assert(!std::is_function<T>::value, "function declaration is not allowed, use function pointer if needed");
+        static_assert(!std::is_function<T>::value,
+            "function declaration is not allowed, use function pointer if needed");
         void* userdata;
         LuaRef f = createFunctionWithNewData(L, proc, sizeof(T), &userdata);
         new (userdata) T(cpp);
@@ -386,7 +388,7 @@ public:
      * @param L lua state
      * @param index position on stack
      */
-    explicit LuaRef(lua_State* state, int index = -1)
+    explicit LuaRef(lua_State* state, int index)
         : L(state)
     {
         if (!L) throw LuaException("invalid state");

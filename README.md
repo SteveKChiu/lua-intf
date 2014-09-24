@@ -143,7 +143,8 @@ Integrate with Lua module system
 
 The lua module system don't register modules in global variables. So you'll need to pass a local reference to `LuaBinding`. For example:
 ````c++
-    extern "C" int luaopen_modname(lua_State* L) {
+    extern "C" int luaopen_modname(lua_State* L) 
+    {
         LuaRef mod = LuaRef::createTable(L);
         LuaBinding(mod)
             ...;
@@ -194,17 +195,17 @@ C++ function exported to Lua can follow one the two calling conventions:
 
 + Normal function, that return value will be the value seen on the Lua side.
 
-+ Lua `CFunction` convention, that the first argument is `lua_State*` and the return type is `int`. And just like `CFunction` you need to manually push the result onto Lua stack, and return the number of results pushed.
++ Lua `lua_CFunction` convention, that the first argument is `lua_State*` and the return type is `int`. And just like `lua_CFunction` you need to manually push the result onto Lua stack, and return the number of results pushed.
 
-`lua-intf` extends `CFunction` convention by allowing more arguments besides `lua_State*`, the following functions will all follow the `CFunction` convention:
+`lua-intf` extends `lua_CFunction` convention by allowing more arguments besides `lua_State*`, the following functions will all follow the `lua_CFunction` convention:
 ````c++
-	// regular CFunction convention
+	// regular lua_CFunction convention
 	int func_1(lua_state* L);
 
-	// CFunction convention, but allow arg1, arg2 to map to arguments
+	// lua_CFunction convention, but allow arg1, arg2 to map to arguments
 	int func_2(lua_state* L, const std::string& arg1, int arg2);
 
-	// this is *NOT* CFunction
+	// this is *NOT* lua_CFunction
 	// the L can be placed anywhere, and it is stub to capture lua_State*,
 	// and do not contribute to actual Lua arguments
 	int func_3(const std::string& arg1, lua_state* L);
@@ -212,14 +213,14 @@ C++ function exported to Lua can follow one the two calling conventions:
 	class Object
 	{
 	public:
-		// class method can follow CFunction convention too
+		// class method can follow lua_CFunction convention too
 		int func_1(lua_state* L);
 
-		// class CFunction convention, but allow arg1, arg2 to map to arguments
+		// class lua_CFunction convention, but allow arg1, arg2 to map to arguments
 		int func_2(lua_state* L, const std::string& arg1, int arg2);
 	};
 
-	// the following can also be CFunction convention if it is added as class functions
+	// the following can also be lua_CFunction convention if it is added as class functions
 	// note the first argument must be the pointer type of the registered class
 	int obj_func_1(Object* obj, lua_state* L);
 	int obj_func_2(Object* obj, lua_state* L, const std::string& arg1, int arg2);

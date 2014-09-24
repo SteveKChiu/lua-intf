@@ -116,7 +116,7 @@ struct CppBindClassMethodBase
             T* obj = CppObject::get<T>(L, 1, IS_CONST);
             CppArgInput<P...>::get(L, 2, args);
 
-            int n = CppInvokeClassMethod<T, IS_PROXY, FN, R, typename CppArg<P>::PasserType...>::push(L, obj, fn, args);
+            int n = CppInvokeClassMethod<T, IS_PROXY, FN, R, typename CppArg<P>::HolderType...>::push(L, obj, fn, args);
             return n + CppArgOutput<P...>::push(L, args);
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
@@ -137,90 +137,108 @@ template <typename T, typename TF, typename R, typename... P, int CHK>
 struct CppBindClassMethod <T, R(TF::*)(P...), R(TF::*)(P...), CHK>
     : CppBindClassMethodBase <CHK, T, false, false, R(T::*)(P...), R, P...>
 {
-    static_assert(std::is_same<T, TF>::value, "class type and member function does not match");
+    static_assert(std::is_same<T, TF>::value,
+        "class type and member function does not match");
 };
 
 template <typename T, typename TF, typename R, typename... P, int CHK>
 struct CppBindClassMethod <T, R(TF::*)(P...) const, R(TF::*)(P...) const, CHK>
     : CppBindClassMethodBase <CHK, T, false, true, R(T::*)(P...) const, R, P...>
 {
-    static_assert(std::is_same<T, TF>::value, "class type and member function does not match");
+    static_assert(std::is_same<T, TF>::value,
+        "class type and member function does not match");
 };
 
 template <typename T, typename TF, typename R, typename... P, int CHK>
 struct CppBindClassMethod <T, R(*)(TF*, P...), R(*)(TF*, P...), CHK>
     : CppBindClassMethodBase <CHK, T, true, false, R(*)(T*, P...), R, P...>
 {
-    static_assert(std::is_same<T, TF>::value, "class type and function argument type does not match");
+    static_assert(std::is_same<T, TF>::value,
+        "class type and function argument type does not match");
 };
 
 template <typename T, typename TF, typename R, typename... P, int CHK>
 struct CppBindClassMethod <T, R(*)(const TF*, P...), R(*)(const TF*, P...), CHK>
     : CppBindClassMethodBase <CHK, T, true, true, R(*)(const T*, P...), R, P...>
 {
-    static_assert(std::is_same<T, TF>::value, "class type and function argument type does not match");
+    static_assert(std::is_same<T, TF>::value,
+        "class type and function argument type does not match");
 };
 
 template <typename T, typename TF, typename R, typename... P, int CHK>
 struct CppBindClassMethod <T, std::function<R(TF*, P...)>, std::function<R(TF*, P...)>, CHK>
     : CppBindClassMethodBase <CHK, T, true, false, std::function<R(T*, P...)>, R, P...>
 {
-    static_assert(std::is_same<T, TF>::value, "class type and function argument type does not match");
+    static_assert(std::is_same<T, TF>::value,
+        "class type and function argument type does not match");
 };
 
 template <typename T, typename TF, typename R, typename... P, int CHK>
 struct CppBindClassMethod <T, std::function<R(const TF*, P...)>, std::function<R(const TF*, P...)>, CHK>
     : CppBindClassMethodBase <CHK, T, true, true, std::function<R(T*, P...)>, R, P...>
 {
-    static_assert(std::is_same<T, TF>::value, "class type and function argument type does not match");
+    static_assert(std::is_same<T, TF>::value,
+        "class type and function argument type does not match");
 };
 
 template <typename T, typename TF, typename R, typename... A, typename... P, int CHK>
 struct CppBindClassMethod <T, R(TF::*)(A...), _arg(*)(P...), CHK>
     : CppBindClassMethodBase <CHK, T, false, false, R(T::*)(A...), R, P...>
 {
-    static_assert(std::is_same<T, TF>::value, "class type and member function does not match");
-    static_assert(sizeof...(A) == sizeof...(P), "the number of arguments and argument-specs do not match");
+    static_assert(std::is_same<T, TF>::value,
+        "class type and member function does not match");
+    static_assert(sizeof...(A) == sizeof...(P),
+        "the number of arguments and argument-specs do not match");
 };
 
 template <typename T, typename TF, typename R, typename... A, typename... P, int CHK>
 struct CppBindClassMethod <T, R(TF::*)(A...) const, _arg(*)(P...), CHK>
     : CppBindClassMethodBase <CHK, T, false, true, R(T::*)(A...) const, R, P...>
 {
-    static_assert(std::is_same<T, TF>::value, "class type and member function does not match");
-    static_assert(sizeof...(A) == sizeof...(P), "the number of arguments and argument-specs do not match");
+    static_assert(std::is_same<T, TF>::value,
+        "class type and member function does not match");
+    static_assert(sizeof...(A) == sizeof...(P),
+        "the number of arguments and argument-specs do not match");
 };
 
 template <typename T, typename TF, typename R, typename... A, typename... P, int CHK>
 struct CppBindClassMethod <T, R(*)(TF*, A...), _arg(*)(P...), CHK>
     : CppBindClassMethodBase <CHK, T, true, false, R(*)(T*, A...), R, P...>
 {
-    static_assert(std::is_same<T, TF>::value, "class type and function argument type does not match");
-    static_assert(sizeof...(A) == sizeof...(P), "the number of arguments and argument-specs do not match");
+    static_assert(std::is_same<T, TF>::value,
+        "class type and function argument type does not match");
+    static_assert(sizeof...(A) == sizeof...(P),
+        "the number of arguments and argument-specs do not match");
 };
 
 template <typename T, typename TF, typename R, typename... A, typename... P, int CHK>
 struct CppBindClassMethod <T, R(*)(const TF*, A...), _arg(*)(P...), CHK>
     : CppBindClassMethodBase <CHK, T, true, true, R(*)(const T*, A...), R, P...>
 {
-    static_assert(std::is_same<T, TF>::value, "class type and function argument type does not match");
-    static_assert(sizeof...(A) == sizeof...(P), "the number of arguments and argument-specs do not match");
+    static_assert(std::is_same<T, TF>::value,
+        "class type and function argument type does not match");
+    static_assert(sizeof...(A) == sizeof...(P),
+        "the number of arguments and argument-specs do not match");
 };
 
 template <typename T, typename TF, typename R, typename... A, typename... P, int CHK>
 struct CppBindClassMethod <T, std::function<R(TF*, A...)>, _arg(*)(P...), CHK>
     : CppBindClassMethodBase <CHK, T, true, false, std::function<R(T*, A...)>, R, P...>
 {
-    static_assert(std::is_same<T, TF>::value, "class type and function argument type does not match");
-    static_assert(sizeof...(A) == sizeof...(P), "the number of arguments and argument-specs do not match");
+    static_assert(std::is_same<T, TF>::value,
+        "class type and function argument type does not match");
+    static_assert(sizeof...(A) == sizeof...(P),
+        "the number of arguments and argument-specs do not match");
 };
 
 template <typename T, typename TF, typename R, typename... A, typename... P, int CHK>
 struct CppBindClassMethod <T, std::function<R(const TF*, A...)>, _arg(*)(P...), CHK>
     : CppBindClassMethodBase <CHK, T, true, true, std::function<R(const T*, A...)>, R, P...>
 {
-    static_assert(std::is_same<T, TF>::value, "class type and function argument type does not match");
-    static_assert(sizeof...(A) == sizeof...(P), "the number of arguments and argument-specs do not match");
+    static_assert(std::is_same<T, TF>::value,
+        "class type and function argument type does not match");
+    static_assert(sizeof...(A) == sizeof...(P),
+        "the number of arguments and argument-specs do not match");
 };
 
 template <typename T, typename FN, int CHK>
@@ -247,7 +265,7 @@ struct CppBindClassVariable
         try {
             const T* obj = CppObject::get<T>(L, 1, true);
             auto mp = static_cast<V T::**>(lua_touserdata(L, lua_upvalueindex(1)));
-            LuaType<V&>::push(L, obj->**mp);
+            LuaType<V>::push(L, obj->**mp);
             return 1;
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
@@ -456,7 +474,7 @@ public:
     }
 
     /**
-     * Add or replace a static data member.
+     * Add or replace a static non-const data member.
      */
     template <typename V>
     CppBindClass<T>& addStaticVariable(const char* name, V* v, bool writable = true)
@@ -471,13 +489,26 @@ public:
     }
 
     /**
+     * Add or replace a static const data member.
+     */
+    template <typename V>
+    CppBindClass<T>& addStaticVariable(const char* name, const V* v)
+    {
+        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, const_cast<V*>(v)));
+        setStaticReadOnly(name);
+        return *this;
+    }
+
+    /**
      * Add or replace a read-write property.
      */
     template <typename FG, typename FS>
     CppBindClass<T>& addStaticProperty(const char* name, const FG& get, const FS& set)
     {
-        static_assert(!std::is_function<FG>::value, "function pointer is needed, please prepend & to function name");
-        static_assert(!std::is_function<FS>::value, "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FG>::value,
+            "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FS>::value,
+            "function pointer is needed, please prepend & to function name");
         using CppGetter = CppBindMethod<FG, FG, 1, 1>;
         using CppSetter = CppBindMethod<FS, FS, 1, -1>;
         setStaticGetter(name, LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)));
@@ -491,7 +522,8 @@ public:
     template <typename FN>
     CppBindClass<T>& addStaticProperty(const char* name, const FN& get)
     {
-        static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FN>::value,
+            "function pointer is needed, please prepend & to function name");
         using CppGetter = CppBindMethod<FN, FN, 1, 1>;
         setStaticGetter(name, LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)));
         setStaticReadOnly(name);
@@ -504,7 +536,8 @@ public:
     template <typename FN>
     CppBindClass<T>& addStaticFunction(const char* name, const FN& proc)
     {
-        static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FN>::value,
+            "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindMethod<FN>;
         m_meta.rawset(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
         return *this;
@@ -516,7 +549,8 @@ public:
     template <typename FN, typename ARGS>
     CppBindClass<T>& addStaticFunction(const char* name, const FN& proc, ARGS)
     {
-        static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FN>::value,
+            "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindMethod<FN, ARGS>;
         m_meta.rawset(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
         return *this;
@@ -569,7 +603,8 @@ public:
     template <typename FN>
     CppBindClass<T>& addFactory(const FN& proc)
     {
-        static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FN>::value,
+            "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindMethod<FN, FN, 2>;
         m_meta.rawset("__call", LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
         return *this;
@@ -589,18 +624,18 @@ public:
     template <typename FN, typename ARGS>
     CppBindClass<T>& addFactory(const FN& proc, ARGS)
     {
-        static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FN>::value,
+            "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindMethod<FN, ARGS, 2>;
         m_meta.rawset("__call", LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
         return *this;
     }
 
     /**
-     * Add or replace a non-const data member with optional setter, but only if
-     * the type of the data member is copy assignable.
+     * Add or replace a non-const data member.
      */
     template <typename V>
-    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T>&>::type addVariable(const char* name, V T::* v, bool writable = true)
+    CppBindClass<T>& addVariable(const char* name, V T::* v, bool writable = true)
     {
         setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::get, v));
         if (writable) {
@@ -617,7 +652,7 @@ public:
     template <typename V>
     CppBindClass<T>& addVariable(const char* name, const V T::* v)
     {
-        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::get, v));
+        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::get, const_cast<V T::*>(v)));
         setMemberReadOnly(name);
         return *this;
     }
@@ -628,8 +663,10 @@ public:
     template <typename FG, typename FS>
     CppBindClass<T>& addProperty(const char* name, const FG& get, const FS& set)
     {
-        static_assert(!std::is_function<FG>::value, "function pointer is needed, please prepend & to function name");
-        static_assert(!std::is_function<FS>::value, "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FG>::value,
+            "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FS>::value,
+            "function pointer is needed, please prepend & to function name");
         using CppGetter = CppBindClassMethod<T, FG, FG, 1>;
         using CppSetter = CppBindClassMethod<T, FS, FS, -1>;
         setMemberGetter(name, LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)));
@@ -643,7 +680,8 @@ public:
     template <typename FN>
     CppBindClass<T>& addProperty(const char* name, const FN& get)
     {
-        static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FN>::value,
+            "function pointer is needed, please prepend & to function name");
         using CppGetter = CppBindClassMethod<T, FN, FN, 1>;
         setMemberGetter(name, LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)));
         setMemberReadOnly(name);
@@ -656,7 +694,8 @@ public:
     template <typename FN>
     CppBindClass<T>& addFunction(const char* name, const FN& proc)
     {
-        static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FN>::value,
+            "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindClassMethod<T, FN>;
         setMemberFunction(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)), CppProc::IsConst);
         return *this;
@@ -668,7 +707,8 @@ public:
     template <typename FN, typename ARGS>
     CppBindClass<T>& addFunction(const char* name, const FN& proc, ARGS)
     {
-        static_assert(!std::is_function<FN>::value, "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FN>::value,
+            "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindClassMethod<T, FN, ARGS>;
         setMemberFunction(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)), CppProc::IsConst);
         return *this;
