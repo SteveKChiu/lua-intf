@@ -185,10 +185,10 @@ struct CppArgTraits <LuaState>
 //---------------------------------------------------------------------------
 
 template <typename Traits, bool IsInput, bool IsOptional, bool HasDefault>
-struct CppArgTraitsInput;
+struct CppArgInput;
 
 template <typename Traits, bool IsOptional, bool HasDefault>
-struct CppArgTraitsInput <Traits, false, IsOptional, HasDefault>
+struct CppArgInput <Traits, false, IsOptional, HasDefault>
 {
     static int get(lua_State*, int, typename Traits::HolderType&)
     {
@@ -197,7 +197,7 @@ struct CppArgTraitsInput <Traits, false, IsOptional, HasDefault>
 };
 
 template <typename Traits, bool HasDefault>
-struct CppArgTraitsInput <Traits, true, false, HasDefault>
+struct CppArgInput <Traits, true, false, HasDefault>
 {
     static int get(lua_State* L, int index, typename Traits::HolderType& r)
     {
@@ -207,7 +207,7 @@ struct CppArgTraitsInput <Traits, true, false, HasDefault>
 };
 
 template <typename Traits>
-struct CppArgTraitsInput <Traits, true, true, false>
+struct CppArgInput <Traits, true, true, false>
 {
     static int get(lua_State* L, int index, typename Traits::HolderType& r)
     {
@@ -217,7 +217,7 @@ struct CppArgTraitsInput <Traits, true, true, false>
 };
 
 template <typename Traits>
-struct CppArgTraitsInput <Traits, true, true, true>
+struct CppArgInput <Traits, true, true, true>
 {
     static int get(lua_State* L, int index, typename Traits::HolderType& r)
     {
@@ -229,10 +229,10 @@ struct CppArgTraitsInput <Traits, true, true, true>
 //---------------------------------------------------------------------------
 
 template <typename Traits, bool IsOutput>
-struct CppArgTraitsOutput;
+struct CppArgOutput;
 
 template <typename Traits>
-struct CppArgTraitsOutput <Traits, false>
+struct CppArgOutput <Traits, false>
 {
     static int push(lua_State*, const typename Traits::ValueType&)
     {
@@ -241,7 +241,7 @@ struct CppArgTraitsOutput <Traits, false>
 };
 
 template <typename Traits>
-struct CppArgTraitsOutput <Traits, true>
+struct CppArgOutput <Traits, true>
 {
     static int push(lua_State* L, const typename Traits::ValueType& f)
     {
@@ -262,12 +262,12 @@ struct CppArg
 
     static int get(lua_State* L, int index, HolderType& r)
     {
-        return CppArgTraitsInput<Traits, Traits::IsInput, Traits::IsOptonal, Traits::HasDefault>::get(L, index, r);
+        return CppArgInput<Traits, Traits::IsInput, Traits::IsOptonal, Traits::HasDefault>::get(L, index, r);
     }
 
     static int push(lua_State* L, const HolderType& f)
     {
-        return CppArgTraitsOutput<Traits, Traits::IsOutput>::push(L, f.value());
+        return CppArgOutput<Traits, Traits::IsOutput>::push(L, f.value());
     }
 };
 
@@ -322,10 +322,10 @@ struct CppArgTuple
 //---------------------------------------------------------------------------
 
 template <typename... P>
-struct CppArgInput;
+struct CppArgTupleInput;
 
 template <>
-struct CppArgInput <>
+struct CppArgTupleInput <>
 {
     template <typename... T>
     static void get(lua_State*, int, std::tuple<T...>&)
@@ -335,38 +335,39 @@ struct CppArgInput <>
 };
 
 template <typename P0, typename... P>
-struct CppArgInput <P0, P...>
+struct CppArgTupleInput <P0, P...>
 {
     template <typename... T>
     static void get(lua_State* L, int index, std::tuple<T...>& t)
     {
         index += CppArg<P0>::get(L, index, std::get<sizeof...(T) - sizeof...(P) - 1>(t));
-        CppArgInput<P...>::get(L, index, t);
+        CppArgTupleInput<P...>::get(L, index, t);
     }
 };
 
 //---------------------------------------------------------------------------
 
 template <typename... P>
-struct CppArgOutput;
+struct CppArgTupleOutput;
 
 template <>
-struct CppArgOutput <>
+struct CppArgTupleOutput <>
 {
     template <typename... T>
     static int push(lua_State*, const std::tuple<T...>&)
     {
+        // template terminate function
         return 0;
     }
 };
 
 template <typename P0, typename... P>
-struct CppArgOutput <P0, P...>
+struct CppArgTupleOutput <P0, P...>
 {
     template <typename... T>
     static int push(lua_State* L, const std::tuple<T...>& t)
     {
         int n = CppArg<P0>::push(L, std::get<sizeof...(T) - sizeof...(P) - 1>(t));
-        return n + CppArgOutput<P...>::push(L, t);
+        return n + CppArgTupleOutput<P...>::push(L, t);
     }
 };

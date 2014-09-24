@@ -206,8 +206,7 @@ class CppObjectValue : public CppObject
 {
 private:
     CppObjectValue()
-    : CppObject(&m_data[0])
-        {}
+        : CppObject(&m_data[0]) {}
 
     virtual ~CppObjectValue()
     {
@@ -216,7 +215,7 @@ private:
     }
 
 public:
-    CppObjectValue<T> (const CppObjectValue<T>&) = delete;
+    CppObjectValue<T>(const CppObjectValue<T>&) = delete;
     CppObjectValue<T>& operator = (const CppObjectValue<T>&) = delete;
 
     template <typename... P>
@@ -249,8 +248,7 @@ class CppObjectPtr : public CppObject
 {
 private:
     explicit CppObjectPtr(void* obj)
-        : CppObject(obj)
-        {}
+        : CppObject(obj) {}
 
 public:
     CppObjectPtr(const CppObjectPtr&) = delete;

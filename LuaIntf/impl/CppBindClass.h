@@ -37,7 +37,7 @@ struct CppBindClassConstructor <T, T, _arg(*)(P...)>
     {
         try {
             typename CppArgTuple<P...>::Type args;
-            CppArgInput<P...>::get(L, 2, args);
+            CppArgTupleInput<P...>::get(L, 2, args);
             CppObjectValue<T>::pushToStack(L, args, false);
             return 1;
         } catch (std::exception& e) {
@@ -56,7 +56,7 @@ struct CppBindClassConstructor <SP, T, _arg(*)(P...)>
     {
         try {
             typename CppArgTuple<P...>::Type args;
-            CppArgInput<P...>::get(L, 2, args);
+            CppArgTupleInput<P...>::get(L, 2, args);
             CppObjectSharedPtr<SP, T>::pushToStack(L, args, false);
             return 1;
         } catch (std::exception& e) {
@@ -114,10 +114,10 @@ struct CppBindClassMethodBase
 
             typename CppArgTuple<P...>::Type args;
             T* obj = CppObject::get<T>(L, 1, IS_CONST);
-            CppArgInput<P...>::get(L, 2, args);
+            CppArgTupleInput<P...>::get(L, 2, args);
 
             int n = CppInvokeClassMethod<T, IS_PROXY, FN, R, typename CppArg<P>::HolderType...>::push(L, obj, fn, args);
-            return n + CppArgOutput<P...>::push(L, args);
+            return n + CppArgTupleOutput<P...>::push(L, args);
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
         }

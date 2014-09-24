@@ -276,6 +276,7 @@ private:
     template <size_t INDEX>
     static int pushTuple(lua_State*, const std::tuple<RP...>&)
     {
+        // template terminate function
         return 0;
     }
 };
