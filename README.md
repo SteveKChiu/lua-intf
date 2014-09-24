@@ -68,8 +68,13 @@ C++ class or functions exported are organized by module and class. The general l
 	LuaBinding(L)
 		.beginModule(string module_name)
 			.addFactory(function* func)
+
 			.addVariable(string property_name, VARIABLE_TYPE* var, bool writable = true)
+			.addVariableRef(string property_name, VARIABLE_TYPE* var, bool writable = true)
+
 			.addProperty(string property_name, function* getter, function* setter)
+			.addProperty(string property_name, function* getter)
+
 			.addFunction(string function_name, function* func)
 
 			.beginModule(string sub_module_name)
@@ -88,11 +93,25 @@ C++ class or functions exported are organized by module and class. The general l
 		.beginClass<CXX_TYPE>(string class_name)
 			.addFactory(FUNCTION_TYPE func)		// you can only have one addFactory or addConstructor
 			.addConstructor(LUA_ARGS(...))
+
 			.addStaticVariable(string property_name, VARIABLE_TYPE* var, bool writable = true)
+			.addStaticVariableRef(string property_name, VARIABLE_TYPE* var, bool writable = true)
+
 			.addStaticProperty(string property_name, FUNCTION_TYPE getter, FUNCTION_TYPE setter)
+			.addStaticProperty(string property_name, FUNCTION_TYPE getter)
+
 			.addStaticFunction(string function_name, FUNCTION_TYPE func)
+
 			.addVariable(string property_name, CXX_TYPE::FIELD_TYPE* var, bool writable = true)
+			.addVariableRef(string property_name, CXX_TYPE::FIELD_TYPE* var, bool writable = true)
+
 			.addProperty(string property_name, CXX_TYPE::FUNCTION_TYPE getter, CXX_TYPE::FUNCTION_TYPE setter)
+			.addProperty(string property_name, CXX_TYPE::FUNCTION_TYPE getter, CXX_TYPE::FUNCTION_TYPE getter_const, CXX_TYPE::FUNCTION_TYPE setter)
+			.addProperty(string property_name, CXX_TYPE::FUNCTION_TYPE getter)
+
+			.addPropertyReadOnly(string property_name, CXX_TYPE::FUNCTION_TYPE getter, CXX_TYPE::FUNCTION_TYPE getter_const)
+			.addPropertyReadOnly(string property_name, CXX_TYPE::FUNCTION_TYPE getter)
+
 			.addFunction(string function_name, CXX_TYPE::FUNCTION_TYPE func)
 		.endClass()
 
@@ -103,23 +122,29 @@ C++ class or functions exported are organized by module and class. The general l
 A module binding is like a package or namespace, it can also contain other sub-module or class. A module can have the following bindings:
 
 + factory function - bind to global or static C++ functions, or forward to sub-class constructor or sub-module factory
-+ property - bind to global or static variable, or getter and setter functions, property can be read-only
++ variable - bind to global or static variable, the valued pushed to lua is by-value, can be read-only
++ variable reference - bind to global or static variable, the valued pushed to lua is by-reference, can be read-only
++ property - bind to getter and setter functions, can be read-only
 + function - bind to global or static function
 
 A class binding is modeled after C++ class, it models the const-ness correctly, so const object can not access non-const functions. It can have the following bindings:
 
 + constructor - bind to class constructor
 + factory function - bind to global or static function that return the newly created object
-+ static property - bind to global or static variable, or getter and setter functions, property can be read-only
++ static variable - bind to global or static variable, the valued pushed to lua is by-value, can be read-only
++ static variable reference - bind to global or static variable, the valued pushed to lua is by-reference, can be read-only
++ static property - bind to global or static getter and setter functions, can be read-only
 + static function - bind to global or static function
-+ member property - bind to member fields, or member getter and setter functions, property can be read-only
++ member variable - bind to member fields, the valued pushed to lua is by-value, can be read-only
++ member variable reference - bind to member fields, the valued pushed to lua is by-reference, can be read-only
++ member property - bind to member getter and setter functions, you can bind const and non-const version of getters, can be read-only
 + member function - bind to member functions
 
 For module and class, you can have only one constructor or factory function. To access the factory or constructor in Lua script, you call the module or class name like a function, for example the above `Web` class:
 ````lua
 	local w = Web("http://www.google.com")
 ````
-The static or module property is accessible by module/class name, it is just like table field:
+The static or module variable and property is accessible by module/class name, it is just like table field:
 ````lua
 	local url = Web.home_url
 	Web.home_url = "http://www.google.com"
@@ -128,7 +153,7 @@ The static function can be called by the following, note the '.' syntax and clas
 ````lua
 	Web.go_home()
 ````
-The member property is associated with object, so it is accessible by variable:
+The member variable and property is associated with object, so it is accessible by variable:
 ````lua
 	local session = Web("http://www.google.com")
 	local url = session.url

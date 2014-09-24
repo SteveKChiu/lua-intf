@@ -228,7 +228,7 @@ LUA_INLINE bool CppBindClassBase::buildMetaTable(LuaRef& meta, LuaRef& parent, c
     clazz.setMetaTable(clazz);
     clazz.rawset("__index", &CppBindClassMetaMethod::index);
     clazz.rawset("__newindex", &CppBindClassMetaMethod::newIndex);
-    clazz.rawset("___getters", clazz_const.rawget<LuaRef>("___getters"));
+    clazz.rawset("___getters", LuaRef::createTable(L));
     clazz.rawset("___setters", LuaRef::createTable(L));
     clazz.rawset("___type", type_name);
     clazz.rawset("___const", clazz_const);
@@ -285,9 +285,15 @@ LUA_INLINE void CppBindClassBase::setStaticReadOnly(const char* name)
     setStaticSetter(name, LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorReadOnly, name));
 }
 
-LUA_INLINE void CppBindClassBase::setMemberGetter(const char* name, const LuaRef& getter)
+LUA_INLINE void CppBindClassBase::setMemberGetter(const char* name, const LuaRef& getter, const LuaRef& getter_const)
 {
     m_meta.rawget<LuaRef>("___class").rawget<LuaRef>("___getters").rawset(name, getter);
+    m_meta.rawget<LuaRef>("___const").rawget<LuaRef>("___getters").rawset(name, getter_const);
+}
+
+LUA_INLINE void CppBindClassBase::setMemberGetter(const char* name, const LuaRef& getter)
+{
+    setMemberGetter(name, getter, getter);
 }
 
 LUA_INLINE void CppBindClassBase::setMemberSetter(const char* name, const LuaRef& setter)

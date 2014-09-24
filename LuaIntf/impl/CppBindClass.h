@@ -108,7 +108,6 @@ struct CppBindClassMethodBase
     {
         try {
             assert(lua_isuserdata(L, lua_upvalueindex(1)));
-
             const FN& fn = *reinterpret_cast<const FN*>(lua_touserdata(L, lua_upvalueindex(1)));
             assert(fn);
 
@@ -252,37 +251,72 @@ struct CppBindClassMethod <T, FN, _arg(*)(P...), CHK>
 //--------------------------------------------------------------------------
 
 template <typename T, typename V>
-struct CppBindClassVariable
+struct CppBindClassVariableGetter
 {
     /**
-     * lua_CFunction to get a class data member.
+     * lua_CFunction to get a class data member, a copy of value is pushed onto stack.
      *
      * The pointer-to-member is in the first upvalue.
      * The class userdata object is at the top of the Lua stack.
      */
-    static int get(lua_State* L)
+    static int call(lua_State* L)
     {
         try {
-            const T* obj = CppObject::get<T>(L, 1, true);
+            assert(lua_isuserdata(L, lua_upvalueindex(1)));
             auto mp = static_cast<V T::**>(lua_touserdata(L, lua_upvalueindex(1)));
+            assert(mp);
+
+            const T* obj = CppObject::get<T>(L, 1, true);
             LuaType<V>::push(L, obj->**mp);
             return 1;
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
         }
     }
+};
 
+template <typename T, typename V>
+struct CppBindClassVariableRefer
+{
+    /**
+     * lua_CFunction to refer a class data member, the reference is pushed onto stack.
+     *
+     * The pointer-to-member is in the first upvalue.
+     * The class userdata object is at the top of the Lua stack.
+     */
+    static int call(lua_State* L)
+    {
+        try {
+            assert(lua_isuserdata(L, lua_upvalueindex(1)));
+            auto mp = static_cast<V T::**>(lua_touserdata(L, lua_upvalueindex(1)));
+            assert(mp);
+
+            T* obj = CppObject::get<T>(L, 1, false);
+            LuaType<V&>::push(L, obj->**mp);
+            return 1;
+        } catch (std::exception& e) {
+            return luaL_error(L, e.what());
+        }
+    }
+};
+
+template <typename T, typename V>
+struct CppBindClassVariableSetter
+{
     /**
      * lua_CFunction to set a class data member.
      *
      * The pointer-to-member is in the first upvalue.
      * The class userdata object is at the top of the Lua stack.
      */
-    static int set(lua_State* L)
+    static int call(lua_State* L)
     {
         try {
-            T* obj = CppObject::get<T>(L, 1, false);
+            assert(lua_isuserdata(L, lua_upvalueindex(1)));
             auto mp = static_cast<V T::**>(lua_touserdata(L, lua_upvalueindex(1)));
+            assert(mp);
+
+            T* obj = CppObject::get<T>(L, 1, false);
             obj->**mp = LuaType<V>::get(L, 2);
             return 0;
         } catch (std::exception& e) {
@@ -356,6 +390,7 @@ protected:
     void setStaticReadOnly(const char* name);
 
     void setMemberGetter(const char* name, const LuaRef& getter);
+    void setMemberGetter(const char* name, const LuaRef& getter, const LuaRef& getter_const);
     void setMemberSetter(const char* name, const LuaRef& setter);
     void setMemberReadOnly(const char* name);
     void setMemberFunction(const char* name, const LuaRef& proc, bool is_const);
@@ -475,13 +510,16 @@ public:
 
     /**
      * Add or replace a static non-const data member.
+     * The value return to lua is pass-by-value, that will create a local copy in lua.
+     * This is different from addStaticVariableRef, which is pass-by-reference, and allow direct access to the variable.
+     * This only apply to class type, there is no difference to the primitive types.
      */
     template <typename V>
     CppBindClass<T>& addStaticVariable(const char* name, V* v, bool writable = true)
     {
-        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, v));
+        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, v));
         if (writable) {
-            setStaticSetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::set, v));
+            setStaticSetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableSetter<V>::call, v));
         } else {
             setStaticReadOnly(name);
         }
@@ -490,11 +528,62 @@ public:
 
     /**
      * Add or replace a static const data member.
+     * The value return to lua is pass-by-value, that will create a local copy in lua.
+     * This is different from addStaticVariableRef, which is pass-by-reference, and allow direct access to the variable.
+     * This only apply to class type, there is no difference to the primitive types.
      */
     template <typename V>
     CppBindClass<T>& addStaticVariable(const char* name, const V* v)
     {
-        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, const_cast<V*>(v)));
+        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, const_cast<V*>(v)));
+        setStaticReadOnly(name);
+        return *this;
+    }
+
+    /**
+     * Add or replace a static non-const data member.
+     * The value return to lua is pass-by-reference, and allow direct access to the variable.
+     * This is different from addStaticVariable, which is pass-by-value, and will a local copy upon access.
+     * This only apply to class type, there is no difference to the primitive types.
+     */
+    template <typename V>
+    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
+        addStaticVariableRef(const char* name, V* v, bool writable = true)
+    {
+        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableRefer<V>::call, v));
+        if (writable) {
+            setStaticSetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableSetter<V>::call, v));
+        } else {
+            setStaticReadOnly(name);
+        }
+        return *this;
+    }
+
+    /**
+     * Add or replace a static non-const data member.
+     * The value return to lua is pass-by-reference, and allow direct access to the variable.
+     * This is different from addStaticVariable, which is pass-by-value, and will a local copy upon access.
+     * This only apply to class type, there is no difference to the primitive types.
+     */
+    template <typename V>
+    typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
+        addStaticVariableRef(const char* name, V* v)
+    {
+        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableRefer<V>::call, v));
+        setStaticReadOnly(name);
+        return *this;
+    }
+
+    /**
+     * Add or replace a static const data member.
+     * The value return to lua is pass-by-reference, and allow direct access to the variable.
+     * This is different from addStaticVariable, which is pass-by-value, and will a local copy upon access.
+     * This only apply to class type, there is no difference to the primitive types.
+     */
+    template <typename V>
+    CppBindClass<T>& addStaticVariableRef(const char* name, const V* v)
+    {
+        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableRefer<const V>::call, const_cast<V*>(v)));
         setStaticReadOnly(name);
         return *this;
     }
@@ -633,13 +722,16 @@ public:
 
     /**
      * Add or replace a non-const data member.
+     * The value return to lua is pass-by-value, that will create a local copy in lua.
+     * This is different from addVariableRef, which is pass-by-reference, and allow direct access to the variable.
+     * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
     CppBindClass<T>& addVariable(const char* name, V T::* v, bool writable = true)
     {
-        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::get, v));
+        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariableGetter<T, V>::call, v));
         if (writable) {
-            setMemberSetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::set, v));
+            setMemberSetter(name, LuaRef::createFunction(state(), &CppBindClassVariableSetter<T, V>::call, v));
         } else {
             setMemberReadOnly(name);
         }
@@ -648,11 +740,66 @@ public:
 
     /**
      * Add or replace a const read-only data member.
+     * The value return to lua is pass-by-value, that will create a local copy in lua.
+     * This is different from addVariableRef, which is pass-by-reference, and allow direct access to the variable.
+     * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
     CppBindClass<T>& addVariable(const char* name, const V T::* v)
     {
-        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::get, const_cast<V T::*>(v)));
+        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariableGetter<T, V>::call, v));
+        setMemberReadOnly(name);
+        return *this;
+    }
+
+    /**
+     * Add or replace a non-const data member.
+     * The value return to lua is pass-by-reference, and allow direct access to the variable.
+     * This is different from addVariable, which is pass-by-value, and will a local copy upon access.
+     * This apply only to the class type, the primitive types are always pass-by-value.
+     */
+    template <typename V>
+    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
+        addVariableRef(const char* name, V T::* v, bool writable = true)
+    {
+        setMemberGetter(name,
+            LuaRef::createFunction(state(), &CppBindClassVariableRefer<T, V>::call, v),
+            LuaRef::createFunction(state(), &CppBindClassVariableRefer<T, const V>::call, v));
+        if (writable) {
+            setMemberSetter(name, LuaRef::createFunction(state(), &CppBindClassVariableSetter<T, V>::call, v));
+        } else {
+            setMemberReadOnly(name);
+        }
+        return *this;
+    }
+
+    /**
+     * Add or replace a non-const data member.
+     * The value return to lua is pass-by-reference, and allow direct access to the variable.
+     * This is different from addVariable, which is pass-by-value, and will a local copy upon access.
+     * This apply only to the class type, the primitive types are always pass-by-value.
+     */
+    template <typename V>
+    typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
+        addVariableRef(const char* name, V T::* v)
+    {
+        setMemberGetter(name,
+            LuaRef::createFunction(state(), &CppBindClassVariableRefer<T, V>::call, v),
+            LuaRef::createFunction(state(), &CppBindClassVariableRefer<T, const V>::call, v));
+        setMemberReadOnly(name);
+        return *this;
+    }
+
+    /**
+     * Add or replace a read-only data member.
+     * The value return to lua is pass-by-reference, and allow direct access to the variable.
+     * This is different from addVariable, which is pass-by-value, and will a local copy upon access.
+     * This apply only to the class type, the primitive types are always pass-by-value.
+     */
+    template <typename V>
+    CppBindClass<T>& addVariableRef(const char* name, const V T::* v)
+    {
+        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariableRefer<T, const V>::call, v));
         setMemberReadOnly(name);
         return *this;
     }
@@ -675,15 +822,67 @@ public:
     }
 
     /**
+     * Add or replace a property member.
+     * This overrided function allow you to specify non-const and const version of getter.
+     */
+    template <typename FG, typename FGC, typename FS>
+    CppBindClass<T>& addProperty(const char* name, const FG& get, const FGC& get_const, const FS& set)
+    {
+        static_assert(!std::is_function<FG>::value,
+            "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FGC>::value,
+            "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FS>::value,
+            "function pointer is needed, please prepend & to function name");
+        using CppGetter = CppBindClassMethod<T, FG, FG, 1>;
+        using CppGetterConst = CppBindClassMethod<T, FGC, FGC, 1>;
+        using CppSetter = CppBindClassMethod<T, FS, FS, -1>;
+        setMemberGetter(name,
+            LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)),
+            LuaRef::createFunction(state(), &CppGetterConst::call, CppGetterConst::function(get_const)));
+        setMemberSetter(name, LuaRef::createFunction(state(), &CppSetter::call, CppSetter::function(set)));
+        return *this;
+    }
+
+    /**
      * Add or replace a read-only property member.
      */
     template <typename FN>
     CppBindClass<T>& addProperty(const char* name, const FN& get)
     {
+        return addPropertyReadOnly(name, get);
+    }
+
+    /**
+     * Add or replace a read-only property member.
+     */
+    template <typename FN>
+    CppBindClass<T>& addPropertyReadOnly(const char* name, const FN& get)
+    {
         static_assert(!std::is_function<FN>::value,
             "function pointer is needed, please prepend & to function name");
         using CppGetter = CppBindClassMethod<T, FN, FN, 1>;
         setMemberGetter(name, LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)));
+        setMemberReadOnly(name);
+        return *this;
+    }
+
+    /**
+     * Add or replace a read-only property member.
+     * This overrided function allow you to specify non-const and const version of getter.
+     */
+    template <typename FN, typename FNC>
+    CppBindClass<T>& addPropertyReadOnly(const char* name, const FN& get, const FNC& get_const)
+    {
+        static_assert(!std::is_function<FN>::value,
+            "function pointer is needed, please prepend & to function name");
+        static_assert(!std::is_function<FNC>::value,
+            "function pointer is needed, please prepend & to function name");
+        using CppGetter = CppBindClassMethod<T, FN, FN, 1>;
+        using CppGetterConst = CppBindClassMethod<T, FNC, FNC, 1>;
+        setMemberGetter(name,
+            LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)),
+            LuaRef::createFunction(state(), &CppGetterConst::call, CppGetterConst::function(get_const)));
         setMemberReadOnly(name);
         return *this;
     }

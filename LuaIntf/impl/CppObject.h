@@ -206,7 +206,8 @@ class CppObjectValue : public CppObject
 {
 private:
     CppObjectValue()
-        : CppObject(&m_data[0]) {}
+        : CppObject(&m_data[0])
+        {}
 
     virtual ~CppObjectValue()
     {
@@ -248,7 +249,8 @@ class CppObjectPtr : public CppObject
 {
 private:
     explicit CppObjectPtr(void* obj)
-        : CppObject(obj) {}
+        : CppObject(obj)
+        {}
 
 public:
     CppObjectPtr(const CppObjectPtr&) = delete;

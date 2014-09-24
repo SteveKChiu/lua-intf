@@ -25,20 +25,19 @@
 //
 
 template <typename T>
-struct CppBindVariable
+struct CppBindVariableGetter
 {
     /**
-     * lua_CFunction to get a variable.
+     * lua_CFunction to get a variable, a copy of value is pushed onto stack.
      *
      * This is used for global variables or class static data members.
      *
      * The pointer to the data is in the first upvalue.
      */
-    static int get(lua_State* L)
+    static int call(lua_State* L)
     {
         try {
             assert(lua_islightuserdata(L, lua_upvalueindex(1)));
-
             auto ptr = static_cast<const T*>(lua_touserdata(L, lua_upvalueindex(1)));
             assert(ptr);
 
@@ -48,7 +47,36 @@ struct CppBindVariable
             return luaL_error(L, e.what());
         }
     }
+};
 
+template <typename T>
+struct CppBindVariableRefer
+{
+    /**
+     * lua_CFunction to refer a variable, the reference is pushed onto stack.
+     *
+     * This is used for global variables or class static data members.
+     *
+     * The pointer to the data is in the first upvalue.
+     */
+    static int call(lua_State* L)
+    {
+        try {
+            assert(lua_islightuserdata(L, lua_upvalueindex(1)));
+            auto ptr = static_cast<T*>(lua_touserdata(L, lua_upvalueindex(1)));
+            assert(ptr);
+
+            LuaType<T&>::push(L, *ptr);
+            return 1;
+        } catch (std::exception& e) {
+            return luaL_error(L, e.what());
+        }
+    }
+};
+
+template <typename T>
+struct CppBindVariableSetter
+{
     /**
      * lua_CFunction to set a variable.
      *
@@ -56,11 +84,10 @@ struct CppBindVariable
      *
      * The pointer to the data is in the first upvalue.
      */
-    static int set(lua_State* L)
+    static int call(lua_State* L)
     {
         try {
             assert(lua_islightuserdata(L, lua_upvalueindex(1)));
-
             auto ptr = static_cast<T*>(lua_touserdata(L, lua_upvalueindex(1)));
             assert(ptr);
 
@@ -92,7 +119,6 @@ struct CppBindMethodBase
     {
         try {
             assert(lua_isuserdata(L, lua_upvalueindex(1)));
-
             const FN& fn = *reinterpret_cast<const FN*>(lua_touserdata(L, lua_upvalueindex(1)));
             assert(fn);
 
@@ -283,13 +309,16 @@ public:
 
     /**
      * Add or replace a non-const variable.
+     * The value return to lua is pass-by-value, that will create a local copy in lua.
+     * This is different from addVariableRef, which is pass-by-reference, and allow direct access to the variable.
+     * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
     CppBindModule& addVariable(const char* name, V* v, bool writable = true)
     {
-        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, v));
+        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, v));
         if (writable) {
-            setSetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::set, v));
+            setSetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableSetter<V>::call, v));
         } else {
             setReadOnly(name);
         }
@@ -298,15 +327,66 @@ public:
   
     /**
      * Add or replace a const read-only variable.
+     * The value return to lua is pass-by-value, that will create a local copy in lua.
+     * This is different from addVariableRef, which is pass-by-reference, and allow direct access to the variable.
+     * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
     CppBindModule& addVariable(const char* name, const V* v)
     {
-        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, const_cast<V*>(v)));
+        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, const_cast<V*>(v)));
         setReadOnly(name);
         return *this;
     }
   
+    /**
+     * Add or replace a non-const variable.
+     * The value return to lua is pass-by-reference, and allow direct access to the variable.
+     * This is different from addVariable, which is pass-by-value, and will a local copy upon access.
+     * This apply only to the class type, the primitive types are always pass-by-value.
+     */
+    template <typename V>
+    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindModule&>::type
+        addVariableRef(const char* name, V* v, bool writable = true)
+    {
+        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableRefer<V>::call, v));
+        if (writable) {
+            setSetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableSetter<V>::call, v));
+        } else {
+            setReadOnly(name);
+        }
+        return *this;
+    }
+
+    /**
+     * Add or replace a non-const variable.
+     * The value return to lua is pass-by-reference, and allow direct access to the variable.
+     * This is different from addVariable, which is pass-by-value, and will a local copy upon access.
+     * This apply only to the class type, the primitive types are always pass-by-value.
+     */
+    template <typename V>
+    typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindModule&>::type
+        addVariableRef(const char* name, V* v)
+    {
+        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableRefer<V>::call, v));
+        setReadOnly(name);
+        return *this;
+    }
+
+    /**
+     * Add or replace a const read-only variable.
+     * The value return to lua is pass-by-reference, and allow direct access to the variable.
+     * This is different from addVariable, which is pass-by-value, and will a local copy upon access.
+     * This apply only to the class type, the primitive types are always pass-by-value.
+     */
+    template <typename V>
+    CppBindModule& addVariableRef(const char* name, const V* v)
+    {
+        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableRefer<const V>::call, const_cast<V*>(v)));
+        setReadOnly(name);
+        return *this;
+    }
+
     /**
      * Add or replace a read-write property.
      */
