@@ -42,7 +42,7 @@ struct CppBindVariable
             auto ptr = static_cast<const T*>(lua_touserdata(L, lua_upvalueindex(1)));
             assert(ptr);
 
-            LuaType<T>::push(L, *ptr);
+            LuaType<T&>::push(L, *ptr);
             return 1;
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
@@ -99,7 +99,7 @@ struct CppBindMethodBase
             typename CppArgTuple<P...>::Type args;
             CppArgInput<P...>::get(L, IARG, args);
 
-            int n = CppInvokeMethod<FN, R, typename CppArg<P>::ValueType...>::push(L, fn, args);
+            int n = CppInvokeMethod<FN, R, typename CppArg<P>::PasserType...>::push(L, fn, args);
             return n + CppArgOutput<P...>::push(L, args);
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
@@ -280,10 +280,11 @@ public:
     CppBindModule endModule();
 
     /**
-     * Add or replace a variable.
+     * Add or replace a non-const data member with optional setter, but only if
+     * the type of the data member is copy assignable.
      */
     template <typename V>
-    CppBindModule& addVariable(const char* name, V* v, bool writable = true)
+    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindModule&>::type addVariable(const char* name, V* v, bool writable = true)
     {
         setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, v));
         if (writable) {
@@ -293,7 +294,18 @@ public:
         }
         return *this;
     }
-
+  
+    /**
+     * Add or replace a const read-only variable.
+     */
+    template <typename V>
+    CppBindModule& addVariable(const char* name, const V* v)
+    {
+        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariable<V>::get, const_cast<V *>(v)));
+        setReadOnly(name);
+        return *this;
+    }
+  
     /**
      * Add or replace a read-write property.
      */

@@ -116,7 +116,7 @@ struct CppBindClassMethodBase
             T* obj = CppObject::get<T>(L, 1, IS_CONST);
             CppArgInput<P...>::get(L, 2, args);
 
-            int n = CppInvokeClassMethod<T, IS_PROXY, FN, R, typename CppArg<P>::ValueType...>::push(L, obj, fn, args);
+            int n = CppInvokeClassMethod<T, IS_PROXY, FN, R, typename CppArg<P>::PasserType...>::push(L, obj, fn, args);
             return n + CppArgOutput<P...>::push(L, args);
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
@@ -247,7 +247,7 @@ struct CppBindClassVariable
         try {
             const T* obj = CppObject::get<T>(L, 1, true);
             auto mp = static_cast<V T::**>(lua_touserdata(L, lua_upvalueindex(1)));
-            LuaType<V>::push(L, obj->**mp);
+            LuaType<V&>::push(L, obj->**mp);
             return 1;
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
@@ -596,10 +596,11 @@ public:
     }
 
     /**
-     * Add or replace a data member.
+     * Add or replace a non-const data member with optional setter, but only if
+     * the type of the data member is copy assignable.
      */
     template <typename V>
-    CppBindClass<T>& addVariable(const char* name, V T::* v, bool writable = true)
+    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T>&>::type addVariable(const char* name, V T::* v, bool writable = true)
     {
         setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::get, v));
         if (writable) {
@@ -607,6 +608,17 @@ public:
         } else {
             setMemberReadOnly(name);
         }
+        return *this;
+    }
+
+    /**
+     * Add or replace a const read-only data member.
+     */
+    template <typename V>
+    CppBindClass<T>& addVariable(const char* name, const V T::* v)
+    {
+        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariable<T, V>::get, v));
+        setMemberReadOnly(name);
         return *this;
     }
 
