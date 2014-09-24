@@ -449,8 +449,8 @@ private:
         if (buildMetaTable(meta, parent_meta, name,
             CppObjectType<T>::staticID(), CppObjectType<T>::classID(), CppObjectType<T>::constID()))
         {
-            meta.rawget<LuaRef>("___class").rawset("__gc", &CppBindClassDestructor<T, false>::call);
-            meta.rawget<LuaRef>("___const").rawset("__gc", &CppBindClassDestructor<T, true>::call);
+            meta.rawget("___class").rawset("__gc", &CppBindClassDestructor<T, false>::call);
+            meta.rawget("___const").rawset("__gc", &CppBindClassDestructor<T, true>::call);
         }
         return CppBindClass<T>(meta);
     }
@@ -469,8 +469,8 @@ private:
         if (buildMetaTable(meta, parent_meta, name,
             CppObjectType<T>::staticID(), CppObjectType<T>::classID(), CppObjectType<T>::constID(), super_type_id))
         {
-            meta.rawget<LuaRef>("___class").rawset("__gc", &CppBindClassDestructor<T, false>::call);
-            meta.rawget<LuaRef>("___const").rawset("__gc", &CppBindClassDestructor<T, true>::call);
+            meta.rawget("___class").rawset("__gc", &CppBindClassDestructor<T, false>::call);
+            meta.rawget("___const").rawset("__gc", &CppBindClassDestructor<T, true>::call);
         }
         return CppBindClass<T>(meta);
     }

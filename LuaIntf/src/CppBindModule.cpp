@@ -140,12 +140,12 @@ LUA_INLINE std::string CppBindModule::getFullName(const LuaRef& module, const ch
 
 LUA_INLINE void CppBindModule::setGetter(const char* name, const LuaRef& getter)
 {
-    m_meta.rawget<LuaRef>("___getters").rawset(name, getter);
+    m_meta.rawget("___getters").rawset(name, getter);
 }
 
 LUA_INLINE void CppBindModule::setSetter(const char* name, const LuaRef& setter)
 {
-    m_meta.rawget<LuaRef>("___setters").rawset(name, setter);
+    m_meta.rawget("___setters").rawset(name, setter);
 }
 
 LUA_INLINE void CppBindModule::setReadOnly(const char* name)
@@ -165,7 +165,7 @@ LUA_INLINE CppBindModule CppBindModule::bind(LuaRef& mod)
 
 LUA_INLINE CppBindModule CppBindModule::beginModule(const char* name)
 {
-    LuaRef ref = m_meta.rawget<LuaRef>(name);
+    LuaRef ref = m_meta.rawget(name);
     if (ref != nullptr) return CppBindModule(ref);
 
     lua_State* L = state();
@@ -185,6 +185,6 @@ LUA_INLINE CppBindModule CppBindModule::beginModule(const char* name)
 
 LUA_INLINE CppBindModule CppBindModule::endModule()
 {
-    return CppBindModule(m_meta.rawget<LuaRef>("___module"));
+    return CppBindModule(m_meta.rawget("___module"));
 }
 

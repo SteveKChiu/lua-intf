@@ -716,7 +716,7 @@ public:
      * @return variable value
      * @throw LuaException if K or V are not convertible to Lua types
      */
-    template<typename V, typename K>
+    template<typename V = LuaRef, typename K>
     V rawget(const K& key) const
     {
         pushToStack();
@@ -770,7 +770,7 @@ public:
      * @return variable value
      * @throw LuaException if V are not convertible to Lua types
      */
-    template<typename V>
+    template<typename V = LuaRef>
     V rawget(void* p) const
     {
         pushToStack();
@@ -821,7 +821,7 @@ public:
      * @return variable value
      * @throw LuaException if V are not convertible to Lua types
      */
-    template<typename V>
+    template<typename V = LuaRef>
     V rawget(int i) const
     {
         pushToStack();
@@ -901,7 +901,7 @@ public:
      * @return variable value
      * @throw LuaException if K or V are not convertible to Lua types
      */
-    template <typename V, typename K>
+    template <typename V = LuaRef, typename K>
     V get(const K& key) const
     {
         pushToStack();

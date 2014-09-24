@@ -201,7 +201,7 @@ LUA_INLINE int CppBindClassMetaMethod::errorConstMismatch(lua_State* L)
 LUA_INLINE bool CppBindClassBase::buildMetaTable(LuaRef& meta, LuaRef& parent, const char* name,
     void* static_id, void* clazz_id, void* const_id)
 {
-    LuaRef ref = parent.rawget<LuaRef>(name);
+    LuaRef ref = parent.rawget(name);
     if (ref != nullptr) {
         meta = ref;
         return false;
@@ -261,10 +261,10 @@ LUA_INLINE bool CppBindClassBase::buildMetaTable(LuaRef& meta, LuaRef& parent, c
 {
     if (buildMetaTable(meta, parent, name, static_id, clazz_id, const_id)) {
         LuaRef registry(parent.state(), LUA_REGISTRYINDEX);
-        LuaRef super = registry.rawget<LuaRef>(super_static_id);
+        LuaRef super = registry.rawget(super_static_id);
         meta.rawset("___super", super);
-        meta.rawget<LuaRef>("___class").rawset("___super", super.rawget<LuaRef>("___class"));
-        meta.rawget<LuaRef>("___const").rawset("___super", super.rawget<LuaRef>("___const"));
+        meta.rawget("___class").rawset("___super", super.rawget<LuaRef>("___class"));
+        meta.rawget("___const").rawset("___super", super.rawget<LuaRef>("___const"));
         return true;
     }
     return false;
@@ -272,12 +272,12 @@ LUA_INLINE bool CppBindClassBase::buildMetaTable(LuaRef& meta, LuaRef& parent, c
 
 LUA_INLINE void CppBindClassBase::setStaticGetter(const char* name, const LuaRef& getter)
 {
-    m_meta.rawget<LuaRef>("___getters").rawset(name, getter);
+    m_meta.rawget("___getters").rawset(name, getter);
 }
 
 LUA_INLINE void CppBindClassBase::setStaticSetter(const char* name, const LuaRef& setter)
 {
-    m_meta.rawget<LuaRef>("___setters").rawset(name, setter);
+    m_meta.rawget("___setters").rawset(name, setter);
 }
 
 LUA_INLINE void CppBindClassBase::setStaticReadOnly(const char* name)
@@ -287,8 +287,8 @@ LUA_INLINE void CppBindClassBase::setStaticReadOnly(const char* name)
 
 LUA_INLINE void CppBindClassBase::setMemberGetter(const char* name, const LuaRef& getter, const LuaRef& getter_const)
 {
-    m_meta.rawget<LuaRef>("___class").rawget<LuaRef>("___getters").rawset(name, getter);
-    m_meta.rawget<LuaRef>("___const").rawget<LuaRef>("___getters").rawset(name, getter_const);
+    m_meta.rawget("___class").rawget("___getters").rawset(name, getter);
+    m_meta.rawget("___const").rawget("___getters").rawset(name, getter_const);
 }
 
 LUA_INLINE void CppBindClassBase::setMemberGetter(const char* name, const LuaRef& getter)
@@ -299,25 +299,25 @@ LUA_INLINE void CppBindClassBase::setMemberGetter(const char* name, const LuaRef
 LUA_INLINE void CppBindClassBase::setMemberSetter(const char* name, const LuaRef& setter)
 {
     LuaRef err = LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorConstMismatch, name);
-    m_meta.rawget<LuaRef>("___class").rawget<LuaRef>("___setters").rawset(name, setter);
-    m_meta.rawget<LuaRef>("___const").rawget<LuaRef>("___setters").rawset(name, err);
+    m_meta.rawget("___class").rawget("___setters").rawset(name, setter);
+    m_meta.rawget("___const").rawget("___setters").rawset(name, err);
 }
 
 LUA_INLINE void CppBindClassBase::setMemberReadOnly(const char* name)
 {
     LuaRef err = LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorReadOnly, name);
-    m_meta.rawget<LuaRef>("___class").rawget<LuaRef>("___setters").rawset(name, err);
-    m_meta.rawget<LuaRef>("___const").rawget<LuaRef>("___setters").rawset(name, err);
+    m_meta.rawget("___class").rawget("___setters").rawset(name, err);
+    m_meta.rawget("___const").rawget("___setters").rawset(name, err);
 }
 
 LUA_INLINE void CppBindClassBase::setMemberFunction(const char* name, const LuaRef& proc, bool is_const)
 {
-    m_meta.rawget<LuaRef>("___class").rawset(name, proc);
-    m_meta.rawget<LuaRef>("___const").rawset(name,
+    m_meta.rawget("___class").rawset(name, proc);
+    m_meta.rawget("___const").rawset(name,
         is_const ? proc : LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorConstMismatch, name));
 }
 
 LUA_INLINE CppBindModule CppBindClassBase::endClass()
 {
-    return CppBindModule(m_meta.rawget<LuaRef>("___module"));
+    return CppBindModule(m_meta.rawget("___module"));
 }
