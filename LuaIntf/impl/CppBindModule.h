@@ -28,7 +28,7 @@ template <typename T>
 struct CppBindVariableGetter
 {
     /**
-     * lua_CFunction to get a variable, a copy of value is pushed onto stack.
+     * lua_CFunction to get a variable, a new copy of value is pushed onto stack.
      *
      * This is used for global variables or class static data members.
      *
@@ -342,7 +342,7 @@ public:
     /**
      * Add or replace a non-const variable.
      * The value return to lua is pass-by-reference, and allow direct access to the variable.
-     * This is different from addVariable, which is pass-by-value, and will a local copy upon access.
+     * This is different from addVariable, which is pass-by-value, and will create a local copy upon access.
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
@@ -361,7 +361,7 @@ public:
     /**
      * Add or replace a non-const variable.
      * The value return to lua is pass-by-reference, and allow direct access to the variable.
-     * This is different from addVariable, which is pass-by-value, and will a local copy upon access.
+     * This is different from addVariable, which is pass-by-value, and will create a local copy upon access.
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
@@ -376,7 +376,7 @@ public:
     /**
      * Add or replace a const read-only variable.
      * The value return to lua is pass-by-reference, and allow direct access to the variable.
-     * This is different from addVariable, which is pass-by-value, and will a local copy upon access.
+     * This is different from addVariable, which is pass-by-value, and will create a local copy upon access.
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>

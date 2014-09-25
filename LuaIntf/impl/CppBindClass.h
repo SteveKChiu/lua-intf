@@ -254,7 +254,7 @@ template <typename T, typename V>
 struct CppBindClassVariableGetter
 {
     /**
-     * lua_CFunction to get a class data member, a copy of value is pushed onto stack.
+     * lua_CFunction to get a class data member, a new copy of value is pushed onto stack.
      *
      * The pointer-to-member is in the first upvalue.
      * The class userdata object is at the top of the Lua stack.
@@ -512,7 +512,7 @@ public:
      * Add or replace a static non-const data member.
      * The value return to lua is pass-by-value, that will create a local copy in lua.
      * This is different from addStaticVariableRef, which is pass-by-reference, and allow direct access to the variable.
-     * This only apply to class type, there is no difference to the primitive types.
+     * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
     CppBindClass<T>& addStaticVariable(const char* name, V* v, bool writable = true)
@@ -530,7 +530,7 @@ public:
      * Add or replace a static const data member.
      * The value return to lua is pass-by-value, that will create a local copy in lua.
      * This is different from addStaticVariableRef, which is pass-by-reference, and allow direct access to the variable.
-     * This only apply to class type, there is no difference to the primitive types.
+     * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
     CppBindClass<T>& addStaticVariable(const char* name, const V* v)
@@ -543,8 +543,8 @@ public:
     /**
      * Add or replace a static non-const data member.
      * The value return to lua is pass-by-reference, and allow direct access to the variable.
-     * This is different from addStaticVariable, which is pass-by-value, and will a local copy upon access.
-     * This only apply to class type, there is no difference to the primitive types.
+     * This is different from addStaticVariable, which is pass-by-value, and will create a local copy upon access.
+     * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
     typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
@@ -562,8 +562,8 @@ public:
     /**
      * Add or replace a static non-const data member.
      * The value return to lua is pass-by-reference, and allow direct access to the variable.
-     * This is different from addStaticVariable, which is pass-by-value, and will a local copy upon access.
-     * This only apply to class type, there is no difference to the primitive types.
+     * This is different from addStaticVariable, which is pass-by-value, and will create a local copy upon access.
+     * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
     typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
@@ -577,8 +577,8 @@ public:
     /**
      * Add or replace a static const data member.
      * The value return to lua is pass-by-reference, and allow direct access to the variable.
-     * This is different from addStaticVariable, which is pass-by-value, and will a local copy upon access.
-     * This only apply to class type, there is no difference to the primitive types.
+     * This is different from addStaticVariable, which is pass-by-value, and will create a local copy upon access.
+     * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
     CppBindClass<T>& addStaticVariableRef(const char* name, const V* v)
@@ -755,7 +755,7 @@ public:
     /**
      * Add or replace a non-const data member.
      * The value return to lua is pass-by-reference, and allow direct access to the variable.
-     * This is different from addVariable, which is pass-by-value, and will a local copy upon access.
+     * This is different from addVariable, which is pass-by-value, and will create a local copy upon access.
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
@@ -776,7 +776,7 @@ public:
     /**
      * Add or replace a non-const data member.
      * The value return to lua is pass-by-reference, and allow direct access to the variable.
-     * This is different from addVariable, which is pass-by-value, and will a local copy upon access.
+     * This is different from addVariable, which is pass-by-value, and will create a local copy upon access.
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
@@ -793,7 +793,7 @@ public:
     /**
      * Add or replace a read-only data member.
      * The value return to lua is pass-by-reference, and allow direct access to the variable.
-     * This is different from addVariable, which is pass-by-value, and will a local copy upon access.
+     * This is different from addVariable, which is pass-by-value, and will create a local copy upon access.
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
