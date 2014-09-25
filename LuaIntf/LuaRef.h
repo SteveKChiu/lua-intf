@@ -716,7 +716,7 @@ public:
      * @return variable value
      * @throw LuaException if K or V are not convertible to Lua types
      */
-    template<typename V = LuaRef, typename K>
+    template <typename V = LuaRef, typename K>
     V rawget(const K& key) const
     {
         pushToStack();
@@ -735,7 +735,7 @@ public:
      * @return variable value
      * @throw LuaException if K or V are not convertible to Lua types
      */
-    template<typename V, typename K>
+    template <typename V, typename K>
     V rawget(const K& key, const V& def) const
     {
         pushToStack();
@@ -770,7 +770,7 @@ public:
      * @return variable value
      * @throw LuaException if V are not convertible to Lua types
      */
-    template<typename V = LuaRef>
+    template <typename V = LuaRef>
     V rawget(void* p) const
     {
         pushToStack();
@@ -788,7 +788,7 @@ public:
      * @return variable value
      * @throw LuaException if V are not convertible to Lua types
      */
-    template<typename V>
+    template <typename V>
     V rawget(void* p, const V& def) const
     {
         pushToStack();
@@ -821,7 +821,7 @@ public:
      * @return variable value
      * @throw LuaException if V are not convertible to Lua types
      */
-    template<typename V = LuaRef>
+    template <typename V = LuaRef>
     V rawget(int i) const
     {
         pushToStack();
@@ -839,7 +839,7 @@ public:
      * @return variable value
      * @throw LuaException if V are not convertible to Lua types
      */
-    template<typename V>
+    template <typename V>
     V rawget(int i, const V& def) const
     {
         pushToStack();
@@ -1135,9 +1135,9 @@ struct LuaRefType
     }
 };
 
-template<> struct LuaType <LuaRef> : LuaRefType {};
-template<> struct LuaType <LuaRef&> : LuaRefType {};
-template<> struct LuaType <LuaRef const&> : LuaRefType {};
+template <> struct LuaType <LuaRef> : LuaRefType {};
+template <> struct LuaType <LuaRef&> : LuaRefType {};
+template <> struct LuaType <LuaRef const&> : LuaRefType {};
 
 //---------------------------------------------------------------------------
 
