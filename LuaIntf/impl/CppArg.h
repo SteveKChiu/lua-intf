@@ -211,7 +211,8 @@ struct CppArgInput <Traits, true, true, false>
 {
     static int get(lua_State* L, int index, typename Traits::HolderType& r)
     {
-        r.hold(LuaType<typename Traits::Type>::opt(L, index, typename Traits::ValueType()));
+        using DefaultType = typename std::decay<typename Traits::ValueType>::type;
+        r.hold(LuaType<typename Traits::Type>::opt(L, index, DefaultType()));
         return 1;
     }
 };
