@@ -118,7 +118,7 @@ public:
      * @return value of t[k] as type V
      * @throw LuaException if V are not convertible to Lua types
      */
-    template <typename V>
+    template <typename V = LuaRef>
     V value() const
     {
         lua_rawgeti(L, LUA_REGISTRYINDEX, m_table);
@@ -220,7 +220,7 @@ public:
     /**
      * Get the key of current entry
      */
-    template <typename K>
+    template <typename K = LuaRef>
     K key() const
     {
         if (!L) throw LuaException("invalid key reference");
@@ -231,7 +231,7 @@ public:
     /**
      * Get the value of current entry
      */
-    template <typename V>
+    template <typename V = LuaRef>
     V value() const
     {
         if (!L) throw LuaException("invalid value reference");
@@ -388,7 +388,7 @@ public:
      * @param L lua state
      * @param index position on stack
      */
-    explicit LuaRef(lua_State* state, int index)
+    LuaRef(lua_State* state, int index)
         : L(state)
     {
         if (!L) throw LuaException("invalid state");
@@ -434,7 +434,7 @@ public:
      * Type conversion for LuaTableRef
      */
     LuaRef(const LuaTableRef& that)
-        : LuaRef(that.value<LuaRef>())
+        : LuaRef(that.value())
         {}
 
     /**

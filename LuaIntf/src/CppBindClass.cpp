@@ -263,8 +263,8 @@ LUA_INLINE bool CppBindClassBase::buildMetaTable(LuaRef& meta, LuaRef& parent, c
         LuaRef registry(parent.state(), LUA_REGISTRYINDEX);
         LuaRef super = registry.rawget(super_static_id);
         meta.rawset("___super", super);
-        meta.rawget("___class").rawset("___super", super.rawget<LuaRef>("___class"));
-        meta.rawget("___const").rawset("___super", super.rawget<LuaRef>("___const"));
+        meta.rawget("___class").rawset("___super", super.rawget("___class"));
+        meta.rawget("___const").rawset("___super", super.rawget("___const"));
         return true;
     }
     return false;

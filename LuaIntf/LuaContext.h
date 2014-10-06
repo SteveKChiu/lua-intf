@@ -154,7 +154,7 @@ public:
     /**
      * Get value from global variable
      */
-    template <typename V>
+    template <typename V = LuaRef>
     V getGlobal(const char* name) const
     {
         return Lua::getGlobal<V>(L, name);
