@@ -216,9 +216,9 @@ For constructing shared pointer inside Lua `userdata`, you can register the cons
 Function calling convention
 ---------------------------
 
-C++ function exported to Lua can follow one the two calling conventions:
+C++ function exported to Lua can follow one of the two calling conventions:
 
-+ Normal function, that return value will be the value seen on the Lua side.
++ Normal function, the return value will be the value seen on the Lua side.
 
 + Lua `lua_CFunction` convention, that the first argument is `lua_State*` and the return type is `int`. And just like `lua_CFunction` you need to manually push the result onto Lua stack, and return the number of results pushed.
 
@@ -298,13 +298,6 @@ Yet another way to return multiple results is to use `std::tuple`:
 
 	.endModule();
 ````
-And the `std::tuple` works with `LuaRef` too, note the following code works with either definition (`_out<int>` or `std::tuple`) or the normal Lua function:
-````c++
-	LuaRef func(L, "utils.match");
-    std::string found;
-    int found_pos;
-    std::tie(found, found_pos) = func.call<std::tuple<std::string, int>>("this is test", "test");
-````
 If your C++ function is overloaded, pass `&funcion` is not enough, you have to explicitly cast it to proper type:
 ````c++
 	static int test(string, int);
@@ -316,6 +309,7 @@ If your C++ function is overloaded, pass `&funcion` is not enough, you have to e
 		.addFunction("test_1", static_cast<int(*)(string, int)>(&test))
 
 		// this will bind string test(string), by using our LUA_FN macro
+		// LUA_FN(RETURN_TYPE, FUNC_NAME, ARG_TYPES...)
 		.addFunction("test_2", LUA_FN(string, test, string))
 
 	.endModule();
@@ -471,6 +465,14 @@ And you can mix it with the low level API:
     lua_call(L, 3, 2);
 	LuaRef r(L, -2); 					// map r to lua stack index -2
 ````
+You can use the `std::tuple` for multiple return vales:
+````c++
+	LuaRef func(L, "utils.match");
+    std::string found;
+    int found_pos;
+    std::tie(found, found_pos) = func.call<std::tuple<std::string, int>>("this is test", "test");
+````
+
 Low level API as simple wrapper for Lua C API
 ---------------------------------------------
 
