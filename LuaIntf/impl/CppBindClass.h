@@ -250,11 +250,11 @@ struct CppBindClassMethod <T, FN, _arg(*)(P...), CHK>
 
 //--------------------------------------------------------------------------
 
-template <typename T, typename V>
+template <typename T, typename V, typename PV = V>
 struct CppBindClassVariableGetter
 {
     /**
-     * lua_CFunction to get a class data member, a new copy of value is pushed onto stack.
+     * lua_CFunction to get a class data member
      *
      * The pointer-to-member is in the first upvalue.
      * The class userdata object is at the top of the Lua stack.
@@ -267,32 +267,7 @@ struct CppBindClassVariableGetter
             assert(mp);
 
             const T* obj = CppObject::get<T>(L, 1, true);
-            LuaType<V>::push(L, obj->**mp);
-            return 1;
-        } catch (std::exception& e) {
-            return luaL_error(L, e.what());
-        }
-    }
-};
-
-template <typename T, typename V>
-struct CppBindClassVariableRefer
-{
-    /**
-     * lua_CFunction to refer a class data member, the reference is pushed onto stack.
-     *
-     * The pointer-to-member is in the first upvalue.
-     * The class userdata object is at the top of the Lua stack.
-     */
-    static int call(lua_State* L)
-    {
-        try {
-            assert(lua_isuserdata(L, lua_upvalueindex(1)));
-            auto mp = static_cast<V T::**>(lua_touserdata(L, lua_upvalueindex(1)));
-            assert(mp);
-
-            T* obj = CppObject::get<T>(L, 1, false);
-            LuaType<V&>::push(L, obj->**mp);
+            LuaType<PV>::push(L, obj->**mp);
             return 1;
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
@@ -550,7 +525,7 @@ public:
     typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
         addStaticVariableRef(const char* name, V* v, bool writable = true)
     {
-        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableRefer<V>::call, v));
+        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, V&>::call, v));
         if (writable) {
             setStaticSetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableSetter<V>::call, v));
         } else {
@@ -569,7 +544,7 @@ public:
     typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
         addStaticVariableRef(const char* name, V* v)
     {
-        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableRefer<V>::call, v));
+        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, V&>::call, v));
         setStaticReadOnly(name);
         return *this;
     }
@@ -583,7 +558,7 @@ public:
     template <typename V>
     CppBindClass<T>& addStaticVariableRef(const char* name, const V* v)
     {
-        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableRefer<const V>::call, const_cast<V*>(v)));
+        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, const V&>::call, const_cast<V*>(v)));
         setStaticReadOnly(name);
         return *this;
     }
@@ -763,8 +738,8 @@ public:
         addVariableRef(const char* name, V T::* v, bool writable = true)
     {
         setMemberGetter(name,
-            LuaRef::createFunction(state(), &CppBindClassVariableRefer<T, V>::call, v),
-            LuaRef::createFunction(state(), &CppBindClassVariableRefer<T, const V>::call, v));
+            LuaRef::createFunction(state(), &CppBindClassVariableGetter<T, V, V&>::call, v),
+            LuaRef::createFunction(state(), &CppBindClassVariableGetter<T, V, const V&>::call, v));
         if (writable) {
             setMemberSetter(name, LuaRef::createFunction(state(), &CppBindClassVariableSetter<T, V>::call, v));
         } else {
@@ -784,8 +759,8 @@ public:
         addVariableRef(const char* name, V T::* v)
     {
         setMemberGetter(name,
-            LuaRef::createFunction(state(), &CppBindClassVariableRefer<T, V>::call, v),
-            LuaRef::createFunction(state(), &CppBindClassVariableRefer<T, const V>::call, v));
+            LuaRef::createFunction(state(), &CppBindClassVariableGetter<T, V, V&>::call, v),
+            LuaRef::createFunction(state(), &CppBindClassVariableGetter<T, V, const V&>::call, v));
         setMemberReadOnly(name);
         return *this;
     }
@@ -799,7 +774,7 @@ public:
     template <typename V>
     CppBindClass<T>& addVariableRef(const char* name, const V T::* v)
     {
-        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariableRefer<T, const V>::call, v));
+        setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariableGetter<T, V, const V&>::call, v));
         setMemberReadOnly(name);
         return *this;
     }
