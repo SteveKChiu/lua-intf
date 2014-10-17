@@ -306,7 +306,7 @@ public:
             "function declaration is not allowed, use function pointer if needed");
         void* userdata;
         LuaRef f = createFunctionWithNewData(L, proc, sizeof(T), &userdata);
-        new (userdata) T(std::forward<P>(args)...);
+        ::new (userdata) T(std::forward<P>(args)...);
         return f;
     }
 
@@ -339,7 +339,7 @@ public:
             "function declaration is not allowed, use function pointer if needed");
         void* userdata;
         LuaRef f = createFunctionWithNewData(L, proc, sizeof(T), &userdata);
-        new (userdata) T(cpp);
+        ::new (userdata) T(cpp);
         return f;
     }
 

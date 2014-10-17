@@ -223,15 +223,15 @@ public:
     static void pushToStack(lua_State* L, std::tuple<P...>& args, bool is_const)
     {
         void* mem = allocate<CppObjectValue<T>, T>(L, is_const);
-        CppObjectValue<T>* v = new (mem) CppObjectValue<T>();
+        CppObjectValue<T>* v = ::new (mem) CppObjectValue<T>();
         CppInvokeClassConstructor<T, P...>::call(v->ptr(), args);
     }
 
     static void pushToStack(lua_State* L, const T& obj, bool is_const)
     {
         void* mem = allocate<CppObjectValue<T>, T>(L, is_const);
-        CppObjectValue<T>* v = new (mem) CppObjectValue<T>();
-        new (v->ptr()) T(obj);
+        CppObjectValue<T>* v = ::new (mem) CppObjectValue<T>();
+        ::new (v->ptr()) T(obj);
     }
 
 private:
@@ -260,7 +260,7 @@ public:
     static void pushToStack(lua_State* L, T* obj, bool is_const)
     {
         void* mem = allocate<CppObjectPtr, T>(L, is_const);
-        new (mem) CppObjectPtr(obj);
+        ::new (mem) CppObjectPtr(obj);
     }
 };
 
@@ -304,19 +304,19 @@ public:
     {
         void* mem = allocate<CppObjectSharedPtr<SP, T>, T>(L, is_const);
         T* obj = CppInvokeClassConstructor<T, P...>::call(args);
-        new (mem) CppObjectSharedPtr<SP, T>(obj);
+        ::new (mem) CppObjectSharedPtr<SP, T>(obj);
     }
 
     static void pushToStack(lua_State* L, T* obj, bool is_const)
     {
         void* mem = allocate<CppObjectSharedPtr<SP, T>, T>(L, is_const);
-        new (mem) CppObjectSharedPtr<SP, T>(obj);
+        ::new (mem) CppObjectSharedPtr<SP, T>(obj);
     }
 
     static void pushToStack(lua_State* L, const SP& sp, bool is_const)
     {
         void* mem = allocate<CppObjectSharedPtr<SP, T>, T>(L, is_const);
-        new (mem) CppObjectSharedPtr<SP, T>(sp);
+        ::new (mem) CppObjectSharedPtr<SP, T>(sp);
     }
 
 private:

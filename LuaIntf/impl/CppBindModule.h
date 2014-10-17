@@ -408,7 +408,6 @@ public:
 
     /**
      * Add or replace a function, user can specify augument spec.
-     *
      */
     template <typename FN, typename ARGS>
     CppBindModule& addFunction(const char* name, const FN& proc, ARGS)

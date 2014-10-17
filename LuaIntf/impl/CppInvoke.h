@@ -151,7 +151,7 @@ struct CppDispatchClassConstructor <T, TUPLE, 0, INDEX...>
 
     static T* call(void* mem, TUPLE& args)
     {
-        return new (mem) T(std::get<INDEX>(args).value()...);
+        return ::new (mem) T(std::get<INDEX>(args).value()...);
     }
 };
 
