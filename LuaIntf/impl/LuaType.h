@@ -353,9 +353,11 @@ struct LuaValueType <unsigned long long, lua_Number> : LuaUnsafeInt64Type <unsig
 
 LUA_USING_VALUE_TYPE(bool)
 LUA_USING_VALUE_TYPE(char)
-LUA_USING_VALUE_TYPE_EXT(unsigned char, lua_Integer)
+
+LUA_USING_VALUE_TYPE_EXT(signed char, lua_Integer)
+LUA_USING_VALUE_TYPE_EXT(unsigned char, lua_Unsigned)
 LUA_USING_VALUE_TYPE_EXT(short, lua_Integer)
-LUA_USING_VALUE_TYPE_EXT(unsigned short, lua_Integer)
+LUA_USING_VALUE_TYPE_EXT(unsigned short, lua_Unsigned)
 LUA_USING_VALUE_TYPE_EXT(int, lua_Integer)
 LUA_USING_VALUE_TYPE_EXT(unsigned int, lua_Unsigned)
 LUA_USING_VALUE_TYPE_EXT(long, lua_Integer)
