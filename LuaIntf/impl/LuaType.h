@@ -158,7 +158,7 @@ struct LuaValueType <char>
 
     static void push(lua_State* L, char value)
     {
-        char str[] = { static_cast<char>(value), 0 };
+        char str[] = { value, 0 };
         lua_pushstring(L, str);
     }
 
@@ -169,7 +169,7 @@ struct LuaValueType <char>
 
     static char opt(lua_State* L, int index, char def)
     {
-        char str[] = { static_cast<char>(def), 0 };
+        char str[] = { def, 0 };
         return luaL_optstring(L, index, str)[0];
     }
 };
@@ -353,6 +353,7 @@ struct LuaValueType <unsigned long long, lua_Number> : LuaUnsafeInt64Type <unsig
 
 LUA_USING_VALUE_TYPE(bool)
 LUA_USING_VALUE_TYPE(char)
+LUA_USING_VALUE_TYPE_EXT(signed char, lua_Integer)
 LUA_USING_VALUE_TYPE_EXT(unsigned char, lua_Integer)
 LUA_USING_VALUE_TYPE_EXT(short, lua_Integer)
 LUA_USING_VALUE_TYPE_EXT(unsigned short, lua_Integer)
