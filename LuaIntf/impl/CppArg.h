@@ -75,7 +75,7 @@ struct CppArgHolder
 };
 
 template <typename T>
-struct CppArgHolder<T&>
+struct CppArgHolder <T&>
 {
     T& value() 
     {
@@ -94,6 +94,8 @@ struct CppArgHolder<T&>
 
     T* holder;
 };
+
+//---------------------------------------------------------------------------
 
 template <typename T>
 struct CppArgTraits
@@ -227,6 +229,26 @@ struct CppArgInput <Traits, true, true, true>
     }
 };
 
+template <>
+struct CppArgInput <CppArgTraits<lua_State*>, false, false, false>
+{
+    static int get(lua_State* L, int, typename CppArgTraits<lua_State*>::HolderType& r)
+    {
+        r.hold(L);
+        return 0;
+    }
+};
+
+template <>
+struct CppArgInput <CppArgTraits<LuaState>, false, false, false>
+{
+    static int get(lua_State* L, int, typename CppArgTraits<LuaState>::HolderType& r)
+    {
+        r.hold(L);
+        return 0;
+    }
+};
+
 //---------------------------------------------------------------------------
 
 template <typename Traits, bool IsOutput>
@@ -244,9 +266,9 @@ struct CppArgOutput <Traits, false>
 template <typename Traits>
 struct CppArgOutput <Traits, true>
 {
-    static int push(lua_State* L, const typename Traits::ValueType& f)
+    static int push(lua_State* L, const typename Traits::ValueType& v)
     {
-        LuaType<typename Traits::Type>::push(L, f);
+        LuaType<typename Traits::Type>::push(L, v);
         return 1;
     }
 };
@@ -266,53 +288,11 @@ struct CppArg
         return CppArgInput<Traits, Traits::IsInput, Traits::IsOptonal, Traits::HasDefault>::get(L, index, r);
     }
 
-    static int push(lua_State* L, const HolderType& f)
+    static int push(lua_State* L, const HolderType& v)
     {
-        return CppArgOutput<Traits, Traits::IsOutput>::push(L, f.value());
+        return CppArgOutput<Traits, Traits::IsOutput>::push(L, v.value());
     }
 };
-
-template <>
-struct CppArg <lua_State*>
-{
-    typedef CppArgTraits<lua_State*> Traits;
-    typedef typename Traits::Type Type;
-    typedef typename Traits::ValueType ValueType;
-    typedef typename Traits::HolderType HolderType;
-
-    static int get(lua_State* L, int, HolderType& r)
-    {
-        r.hold(L);
-        return 0;
-    }
-
-    static int push(lua_State*, const HolderType& r)
-    {
-        return 0;
-    }
-};
-
-template <>
-struct CppArg <LuaState>
-{
-    typedef CppArgTraits<LuaState> Traits;
-    typedef typename Traits::Type Type;
-    typedef typename Traits::ValueType ValueType;
-    typedef typename Traits::HolderType HolderType;
-
-    static int get(lua_State* L, int, HolderType& r)
-    {
-        r.hold(L);
-        return 0;
-    }
-
-    static int push(lua_State*, const HolderType& r)
-    {
-        return 0;
-    }
-};
-
-//---------------------------------------------------------------------------
 
 template <typename... P>
 struct CppArgTuple
