@@ -102,18 +102,6 @@ namespace Lua
     }
 
     /**
-     * Pop the value from the given index of Lua stack,
-     * the value at the given index is removed
-     */
-    template <typename T>
-    inline T pop(lua_State* L, int index)
-    {
-        T v = LuaType<T>::get(L, index);
-        lua_remove(L, index);
-        return v;
-    }
-
-    /**
      * Push STL-style list as Lua table onto Lua stack.
      */
     template <typename LIST>
@@ -248,7 +236,7 @@ namespace Lua
 class LuaState
 {
 public:
-    LuaState()
+    constexpr LuaState()
         : L(nullptr) {}
 
     LuaState(lua_State* that)
