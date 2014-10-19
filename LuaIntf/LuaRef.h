@@ -411,7 +411,7 @@ public:
     }
 
     /**
-     * Copy constructor, this is still reference the same Lua object
+     * Copy constructor, this still refer to the same Lua object
      */
     LuaRef(const LuaRef& that)
         : L(that.L)
@@ -421,7 +421,7 @@ public:
     }
 
     /**
-     * Move constructor, this is still reference the same Lua object
+     * Move constructor, this still refer to the same Lua object
      */
     LuaRef(LuaRef&& that)
         : L(that.L)
@@ -448,7 +448,7 @@ public:
     }
 
     /**
-     * Copy assignment, this only copy the reference, so both reference the same object
+     * Copy assignment, this only copy the reference, so both refer to the same object
      */
     LuaRef& operator = (const LuaRef& that);
 
