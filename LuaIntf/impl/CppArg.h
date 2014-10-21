@@ -29,7 +29,7 @@ struct _arg {};
 template <typename T>
 struct _opt {};
 
-template <typename T, T DEF>
+template <typename T, std::intmax_t DEF_NUM, std::intmax_t DEF_DEN = 1>
 struct _def {};
 
 template <typename T>
@@ -41,7 +41,7 @@ struct _ref {};
 template <typename T>
 struct _ref_opt {};
 
-template <typename T, T DEF>
+template <typename T, std::intmax_t DEF_NUM, std::intmax_t DEF_DEN = 1>
 struct _ref_def {};
 
 #define LUA_SP(p) static_cast<p*>(nullptr)
@@ -115,12 +115,12 @@ struct CppArgTraits <_opt<T>> : CppArgTraits <T>
     static constexpr bool IsOptonal = true;
 };
 
-template <typename T, T DEF>
-struct CppArgTraits <_def<T, DEF>> : CppArgTraits <T>
+template <typename T, std::intmax_t NUM, std::intmax_t DEN>
+struct CppArgTraits <_def<T, NUM, DEN>> : CppArgTraits <T>
 {
     static constexpr bool IsOptonal = true;
     static constexpr bool HasDefault = true;
-    static constexpr T DefaultValue = DEF;
+    static constexpr T DefaultValue = T(T(NUM) / DEN);
 };
 
 template <typename T>
@@ -149,15 +149,15 @@ struct CppArgTraits <_ref_opt<T>> : CppArgTraits <T>
     static constexpr bool IsOutput = true;
 };
 
-template <typename T, T DEF>
-struct CppArgTraits <_ref_def<T, DEF>> : CppArgTraits <T>
+template <typename T, std::intmax_t NUM, std::intmax_t DEN>
+struct CppArgTraits <_ref_def<T, NUM, DEN>> : CppArgTraits <T>
 {
     static_assert(!std::is_const<T>::value && std::is_lvalue_reference<T>::value,
         "argument with ref spec must be non-const reference type");
     static constexpr bool IsOptonal = true;
     static constexpr bool IsOutput = true;
     static constexpr bool HasDefault = true;
-    static constexpr T DefaultValue = DEF;
+    static constexpr T DefaultValue = T(T(NUM) / DEN);
 };
 
 template <>

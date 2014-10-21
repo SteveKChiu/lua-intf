@@ -26,10 +26,10 @@
 
 template <typename FN>
 struct CppLambdaTraits
-    : public CppLambdaTraits<decltype(&FN::operator())> {};
+    : public CppLambdaTraits <decltype(&FN::operator())> {};
 
 template <typename FN, typename R, typename... P>
-struct CppLambdaTraits<R(FN::*)(P...) const>
+struct CppLambdaTraits <R(FN::*)(P...) const>
 {
     typedef std::function<R(P...)> FunctionType;
 };
@@ -38,10 +38,10 @@ struct CppLambdaTraits<R(FN::*)(P...) const>
 
 template <typename FN, typename R, typename TUPLE, size_t N, size_t... INDEX>
 struct CppDispatchMethod
-    : CppDispatchMethod<FN, R, TUPLE, N - 1, N - 1, INDEX...> {};
+    : CppDispatchMethod <FN, R, TUPLE, N - 1, N - 1, INDEX...> {};
 
 template <typename FN, typename R, typename TUPLE, size_t... INDEX>
-struct CppDispatchMethod<FN, R, TUPLE, 0, INDEX...>
+struct CppDispatchMethod <FN, R, TUPLE, 0, INDEX...>
 {
     static R call(const FN& func, TUPLE& args)
     {
