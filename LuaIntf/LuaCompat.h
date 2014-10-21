@@ -64,7 +64,7 @@
 
 //---------------------------------------------------------------------------
 
-#if !LUAINTF_BUILD_LUA_CXX
+#if LUAINTF_BUILD_LUA_CXX
 extern "C"
 {
 #endif
@@ -72,7 +72,7 @@ extern "C"
 #include "lualib.h"
 #include "lauxlib.h"
 
-#if !LUAINTF_BUILD_LUA_CXX
+#if LUAINTF_BUILD_LUA_CXX
 }
 #endif
 
