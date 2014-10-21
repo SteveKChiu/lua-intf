@@ -250,22 +250,23 @@ C++ function exported to Lua can follow one of the two calling conventions:
 	int obj_func_1(Object* obj, lua_state* L);
 	int obj_func_2(Object* obj, lua_state* L, const std::string& arg1, int arg2);
 ````
-For every function registration, `lua-intf` also support C++11 `std::function` type, so you can use `std::bind` or lambda expression if needed. You can use lambda expression freely without giving full std::function declaration.
+For every function registration, `lua-intf` also support C++11 `std::function` type, so you can use `std::bind` or lambda expression if needed. You can use lambda expression freely without giving full `std::function` declaration; `std::bind` on the other hand, must be declared:
 ````c++
     LuaBinding(L).beginClass<Web>("Web")
 		.addStaticFunction("lambda", [] {
 			// you can use C++11 lambda expression here too
 			return "yes";
 		})
-		.addStaticFunction("bind",
+		.addStaticFunction<std::function<std::string()>>("bind",
 			std::bind(&Web::url, other_web_object))
 	.endClass();
 ````
-`lua-intf` make it possible to bind optional `_opt<ARG_TYPE>` or default arguments `_def<ARG_TYPE, DEF_VALUE>` for Lua. For example:
+`lua-intf` make it possible to bind optional `_opt<ARG_TYPE>` or default arguments `_def<ARG_TYPE, DEF_NUM, DEF_DEN = 1>` for Lua. For example:
 ````c++
 	struct MyString
 	{
 		std::string indexOf(const std::string& str, int pos);
+		std::string desc(float number);
 		...
 	};
 
@@ -274,9 +275,14 @@ For every function registration, `lua-intf` also support C++11 `std::function` t
 		// this will make pos = 1 if it is not specified in Lua side
 		.addFunction("indexOf", &MyString::indexOf, LUA_ARGS(std::string, _def<int, 1>))
 
+		// this will make number = 1.333 = (4 / 3) if it is not specified in Lua side
+        // because C++ does not allow float as non-type template parameter
+        // you have to use ratio to specify floating numbers 1.333 = (4 / 3)
+		.addFunction("indexOf", &MyString::desc, LUA_ARGS(_def<float, 4, 3>))
+
 	.endClass();
 ````
-It is also possible to return multiple results by telling which argument is for output `_out<ARG_TYPE>` or input-output `_ref<ARG_TYPE>` `_ref_opt<ARG_TYPE>` `_ref_def<ARG_TYPE, DEF_VALUE>`. For example:
+It is also possible to return multiple results by telling which argument is for output `_out<ARG_TYPE>` or input-output `_ref<ARG_TYPE>` `_ref_opt<ARG_TYPE>` `_ref_def<ARG_TYPE, DEF_NUM, DEF_DEN = 1>`. For example:
 ````c++
 	static std::string match(const std::string& src, const std::string& pat, int pos, int& found_pos);
 
@@ -298,7 +304,7 @@ Yet another way to return multiple results is to use `std::tuple`:
 
 	.endModule();
 ````
-If your C++ function is overloaded, pass `&funcion` is not enough, you have to explicitly cast it to proper type:
+If your C++ function is overloaded, pass `&function` is not enough, you have to explicitly cast it to proper type:
 ````c++
 	static int test(string, int);
 	static string test(string);
@@ -314,10 +320,10 @@ If your C++ function is overloaded, pass `&funcion` is not enough, you have to e
 
 	.endModule();
 ````
-Lua for-loop interation function
+Lua for-loop iteration function
 --------------------------------
 
-`lua-intf` provides a helper class `CppFunctor` to make it easier to implement for-loop interation function for Lua.  To use it, user need to inherit CppFunctor, and override run method and optional descructor. Then call pushToStack to create the functor object on lua stack.
+`lua-intf` provides a helper class `CppFunctor` to make it easier to implement for-loop iteration function for Lua.  To use it, user need to inherit CppFunctor, and override run method and optional destructor. Then call pushToStack to create the functor object on Lua stack.
 ````c++
     class MyIterator : public CppFunctor
     {
@@ -347,7 +353,7 @@ Lua for-loop interation function
         return 1;
     }
 ````
-To register the for-loop interation function:
+To register the for-loop iteration function:
 ````c++
     LuaBinding(L).beginModule("utils")
 
@@ -355,7 +361,7 @@ To register the for-loop interation function:
 
 	.endModule();
 ````
-To use the interation function in Lua code:
+To use the iteration function in Lua code:
 ````lua
     for x, y in utils.xpairs(...) do
         ...
