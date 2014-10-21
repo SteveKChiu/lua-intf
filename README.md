@@ -179,10 +179,11 @@ The lua module system don't register modules in global variables. So you'll need
 ````
 C++ error handling
 ------------------
-By default LuaIntf expect the Lua library to build as C++ library, this will allow Lua library to throw exception upon error, and make sure C++ oebject on stack to be destructed correctly. For more info about error handling issues, please see:
+By default LuaIntf expect the Lua library to build as C++ library, this will allow Lua library to throw exception upon error, and make sure C++ objects on stack to be destructed correctly. For more info about error handling issues, please see:
+
 http://lua-users.org/wiki/ErrorHandlingBetweenLuaAndCplusplus
 
-If you really want to use Lua as C library and want to live with `longjmp` issues, you can define LUAINTF_BUILD_LUA_CXX to 0 before include LuaIntf headers:
+If you really want to use Lua as C library and want to live with `longjmp` issues, you can define LUAINTF_BUILD_LUA_CXX to 0 before including lua-intf headers:
 ````c++
 #define LUAINTF_BUILD_LUA_CXX 0
 #include "LuaIntf/LuaIntf.h"
