@@ -358,6 +358,21 @@ public:
     }
 
     /**
+     * Create a new table and set the meta table, this behaves like an object
+     *
+     * @param L lua state
+     * @param meta the name of meta table
+     * @return empty table
+     */
+    static LuaRef createObject(lua_State* L, const char* meta)
+    {
+        lua_newtable(L);
+        Lua::pushGlobal(L, meta);
+        lua_setmetatable(L, -2);
+        return popFromStack(L);
+    }
+
+    /**
      * Get registry table
      */
     static LuaRef registry(lua_State* L)
@@ -679,7 +694,7 @@ public:
 
     /**
      * Call this function and get return value(s),
-     * put types of expected return types in the template param.
+     * put the expected return type in the template param.
      *
      * To return multiple values from Lua function, use std::tuple as return type:
      *
@@ -693,6 +708,53 @@ public:
     R call(P&&... args)
     {
         return Call<R, P...>::invoke(L, *this, std::forward<P>(args)...);
+    }
+
+    /**
+     * Call the member function and get return value(s), the member function would
+     * expect the first argument as obejct (table) itself, much like calling function using
+     * ':' syntax in Lua.
+     *
+     * To return multiple values from Lua function, use std::tuple as return type:
+     *
+     * int a, b;
+     * std::tie(a, b) = ref.dispatch<std::tuple<int, int>>("memberFunction", arg1, arg2);
+     *
+     * The above code works like the following in Lua, please note the ':' syntax:
+     *
+     * local a, b = ref:memberFunction(arg1, arg2)
+     *
+     * @param member the name of member function
+     * @param args arguments to pass to function
+     * @return values of function
+     */
+    template <typename R, typename... P>
+    R dispatch(const char* member, P&&... args)
+    {
+        return Call<R, LuaRef, P...>::invoke(L, get(member), *this, std::forward<P>(args)...);
+    }
+
+    /**
+     * Call the member function and get return value(s), much like calling function using
+     * '.' syntax in Lua.
+     *
+     * To return multiple values from Lua function, use std::tuple as return type:
+     *
+     * int a, b;
+     * std::tie(a, b) = ref.dispatchStatic<std::tuple<int, int>>("memberFunction", arg1, arg2);
+     *
+     * The above code works like the following in Lua, please note the '.' syntax:
+     *
+     * local a, b = ref.memberFunction(arg1, arg2)
+     *
+     * @param member the name of member function
+     * @param args arguments to pass to function
+     * @return values of function
+     */
+    template <typename R, typename... P>
+    R dispatchStatic(const char* member, P&&... args)
+    {
+        return Call<R, P...>::invoke(L, get(member), std::forward<P>(args)...);
     }
 
     /**
