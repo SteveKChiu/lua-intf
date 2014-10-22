@@ -350,12 +350,21 @@ struct LuaValueType <unsigned long long, lua_Number>
 //---------------------------------------------------------------------------
 
 template <typename T>
+struct LuaEnumType
+    : LuaValueType <T,
+        typename std::conditional<
+            std::is_unsigned<typename std::underlying_type<T>::type>::value,
+            lua_Unsigned,
+            lua_Integer
+        >::type> {};
+
+template <typename T>
 struct LuaType <T, typename std::enable_if<std::is_enum<T>::value>::type>
-    : LuaValueType <T, lua_Integer> {};
+    : LuaEnumType <T> {};
 
 template <typename T>
 struct LuaType <T&, typename std::enable_if<std::is_enum<T>::value>::type>
-    : LuaValueType <typename std::decay<T>::type, lua_Integer> {};
+    : LuaEnumType <typename std::decay<T>::type> {};
 
 //---------------------------------------------------------------------------
 
