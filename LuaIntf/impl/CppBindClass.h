@@ -504,7 +504,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    CppBindClass<T>& addStaticVariable(const char* name, const V* v)
+    CppBindClass<T, PARENT>& addStaticVariable(const char* name, const V* v)
     {
         setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, const_cast<V*>(v)));
         setStaticReadOnly(name);
@@ -518,7 +518,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
+    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T, PARENT>&>::type
         addStaticVariableRef(const char* name, V* v, bool writable = true)
     {
         setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, V&>::call, v));
@@ -537,7 +537,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
+    typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindClass<T, PARENT>&>::type
         addStaticVariableRef(const char* name, V* v)
     {
         setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, V&>::call, v));
@@ -552,7 +552,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    CppBindClass<T>& addStaticVariableRef(const char* name, const V* v)
+    CppBindClass<T, PARENT>& addStaticVariableRef(const char* name, const V* v)
     {
         setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, const V&>::call, const_cast<V*>(v)));
         setStaticReadOnly(name);
@@ -768,7 +768,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    CppBindClass<T>& addVariableRef(const char* name, const V T::* v)
+    CppBindClass<T, PARENT>& addVariableRef(const char* name, const V T::* v)
     {
         setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariableGetter<T, V, const V&>::call, v));
         setMemberReadOnly(name);
