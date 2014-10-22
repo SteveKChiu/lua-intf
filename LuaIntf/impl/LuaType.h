@@ -244,7 +244,7 @@ struct LuaType <const char(&)[N]>
 
 struct LuaString
 {
-    LuaString()
+    constexpr LuaString()
         : data(nullptr)
         , size(0)
         {}
