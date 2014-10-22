@@ -1117,7 +1117,7 @@ private:
 
 struct LuaRefType
 {
-    typedef LuaRef ValueType;
+    using ValueType = LuaRef;
 
     static void push(lua_State*, const LuaRef& r)
     {

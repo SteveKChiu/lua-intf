@@ -31,7 +31,7 @@ struct CppLambdaTraits
 template <typename FN, typename R, typename... P>
 struct CppLambdaTraits <R(FN::*)(P...) const>
 {
-    typedef std::function<R(P...)> FunctionType;
+    using FunctionType = std::function<R(P...)>;
 };
 
 //----------------------------------------------------------------------------

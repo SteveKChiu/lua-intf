@@ -100,9 +100,9 @@ struct CppArgHolder <T&>
 template <typename T>
 struct CppArgTraits
 {
-    typedef T Type;
-    typedef typename LuaType<T>::ValueType ValueType;
-    typedef CppArgHolder<ValueType> HolderType;
+    using Type = T;
+    using ValueType = typename LuaType<T>::ValueType;
+    using HolderType = CppArgHolder<ValueType>;
     static constexpr bool IsInput = true;
     static constexpr bool IsOutput = false;
     static constexpr bool IsOptonal = false;
@@ -163,9 +163,9 @@ struct CppArgTraits <_ref_def<T, NUM, DEN>> : CppArgTraits <T>
 template <>
 struct CppArgTraits <lua_State*>
 {
-    typedef lua_State* Type;
-    typedef lua_State* ValueType;
-    typedef CppArgHolder<ValueType> HolderType;
+    using Type = lua_State*;
+    using ValueType = lua_State*;
+    using HolderType = CppArgHolder<ValueType>;
     static constexpr bool IsInput = false;
     static constexpr bool IsOutput = false;
     static constexpr bool IsOptonal = false;
@@ -175,9 +175,9 @@ struct CppArgTraits <lua_State*>
 template <>
 struct CppArgTraits <LuaState>
 {
-    typedef LuaState Type;
-    typedef LuaState ValueType;
-    typedef CppArgHolder<ValueType> HolderType;
+    using Type = LuaState;
+    using ValueType = LuaState;
+    using HolderType = CppArgHolder<ValueType>;
     static constexpr bool IsInput = false;
     static constexpr bool IsOutput = false;
     static constexpr bool IsOptonal = false;
@@ -278,10 +278,10 @@ struct CppArgOutput <Traits, true>
 template <typename T>
 struct CppArg
 {
-    typedef CppArgTraits<T> Traits;
-    typedef typename Traits::Type Type;
-    typedef typename Traits::ValueType ValueType;
-    typedef typename Traits::HolderType HolderType;
+    using Traits = CppArgTraits<T>;
+    using Type = typename Traits::Type;
+    using ValueType = typename Traits::ValueType;
+    using HolderType = typename Traits::HolderType;
 
     static int get(lua_State* L, int index, HolderType& r)
     {
@@ -297,7 +297,7 @@ struct CppArg
 template <typename... P>
 struct CppArgTuple
 {
-    typedef std::tuple<typename CppArg<P>::HolderType...> Type;
+    using Type = std::tuple<typename CppArg<P>::HolderType...>;
 };
 
 //---------------------------------------------------------------------------

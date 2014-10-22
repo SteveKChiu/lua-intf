@@ -49,7 +49,7 @@ struct LuaValueType;
 template <>
 struct LuaValueType <bool>
 {
-    typedef bool ValueType;
+    using ValueType = bool;
 
     static void push(lua_State* L, bool value)
     {
@@ -70,7 +70,7 @@ struct LuaValueType <bool>
 template <typename T>
 struct LuaValueType <T, lua_Integer>
 {
-    typedef T ValueType;
+    using ValueType = T;
 
     static void push(lua_State* L, ValueType value)
     {
@@ -91,7 +91,7 @@ struct LuaValueType <T, lua_Integer>
 template <typename T>
 struct LuaValueType <T, lua_Unsigned>
 {
-    typedef T ValueType;
+    using ValueType = T;
 
     static void push(lua_State* L, ValueType value)
     {
@@ -112,7 +112,7 @@ struct LuaValueType <T, lua_Unsigned>
 template <typename T>
 struct LuaValueType <T, lua_Number>
 {
-    typedef T ValueType;
+    using ValueType = T;
 
     static void push(lua_State* L, ValueType value)
     {
@@ -133,7 +133,7 @@ struct LuaValueType <T, lua_Number>
 template <>
 struct LuaValueType <lua_CFunction>
 {
-    typedef lua_CFunction ValueType;
+    using ValueType = lua_CFunction;
 
     static void push(lua_State* L, lua_CFunction f)
     {
@@ -154,7 +154,7 @@ struct LuaValueType <lua_CFunction>
 template <>
 struct LuaValueType <char>
 {
-    typedef char ValueType;
+    using ValueType = char;
 
     static void push(lua_State* L, char value)
     {
@@ -177,7 +177,7 @@ struct LuaValueType <char>
 template <>
 struct LuaValueType <std::string>
 {
-    typedef std::string ValueType;
+    using ValueType = std::string;
 
     static void push(lua_State* L, const std::string& str)
     {
@@ -202,7 +202,7 @@ struct LuaValueType <std::string>
 template <typename T>
 struct LuaValueType <T, const char*>
 {
-    typedef const char* ValueType;
+    using ValueType = const char*;
 
     static void push(lua_State* L, const char* str)
     {
@@ -277,7 +277,7 @@ struct LuaString
 template <>
 struct LuaValueType <LuaString>
 {
-    typedef LuaString ValueType;
+    using ValueType = LuaString;
 
     static void push(lua_State* L, const LuaString& str)
     {
@@ -307,7 +307,7 @@ struct LuaValueType <LuaString>
 template <typename T>
 struct LuaUnsafeInt64Type
 {
-    typedef T ValueType;
+    using ValueType = T;
 
     static void push(lua_State* L, ValueType value)
     {

@@ -76,7 +76,7 @@ namespace Lua
 template <>
 struct LuaValueType <QByteArray>
 {
-    typedef QByteArray ValueType;
+    using ValueType = QByteArray;
 
     static void push(lua_State* L, const QByteArray& str)
     {
@@ -111,7 +111,7 @@ struct LuaValueType <QByteArray>
 template <>
 struct LuaValueType <QString>
 {
-    typedef QString ValueType;
+    using ValueType = QString;
 
     static void push(lua_State* L, const QString& str)
     {
@@ -147,7 +147,7 @@ struct LuaValueType <QString>
 template <>
 struct LuaValueType <QVariant>
 {
-    typedef QVariant ValueType;
+    using ValueType = QVariant;
 
     static void push(lua_State* L, const QVariant& v)
     {
@@ -174,7 +174,7 @@ struct LuaValueType <QVariant>
 template <>
 struct LuaValueType <QVariantMap>
 {
-    typedef QVariantMap ValueType;
+    using ValueType = QVariantMap;
 
     static void push(lua_State* L, const QVariantMap& v)
     {
@@ -209,7 +209,7 @@ struct LuaValueType <QVariantMap>
 template <>
 struct LuaValueType <QVariantList>
 {
-    typedef QVariantList ValueType;
+    using ValueType = QVariantList;
 
     static void push(lua_State* L, const QVariantList& v)
     {
@@ -244,7 +244,7 @@ struct LuaValueType <QVariantList>
 template <>
 struct LuaValueType <QStringList>
 {
-    typedef QStringList ValueType;
+    using ValueType = QStringList;
 
     static void push(lua_State* L, const QStringList& v)
     {

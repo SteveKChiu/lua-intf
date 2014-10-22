@@ -183,7 +183,7 @@ By default LuaIntf expect the Lua library to build as C++ library, this will all
 
 http://lua-users.org/wiki/ErrorHandlingBetweenLuaAndCplusplus
 
-If you really want to use Lua as C library and want to live with `longjmp` issues, you can define LUAINTF_BUILD_LUA_CXX to 0 before including lua-intf headers:
+If you really want to use Lua as C library and want to live with `longjmp` issues, you can define `LUAINTF_BUILD_LUA_CXX` to 0 before including `lua-intf` headers:
 ````c++
 #define LUAINTF_BUILD_LUA_CXX 0
 #include "LuaIntf/LuaIntf.h"
@@ -482,7 +482,7 @@ And you can mix it with the low level API:
     lua_call(L, 3, 2);
 	LuaRef r(L, -2); 					// map r to lua stack index -2
 ````
-You can use the `std::tuple` for multiple return vales:
+You can use the `std::tuple` for multiple return values:
 ````c++
 	LuaRef func(L, "utils.match");
     std::string found;

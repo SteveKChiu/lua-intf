@@ -330,7 +330,7 @@ struct CppObjectTraits
 {
     static constexpr bool IsSharedPtr = false;
     static constexpr bool IsSharedConst = false;
-    typedef T ObjectType;
+    using ObjectType = T;
 };
 
 //----------------------------------------------------------------------------
@@ -344,7 +344,7 @@ struct LuaCppObjectPtr
     static_assert(std::is_class<T>::value,
         "type is not class, need template specialization");
 
-    typedef PTR ValueType;
+    using ValueType = PTR;
 
     static void push(lua_State* L, const T* p)
     {
@@ -444,8 +444,8 @@ struct LuaCppObject
     static_assert(std::is_class<T>::value,
         "type is not class, need template specialization");
 
-    typedef VT ValueType;
-    typedef typename CppObjectTraits<T>::ObjectType ObjectType;
+    using ValueType = VT;
+    using ObjectType = typename CppObjectTraits<T>::ObjectType;
 
     static constexpr bool IsShared = CppObjectTraits<T>::IsSharedPtr;
     static constexpr bool IsRef = IsShared ? true : IS_REF;
@@ -488,7 +488,7 @@ struct LuaType <T const&> : LuaCppObject <T, T const&, true, true> {};
     { \
         static constexpr bool IsSharedPtr = true; \
         static constexpr bool IsSharedConst = false; \
-        typedef T ObjectType; \
+        using ObjectType = T; \
     }; \
     \
     template <typename T> \
@@ -496,5 +496,5 @@ struct LuaType <T const&> : LuaCppObject <T, T const&, true, true> {};
     { \
         static constexpr bool IsSharedPtr = true; \
         static constexpr bool IsSharedConst = true; \
-        typedef T ObjectType; \
+        using ObjectType = T; \
     };
