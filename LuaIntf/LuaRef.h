@@ -704,7 +704,7 @@ public:
      * @param args arguments to pass to function
      * @return values of function
      */
-    template <typename R, typename... P>
+    template <typename R = void, typename... P>
     R call(P&&... args)
     {
         return Call<R, P...>::invoke(L, *this, std::forward<P>(args)...);
@@ -728,10 +728,10 @@ public:
      * @param args arguments to pass to function
      * @return values of function
      */
-    template <typename R, typename... P>
+    template <typename R = void, typename... P>
     R dispatch(const char* member, P&&... args)
     {
-        return Call<R, LuaRef, P...>::invoke(L, get(member), *this, std::forward<P>(args)...);
+        return Call<R, const LuaRef&, P...>::invoke(L, get(member), *this, std::forward<P>(args)...);
     }
 
     /**
@@ -751,7 +751,7 @@ public:
      * @param args arguments to pass to function
      * @return values of function
      */
-    template <typename R, typename... P>
+    template <typename R = void, typename... P>
     R dispatchStatic(const char* member, P&&... args)
     {
         return Call<R, P...>::invoke(L, get(member), std::forward<P>(args)...);
