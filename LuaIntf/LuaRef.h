@@ -693,13 +693,16 @@ public:
     }
 
     /**
-     * Call this function and get return value(s),
-     * put the expected return type in the template param.
+     * Call this function and get return value(s).
      *
      * To return multiple values from Lua function, use std::tuple as return type:
      *
      * int a, b;
      * std::tie(a, b) = ref.call<std::tuple<int, int>>(arg1, arg2);
+     *
+     * The above code works like the following in Lua:
+     *
+     * local a, b = ref(arg1, arg2)
      *
      * @param args arguments to pass to function
      * @return values of function
@@ -712,7 +715,7 @@ public:
 
     /**
      * Call the member function and get return value(s), the member function would
-     * expect the first argument as obejct (table) itself, much like calling function using
+     * expect the first argument as object (table) itself, much like calling function using
      * ':' syntax in Lua.
      *
      * To return multiple values from Lua function, use std::tuple as return type:
