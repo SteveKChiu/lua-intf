@@ -341,9 +341,6 @@ struct CppObjectTraits
 template <typename T, typename PTR, bool IS_CONST>
 struct LuaCppObjectPtr
 {
-    static_assert(std::is_class<T>::value,
-        "type is not class, need template specialization");
-
     using ValueType = PTR;
 
     static void push(lua_State* L, const T* p)
@@ -371,13 +368,16 @@ struct LuaCppObjectPtr
 };
 
 template <typename T>
-struct LuaType <T*> : LuaCppObjectPtr <typename std::decay<T>::type, T*, std::is_const<T>::value> {};
+struct LuaType <T*, typename std::enable_if<std::is_class<T>::value>::type>
+    : LuaCppObjectPtr <typename std::decay<T>::type, T*, std::is_const<T>::value> {};
 
 template <typename T>
-struct LuaType <T* &> : LuaCppObjectPtr <typename std::decay<T>::type, T*, std::is_const<T>::value> {};
+struct LuaType <T* &, typename std::enable_if<std::is_class<T>::value>::type>
+    : LuaCppObjectPtr <typename std::decay<T>::type, T*, std::is_const<T>::value> {};
 
 template <typename T>
-struct LuaType <T* const&> : LuaCppObjectPtr <typename std::decay<T>::type, T*, std::is_const<T>::value> {};
+struct LuaType <T* const&, typename std::enable_if<std::is_class<T>::value>::type>
+    : LuaCppObjectPtr <typename std::decay<T>::type, T*, std::is_const<T>::value> {};
 
 //---------------------------------------------------------------------------
 
@@ -441,9 +441,6 @@ struct LuaCppObjectFactory <SP, T, true, true>
 template <typename T, typename VT, bool IS_REF, bool IS_CONST>
 struct LuaCppObject
 {
-    static_assert(std::is_class<T>::value,
-        "type is not class, need template specialization");
-
     using ValueType = VT;
     using ObjectType = typename CppObjectTraits<T>::ObjectType;
 
@@ -472,13 +469,12 @@ struct LuaCppObject
 };
 
 template <typename T>
-struct LuaType : LuaCppObject <T, T, false, false> {};
+struct LuaType <T, typename std::enable_if<std::is_class<T>::value>::type>
+    : LuaCppObject <T, T, false, false> {};
 
 template <typename T>
-struct LuaType <T&> : LuaCppObject <T, T&, true, false> {};
-
-template <typename T>
-struct LuaType <T const&> : LuaCppObject <T, T const&, true, true> {};
+struct LuaType <T&, typename std::enable_if<std::is_class<T>::value>::type>
+    : LuaCppObject <typename std::decay<T>::type, T&, true, std::is_const<T>::value> {};
 
 //---------------------------------------------------------------------------
 

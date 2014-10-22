@@ -1177,7 +1177,8 @@ private:
 
 //---------------------------------------------------------------------------
 
-struct LuaRefType
+template <>
+struct LuaValueType <LuaRef>
 {
     using ValueType = LuaRef;
 
@@ -1197,9 +1198,7 @@ struct LuaRefType
     }
 };
 
-template <> struct LuaType <LuaRef> : LuaRefType {};
-template <> struct LuaType <LuaRef&> : LuaRefType {};
-template <> struct LuaType <LuaRef const&> : LuaRefType {};
+LUA_USING_VALUE_TYPE(LuaRef)
 
 //---------------------------------------------------------------------------
 

@@ -38,7 +38,7 @@ enum class LuaTypeID
     LIGHTUSERDATA = LUA_TLIGHTUSERDATA
 };
 
-template <typename T>
+template <typename T, typename ENABLE = void>
 struct LuaType;
 
 //---------------------------------------------------------------------------
@@ -225,16 +225,20 @@ struct LuaValueType <T, const char*>
 };
 
 template <size_t N>
-struct LuaType <char[N]> : LuaValueType <const char*> {};
+struct LuaType <char[N]>
+    : LuaValueType <const char*> {};
 
 template <size_t N>
-struct LuaType <char(&)[N]> : LuaValueType <const char*> {};
+struct LuaType <char(&)[N]>
+    : LuaValueType <const char*> {};
 
 template <size_t N>
-struct LuaType <const char[N]> : LuaValueType <const char*> {};
+struct LuaType <const char[N]>
+    : LuaValueType <const char*> {};
 
 template <size_t N>
-struct LuaType <const char(&)[N]> : LuaValueType <const char*> {};
+struct LuaType <const char(&)[N]>
+    : LuaValueType <const char*> {};
 
 //---------------------------------------------------------------------------
 
@@ -334,12 +338,24 @@ struct LuaUnsafeInt64Type
 };
 
 template <>
-struct LuaValueType <long long, lua_Number> : LuaUnsafeInt64Type <long long> {};
+struct LuaValueType <long long, lua_Number>
+    : LuaUnsafeInt64Type <long long> {};
 
 template <>
-struct LuaValueType <unsigned long long, lua_Number> : LuaUnsafeInt64Type <unsigned long long> {};
+struct LuaValueType <unsigned long long, lua_Number>
+    : LuaUnsafeInt64Type <unsigned long long> {};
 
 #endif
+
+//---------------------------------------------------------------------------
+
+template <typename T>
+struct LuaType <T, typename std::enable_if<std::is_enum<T>::value>::type>
+    : LuaValueType <T, lua_Integer> {};
+
+template <typename T>
+struct LuaType <T&, typename std::enable_if<std::is_enum<T>::value>::type>
+    : LuaValueType <typename std::decay<T>::type, lua_Integer> {};
 
 //---------------------------------------------------------------------------
 

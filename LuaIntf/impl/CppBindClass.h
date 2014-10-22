@@ -887,6 +887,5 @@ public:
         setMemberFunction(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)), CppProc::IsConst);
         return *this;
     }
-
 };
 
