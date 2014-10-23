@@ -76,9 +76,7 @@ LUA_INLINE int CppBindClassMetaMethod::index(lua_State* L)
 
         if (lua_iscfunction(L, -1)) {
             // function found, call the getter function -> <result>
-            lua_remove(L, -2);          // pop <mt>
-
-            // now need to test whether this is object (== userdata)
+            // need to test whether this is object (== userdata)
             int n = 0;
             if (lua_isuserdata(L, 1)) {
                 lua_pushvalue(L, 1);    // push userdata as object param for class method
@@ -89,9 +87,11 @@ LUA_INLINE int CppBindClassMetaMethod::index(lua_State* L)
 
             lua_call(L, n, 1);
             break;
+        } else if (!lua_isnil(L, -1)) {
+            // other values found, just use it
+            break;
         } else {
             // pop nil result -> <mt>
-            assert(lua_isnil(L, -1));
             lua_pop(L, 1);
 
             // now try super metatable -> <super_mt>
@@ -172,8 +172,8 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
 
             // check if there is one
             if (lua_isnil(L, -1)) {
-                // give up, pop it
-                return luaL_error(L, "no writable class member '%s'", lua_tostring(L, 2));
+                // give up
+                return luaL_error(L, "no writable class property '%s'", lua_tostring(L, 2));
             } else {
                 // yes, now continue with <super_mt>
                 assert(lua_istable(L, -1));
@@ -186,7 +186,7 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
 
 LUA_INLINE int CppBindClassMetaMethod::errorReadOnly(lua_State* L)
 {
-    return luaL_error(L, "class member '%s' is read-only",
+    return luaL_error(L, "class property '%s' is read-only",
         lua_tostring(L, lua_upvalueindex(1)));
 }
 

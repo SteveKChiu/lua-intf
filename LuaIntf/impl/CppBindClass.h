@@ -480,6 +480,17 @@ public:
     }
 
     /**
+     * Add or replace a static constant value.
+     */
+    template <typename V>
+    CppBindClass<T, PARENT>& addConstant(const char* name, const V& v)
+    {
+        setStaticGetter(name, LuaRef::fromValue(state(), v));
+        setStaticReadOnly(name);
+        return *this;
+    }
+
+    /**
      * Add or replace a static non-const data member.
      * The value return to lua is pass-by-value, that will create a local copy in lua.
      * This is different from addStaticVariableRef, which is pass-by-reference, and allow direct access to the variable.

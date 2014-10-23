@@ -59,9 +59,6 @@ LUA_INLINE int CppBindModuleMetaMethod::index(lua_State* L)
         if (lua_iscfunction(L, -1)) {
             // function found, call the getter function -> <result>
             lua_call(L, 0, 1);
-        } else {
-            // result is nil
-            assert(lua_isnil(L, -1));
         }
     }
 

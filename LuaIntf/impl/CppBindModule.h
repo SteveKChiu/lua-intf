@@ -284,6 +284,17 @@ public:
     CppBindModule endModule();
 
     /**
+     * Add or replace a constant value.
+     */
+    template <typename V>
+    CppBindModule& addConstant(const char* name, const V& v)
+    {
+        setGetter(name, LuaRef::fromValue(state(), v));
+        setReadOnly(name);
+        return *this;
+    }
+
+    /**
      * Add or replace a non-const variable.
      * The value return to lua is pass-by-value, that will create a local copy in lua.
      * This is different from addVariableRef, which is pass-by-reference, and allow direct access to the variable.
