@@ -469,12 +469,8 @@ struct LuaCppObject
 };
 
 template <typename T>
-struct LuaType <T, typename std::enable_if<std::is_class<T>::value>::type>
-    : LuaCppObject <T, T, false, false> {};
-
-template <typename T>
-struct LuaType <T&, typename std::enable_if<std::is_class<T>::value>::type>
-    : LuaCppObject <typename std::decay<T>::type, T&, true, std::is_const<T>::value> {};
+struct LuaType <T, typename std::enable_if<std::is_class<typename std::decay<T>::type>::value>::type>
+    : LuaCppObject <typename std::decay<T>::type, T, std::is_reference<T>::value, std::is_const<T>::value> {};
 
 //---------------------------------------------------------------------------
 

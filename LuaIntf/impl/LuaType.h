@@ -224,22 +224,6 @@ struct LuaValueType <T, const char*>
     }
 };
 
-template <size_t N>
-struct LuaType <char[N]>
-    : LuaValueType <const char*> {};
-
-template <size_t N>
-struct LuaType <char(&)[N]>
-    : LuaValueType <const char*> {};
-
-template <size_t N>
-struct LuaType <const char[N]>
-    : LuaValueType <const char*> {};
-
-template <size_t N>
-struct LuaType <const char(&)[N]>
-    : LuaValueType <const char*> {};
-
 //---------------------------------------------------------------------------
 
 struct LuaString
@@ -350,21 +334,32 @@ struct LuaValueType <unsigned long long, lua_Number>
 //---------------------------------------------------------------------------
 
 template <typename T>
-struct LuaEnumType
-    : LuaValueType <T,
+struct LuaType <T, typename std::enable_if<std::is_enum<typename std::decay<T>::type>::value>::type>
+    : LuaValueType <
+        typename std::decay<T>::type,
         typename std::conditional<
-            std::is_unsigned<typename std::underlying_type<T>::type>::value,
+            std::is_unsigned<typename std::underlying_type<typename std::decay<T>::type>::type>::value,
             lua_Unsigned,
             lua_Integer
         >::type> {};
 
-template <typename T>
-struct LuaType <T, typename std::enable_if<std::is_enum<T>::value>::type>
-    : LuaEnumType <T> {};
+//---------------------------------------------------------------------------
 
-template <typename T>
-struct LuaType <T&, typename std::enable_if<std::is_enum<T>::value>::type>
-    : LuaEnumType <typename std::decay<T>::type> {};
+template <size_t N>
+struct LuaType <char[N]>
+    : LuaValueType <const char*> {};
+
+template <size_t N>
+struct LuaType <char(&)[N]>
+    : LuaValueType <const char*> {};
+
+template <size_t N>
+struct LuaType <const char[N]>
+    : LuaValueType <const char*> {};
+
+template <size_t N>
+struct LuaType <const char(&)[N]>
+    : LuaValueType <const char*> {};
 
 //---------------------------------------------------------------------------
 
