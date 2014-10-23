@@ -387,11 +387,6 @@ public:
         return m_meta;
     }
 
-    /**
-     * Continue registration in the enclosing module.
-     */
-    CppBindModule endClass();
-
 protected:
     LuaRef m_meta;
 };
@@ -401,10 +396,11 @@ protected:
 /**
  * Provides a class registration in a lua_State.
  */
-template <typename T>
+template <typename T, typename PARENT>
 class CppBindClass : public CppBindClassBase
 {
     friend class CppBindModule;
+    template <typename T2, typename P2> friend class CppBindClass;
 
 private:
     explicit CppBindClass(const LuaRef& meta)
@@ -418,7 +414,7 @@ private:
      * @param name the name of class
      * @return new or existing class
      */
-    static CppBindClass<T> bind(LuaRef& parent_meta, const char* name)
+    static CppBindClass<T, PARENT> bind(LuaRef& parent_meta, const char* name)
     {
         LuaRef meta;
         if (buildMetaTable(meta, parent_meta, name,
@@ -427,7 +423,7 @@ private:
             meta.rawget("___class").rawset("__gc", &CppBindClassDestructor<T, false>::call);
             meta.rawget("___const").rawset("__gc", &CppBindClassDestructor<T, true>::call);
         }
-        return CppBindClass<T>(meta);
+        return CppBindClass<T, PARENT>(meta);
     }
 
     /**
@@ -438,7 +434,7 @@ private:
      * @param super_type_id the super class id
      * @return new or existing class
      */
-    static CppBindClass<T> extend(LuaRef& parent_meta, const char* name, void* super_type_id)
+    static CppBindClass<T, PARENT> extend(LuaRef& parent_meta, const char* name, void* super_type_id)
     {
         LuaRef meta;
         if (buildMetaTable(meta, parent_meta, name,
@@ -447,7 +443,7 @@ private:
             meta.rawget("___class").rawset("__gc", &CppBindClassDestructor<T, false>::call);
             meta.rawget("___const").rawset("__gc", &CppBindClassDestructor<T, true>::call);
         }
-        return CppBindClass<T>(meta);
+        return CppBindClass<T, PARENT>(meta);
     }
 
 public:
@@ -468,7 +464,7 @@ public:
     /**
      * Copy assignment.
      */
-    CppBindClass<T>& operator = (const CppBindClass<T>& that)
+    CppBindClass<T, PARENT>& operator = (const CppBindClass<T, PARENT>& that)
     {
         m_meta = that.m_meta;
         return *this;
@@ -477,7 +473,7 @@ public:
     /**
      * Move assignment for temporaries.
      */
-    CppBindClass<T>& operator = (CppBindClass<T>&& that)
+    CppBindClass<T, PARENT>& operator = (CppBindClass<T, PARENT>&& that)
     {
         m_meta = std::move(that.m_meta);
         return *this;
@@ -490,7 +486,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    CppBindClass<T>& addStaticVariable(const char* name, V* v, bool writable = true)
+    CppBindClass<T, PARENT>& addStaticVariable(const char* name, V* v, bool writable = true)
     {
         setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, v));
         if (writable) {
@@ -508,7 +504,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    CppBindClass<T>& addStaticVariable(const char* name, const V* v)
+    CppBindClass<T, PARENT>& addStaticVariable(const char* name, const V* v)
     {
         setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, const_cast<V*>(v)));
         setStaticReadOnly(name);
@@ -522,7 +518,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
+    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T, PARENT>&>::type
         addStaticVariableRef(const char* name, V* v, bool writable = true)
     {
         setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, V&>::call, v));
@@ -541,7 +537,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
+    typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindClass<T, PARENT>&>::type
         addStaticVariableRef(const char* name, V* v)
     {
         setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, V&>::call, v));
@@ -556,7 +552,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    CppBindClass<T>& addStaticVariableRef(const char* name, const V* v)
+    CppBindClass<T, PARENT>& addStaticVariableRef(const char* name, const V* v)
     {
         setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, const V&>::call, const_cast<V*>(v)));
         setStaticReadOnly(name);
@@ -567,7 +563,7 @@ public:
      * Add or replace a read-write property.
      */
     template <typename FG, typename FS>
-    CppBindClass<T>& addStaticProperty(const char* name, const FG& get, const FS& set)
+    CppBindClass<T, PARENT>& addStaticProperty(const char* name, const FG& get, const FS& set)
     {
         static_assert(!std::is_function<FG>::value,
             "function pointer is needed, please prepend & to function name");
@@ -584,7 +580,7 @@ public:
      * Add or replace a read-only property.
      */
     template <typename FN>
-    CppBindClass<T>& addStaticProperty(const char* name, const FN& get)
+    CppBindClass<T, PARENT>& addStaticProperty(const char* name, const FN& get)
     {
         static_assert(!std::is_function<FN>::value,
             "function pointer is needed, please prepend & to function name");
@@ -598,7 +594,7 @@ public:
      * Add or replace a static member function.
      */
     template <typename FN>
-    CppBindClass<T>& addStaticFunction(const char* name, const FN& proc)
+    CppBindClass<T, PARENT>& addStaticFunction(const char* name, const FN& proc)
     {
         static_assert(!std::is_function<FN>::value,
             "function pointer is needed, please prepend & to function name");
@@ -611,7 +607,7 @@ public:
      * Add or replace a static member function, user can specify augument spec.
      */
     template <typename FN, typename ARGS>
-    CppBindClass<T>& addStaticFunction(const char* name, const FN& proc, ARGS)
+    CppBindClass<T, PARENT>& addStaticFunction(const char* name, const FN& proc, ARGS)
     {
         static_assert(!std::is_function<FN>::value,
             "function pointer is needed, please prepend & to function name");
@@ -631,7 +627,7 @@ public:
      * The template parameter should matches the desired Constructor
      */
     template <typename ARGS>
-    CppBindClass<T>& addConstructor(ARGS)
+    CppBindClass<T, PARENT>& addConstructor(ARGS)
     {
         m_meta.rawset("__call", &CppBindClassConstructor<T, T, ARGS>::call);
         return *this;
@@ -647,7 +643,7 @@ public:
      * like a function. You can have only one constructor or factory function for a lua class.
      */
     template <typename SP, typename ARGS>
-    CppBindClass<T>& addConstructor(SP*, ARGS)
+    CppBindClass<T, PARENT>& addConstructor(SP*, ARGS)
     {
         m_meta.rawset("__call", &CppBindClassConstructor<SP, T, ARGS>::call);
         return *this;
@@ -665,7 +661,7 @@ public:
      * like a function. You can have only one constructor or factory function for a lua class.
      */
     template <typename FN>
-    CppBindClass<T>& addFactory(const FN& proc)
+    CppBindClass<T, PARENT>& addFactory(const FN& proc)
     {
         static_assert(!std::is_function<FN>::value,
             "function pointer is needed, please prepend & to function name");
@@ -686,7 +682,7 @@ public:
      * like a function. You can have only one constructor or factory function for a lua class.
      */
     template <typename FN, typename ARGS>
-    CppBindClass<T>& addFactory(const FN& proc, ARGS)
+    CppBindClass<T, PARENT>& addFactory(const FN& proc, ARGS)
     {
         static_assert(!std::is_function<FN>::value,
             "function pointer is needed, please prepend & to function name");
@@ -702,7 +698,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    CppBindClass<T>& addVariable(const char* name, V T::* v, bool writable = true)
+    CppBindClass<T, PARENT>& addVariable(const char* name, V T::* v, bool writable = true)
     {
         setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariableGetter<T, V>::call, v));
         if (writable) {
@@ -720,7 +716,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    CppBindClass<T>& addVariable(const char* name, const V T::* v)
+    CppBindClass<T, PARENT>& addVariable(const char* name, const V T::* v)
     {
         setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariableGetter<T, V>::call, v));
         setMemberReadOnly(name);
@@ -734,7 +730,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
+    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindClass<T, PARENT>&>::type
         addVariableRef(const char* name, V T::* v, bool writable = true)
     {
         setMemberGetter(name,
@@ -755,7 +751,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindClass<T>&>::type
+    typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindClass<T, PARENT>&>::type
         addVariableRef(const char* name, V T::* v)
     {
         setMemberGetter(name,
@@ -772,7 +768,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    CppBindClass<T>& addVariableRef(const char* name, const V T::* v)
+    CppBindClass<T, PARENT>& addVariableRef(const char* name, const V T::* v)
     {
         setMemberGetter(name, LuaRef::createFunction(state(), &CppBindClassVariableGetter<T, V, const V&>::call, v));
         setMemberReadOnly(name);
@@ -783,7 +779,7 @@ public:
      * Add or replace a property member.
      */
     template <typename FG, typename FS>
-    CppBindClass<T>& addProperty(const char* name, const FG& get, const FS& set)
+    CppBindClass<T, PARENT>& addProperty(const char* name, const FG& get, const FS& set)
     {
         static_assert(!std::is_function<FG>::value,
             "function pointer is needed, please prepend & to function name");
@@ -801,7 +797,7 @@ public:
      * This overrided function allow you to specify non-const and const version of getter.
      */
     template <typename FG, typename FGC, typename FS>
-    CppBindClass<T>& addProperty(const char* name, const FG& get, const FGC& get_const, const FS& set)
+    CppBindClass<T, PARENT>& addProperty(const char* name, const FG& get, const FGC& get_const, const FS& set)
     {
         static_assert(!std::is_function<FG>::value,
             "function pointer is needed, please prepend & to function name");
@@ -823,7 +819,7 @@ public:
      * Add or replace a read-only property member.
      */
     template <typename FN>
-    CppBindClass<T>& addProperty(const char* name, const FN& get)
+    CppBindClass<T, PARENT>& addProperty(const char* name, const FN& get)
     {
         return addPropertyReadOnly(name, get);
     }
@@ -832,7 +828,7 @@ public:
      * Add or replace a read-only property member.
      */
     template <typename FN>
-    CppBindClass<T>& addPropertyReadOnly(const char* name, const FN& get)
+    CppBindClass<T, PARENT>& addPropertyReadOnly(const char* name, const FN& get)
     {
         static_assert(!std::is_function<FN>::value,
             "function pointer is needed, please prepend & to function name");
@@ -847,7 +843,7 @@ public:
      * This overrided function allow you to specify non-const and const version of getter.
      */
     template <typename FN, typename FNC>
-    CppBindClass<T>& addPropertyReadOnly(const char* name, const FN& get, const FNC& get_const)
+    CppBindClass<T, PARENT>& addPropertyReadOnly(const char* name, const FN& get, const FNC& get_const)
     {
         static_assert(!std::is_function<FN>::value,
             "function pointer is needed, please prepend & to function name");
@@ -866,7 +862,7 @@ public:
      * Add or replace a member function.
      */
     template <typename FN>
-    CppBindClass<T>& addFunction(const char* name, const FN& proc)
+    CppBindClass<T, PARENT>& addFunction(const char* name, const FN& proc)
     {
         static_assert(!std::is_function<FN>::value,
             "function pointer is needed, please prepend & to function name");
@@ -879,13 +875,38 @@ public:
      * Add or replace a member function, user can specify augument spec.
      */
     template <typename FN, typename ARGS>
-    CppBindClass<T>& addFunction(const char* name, const FN& proc, ARGS)
+    CppBindClass<T, PARENT>& addFunction(const char* name, const FN& proc, ARGS)
     {
         static_assert(!std::is_function<FN>::value,
             "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindClassMethod<T, FN, ARGS>;
         setMemberFunction(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)), CppProc::IsConst);
         return *this;
+    }
+
+    /**
+     * Open a new or existing class for registrations.
+     */
+    template <typename T2>
+    CppBindClass<T2, CppBindClass<T, PARENT>> beginClass(const char* name)
+    {
+        return CppBindClass<T2, CppBindClass<T, PARENT>>::bind(m_meta, name);
+    }
+
+    /**
+     * Open a new class to extend the base class.
+     */
+    template <typename T2, typename SUPER>
+    CppBindClass<T2, CppBindClass<T, PARENT>> beginExtendClass(const char* name)
+    {
+        return CppBindClass<T2, CppBindClass<T, PARENT>>::extend(m_meta, name, CppObjectType<SUPER>::staticID());
+    }
+    
+    /**
+     * Continue registration in the enclosing module or class.
+     */
+    PARENT endClass() {
+      return PARENT(m_meta.rawget<LuaRef>("___module"));
     }
 };
 

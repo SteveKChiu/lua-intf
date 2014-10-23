@@ -185,7 +185,7 @@ struct CppBindModuleMetaMethod
 
 //----------------------------------------------------------------------------
 
-template <typename T>
+template <typename T, typename PARENT>
 class CppBindClass;
 
 /**
@@ -197,6 +197,7 @@ class CppBindClass;
 class CppBindModule
 {
     friend class CppBindClassBase;
+    template <typename T, typename P> friend class CppBindClass;
 
 private:
     explicit CppBindModule(const LuaRef& module)
@@ -458,18 +459,18 @@ public:
      * Open a new or existing class for registrations.
      */
     template <typename T>
-    CppBindClass<T> beginClass(const char* name)
+    CppBindClass<T, CppBindModule> beginClass(const char* name)
     {
-        return CppBindClass<T>::bind(m_meta, name);
+        return CppBindClass<T, CppBindModule>::bind(m_meta, name);
     }
 
     /**
      * Open a new class to extend the base class.
      */
     template <typename T, typename SUPER>
-    CppBindClass<T> beginExtendClass(const char* name)
+    CppBindClass<T, CppBindModule> beginExtendClass(const char* name)
     {
-        return CppBindClass<T>::extend(m_meta, name, CppObjectType<SUPER>::staticID());
+        return CppBindClass<T, CppBindModule>::extend(m_meta, name, CppObjectType<SUPER>::staticID());
     }
 
 private:
