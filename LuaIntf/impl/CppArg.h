@@ -97,6 +97,7 @@ struct CppArgTraits
 {
     using Type = T;
     using ValueType = typename LuaType<T>::ValueType;
+    using DecayedValueType = typename std::decay<ValueType>::type;
     using HolderType = CppArgHolder<ValueType>;
     static constexpr bool IsInput = true;
     static constexpr bool IsOutput = false;
@@ -166,6 +167,7 @@ struct CppArgTraits <lua_State*>
 {
     using Type = lua_State*;
     using ValueType = lua_State*;
+    using DecayedValueType = ValueType;
     using HolderType = CppArgHolder<ValueType>;
     static constexpr bool IsInput = false;
     static constexpr bool IsOutput = false;
@@ -178,6 +180,7 @@ struct CppArgTraits <LuaState>
 {
     using Type = LuaState;
     using ValueType = LuaState;
+    using DecayedValueType = ValueType;
     using HolderType = CppArgHolder<ValueType>;
     static constexpr bool IsInput = false;
     static constexpr bool IsOutput = false;
@@ -214,7 +217,7 @@ struct CppArgInput <Traits, true, true, false>
 {
     static int get(lua_State* L, int index, typename Traits::HolderType& r)
     {
-        using DefaultType = typename std::decay<typename Traits::ValueType>::type;
+        using DefaultType = typename Traits::DecayedValueType;
         r.hold(LuaType<typename Traits::Type>::opt(L, index, DefaultType()));
         return 1;
     }
@@ -258,7 +261,7 @@ struct CppArgOutput;
 template <typename Traits>
 struct CppArgOutput <Traits, false>
 {
-    static int push(lua_State*, const typename Traits::ValueType&)
+    static int push(lua_State*, const typename Traits::DecayedValueType&)
     {
         return 0;
     }
@@ -267,7 +270,7 @@ struct CppArgOutput <Traits, false>
 template <typename Traits>
 struct CppArgOutput <Traits, true>
 {
-    static int push(lua_State* L, const typename Traits::ValueType& v)
+    static int push(lua_State* L, const typename Traits::DecayedValueType& v)
     {
         LuaType<typename Traits::Type>::push(L, v);
         return 1;
