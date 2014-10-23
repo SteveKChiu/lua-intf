@@ -56,27 +56,26 @@ LUA_INLINE int CppBindClassMetaMethod::index(lua_State* L)
         lua_rawget(L, -2);
 
         if (!lua_isnil(L, -1)) {
-            // key value is found, pop metatable and leave key value on top -> <mt[key]>
-            lua_remove(L, -2);
+            // value is found
             break;
-        } else {
-            // not found, pop nil result -> <mt>
-            lua_pop(L, 1);
         }
 
         // get metatable.getters -> <mt> <getters>
+        lua_pop(L, 1);                  // pop nil
         lua_pushliteral(L, "___getters");
         lua_rawget(L, -2);
         assert(lua_istable(L, -1));
 
-        // get metatable.getters[key] -> <mt> <getters[key]>
+        // get metatable.getters[key] -> <mt> <getters> <getters[key]>
         lua_pushvalue(L, 2);            // push key
         lua_rawget(L, -2);              // lookup key in getters
-        lua_remove(L, -2);              // pop getters
 
         if (lua_iscfunction(L, -1)) {
-            // function found, call the getter function -> <result>
-            // need to test whether this is object (== userdata)
+            // function found, pop items to save stack space before call
+            lua_remove(L, -2);          // pop <getters>
+            lua_remove(L, -2);          // pop <mt>
+
+            // now need to test whether this is object (== userdata)
             int n = 0;
             if (lua_isuserdata(L, 1)) {
                 lua_pushvalue(L, 1);    // push userdata as object param for class method
@@ -87,27 +86,42 @@ LUA_INLINE int CppBindClassMetaMethod::index(lua_State* L)
 
             lua_call(L, n, 1);
             break;
-        } else if (!lua_isnil(L, -1)) {
-            // other values found, just use it
-            break;
         } else {
-            // pop nil result -> <mt>
-            lua_pop(L, 1);
+            // pop <getters> <getters[key]>
+            lua_pop(L, 2);
+        }
 
-            // now try super metatable -> <super_mt>
-            lua_pushliteral(L, "___super");
+        if (!lua_isuserdata(L, 1)) {
+            // get metatable.values -> <mt> <values>
+            lua_pushliteral(L, "___values");
             lua_rawget(L, -2);
-            lua_remove(L, -2);
+            assert(lua_istable(L, -1));
 
-            // check if there is one
-            if (lua_isnil(L, -1)) {
-                // give up, leave nil on top -> <nil>
+            // get metatable.values[key] -> <mt> <values> <values[key]>
+            lua_pushvalue(L, 2);            // push key
+            lua_rawget(L, -2);              // lookup key in values
+
+            if (!lua_isnil(L, -1)) {
+                // value is found
                 break;
             } else {
-                // yes, now continue with <super_mt>
-                assert(lua_istable(L, -1));
+                // pop <values> <values[key]>
+                lua_pop(L, 2);
             }
         }
+
+        // now try super metatable -> <mt> <super_mt>
+        lua_pushliteral(L, "___super");
+        lua_rawget(L, -2);
+
+        if (lua_isnil(L, -1)) {
+            // give up, leave nil on top -> <nil>
+            break;
+        }
+
+        // yes, now continue with <super_mt>
+        assert(lua_istable(L, -1));
+        lua_remove(L, -2);              // pop <mt>
     }
 
     return 1;
@@ -139,13 +153,15 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
         lua_rawget(L, -2);              // get __setters table
         assert(lua_istable(L, -1));
 
-        // get setters[key] -> <mt> <setters[key]>
+        // get setters[key] -> <mt> <setters> <setters[key]>
         lua_pushvalue(L, 2);            // push key arg2
         lua_rawget(L, -2);              // lookup key in setters
-        lua_remove(L, -2);              // pop setters
 
         if (lua_iscfunction(L, -1)) {
-            // if value is a cfunction, call function(value)
+            // function found, pop items to save stack space before call
+            lua_remove(L, -2);          // pop setters
+            lua_remove(L, -2);          // pop metatable
+
             // now need to test whether this is object (== userdata)
             int n = 1;
             if (lua_isuserdata(L, 1)) {
@@ -158,25 +174,23 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
             lua_pushvalue(L, 3);        // push new value as arg
             lua_call(L, n, 0);          // call cfunction
             break;
-        } else {
-            // pop nil result -> <mt>
-            assert(lua_isnil(L, -1));
-            lua_pop(L, 1);
-
-            // now try super metatable -> <super_mt>
-            lua_pushliteral(L, "___super");
-            lua_rawget(L, -2);
-            lua_remove(L, -2);
-
-            // check if there is one
-            if (lua_isnil(L, -1)) {
-                // give up
-                return luaL_error(L, "no writable class property '%s'", lua_tostring(L, 2));
-            } else {
-                // yes, now continue with <super_mt>
-                assert(lua_istable(L, -1));
-            }
         }
+
+        // now try super metatable -> <mt> <super_mt>
+        assert(lua_isnil(L, -1));
+        lua_pop(L, 2);                  // pop <setters> <setters[key]>
+        lua_pushliteral(L, "___super");
+        lua_rawget(L, -2);
+
+        // check if there is one
+        if (lua_isnil(L, -1)) {
+            // give up
+            return luaL_error(L, "no writable class property '%s'", lua_tostring(L, 2));
+        }
+
+        // yes, now continue with <super_mt>
+        assert(lua_istable(L, -1));
+        lua_remove(L, -2);              // pop <mt>
     }
 
     return 0;
@@ -238,6 +252,7 @@ LUA_INLINE bool CppBindClassBase::buildMetaTable(LuaRef& meta, LuaRef& parent, c
     clazz_static.rawset("__newindex", &CppBindClassMetaMethod::newIndex);
     clazz_static.rawset("___getters", LuaRef::createTable(L));
     clazz_static.rawset("___setters", LuaRef::createTable(L));
+    clazz_static.rawset("___values", LuaRef::createTable(L));
     clazz_static.rawset("___type", "static_" + type_name);
     clazz_static.rawset("___class", clazz);
     clazz_static.rawset("___const", clazz_const);

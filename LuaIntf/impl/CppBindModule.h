@@ -289,7 +289,7 @@ public:
     template <typename V>
     CppBindModule& addConstant(const char* name, const V& v)
     {
-        setGetter(name, LuaRef::fromValue(state(), v));
+        m_meta.rawget("___values").rawset(name, LuaRef::fromValue(state(), v));
         setReadOnly(name);
         return *this;
     }

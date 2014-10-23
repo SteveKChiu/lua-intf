@@ -44,10 +44,8 @@ LUA_INLINE int CppBindModuleMetaMethod::index(lua_State* L)
     lua_rawget(L, -2);
 
     if (lua_isnil(L, -1)) {
-        // key value is not found, pop nil result -> <mt>
-        lua_pop(L, 1);
-
         // get metatable.getters -> <mt> <getters>
+        lua_pop(L, 1);          // pop nil
         lua_pushliteral(L, "___getters");
         lua_rawget(L, -2);      // get getters table
         assert(lua_istable(L, -1));
@@ -57,9 +55,22 @@ LUA_INLINE int CppBindModuleMetaMethod::index(lua_State* L)
         lua_rawget(L, -2);      // lookup key in getters
 
         if (lua_iscfunction(L, -1)) {
-            // function found, call the getter function -> <result>
+            // function found, pop items to save stack space before call
+            lua_remove(L, -2);  // pop getters
+            lua_remove(L, -2);  // pop mt
             lua_call(L, 0, 1);
+            return 1;
         }
+
+        // get metatable.values -> <mt> <values>
+        lua_pop(L, 2);          // pop <getters> <getters[key]>
+        lua_pushliteral(L, "___values");
+        lua_rawget(L, -2);      // get values table
+        assert(lua_istable(L, -1));
+
+        // get metatable.values[key] -> <mt> <values> <values[key]>
+        lua_pushvalue(L, 2);    // push key
+        lua_rawget(L, -2);      // lookup key in values
     }
 
     return 1;
@@ -84,7 +95,9 @@ LUA_INLINE int CppBindModuleMetaMethod::newIndex(lua_State* L)
     lua_rawget(L, -2);          // lookup key in setters
 
     if (lua_iscfunction(L, -1)) {
-        // if value is a cfunction, call function(value)
+        // function found, pop items to save stack space before call
+        lua_remove(L, -2);      // pop setters
+        lua_remove(L, -2);      // pop mt
         lua_pushvalue(L, 3);    // push new value as arg
         lua_call(L, 1, 0);      // call cfunction
     } else {
@@ -174,6 +187,7 @@ LUA_INLINE CppBindModule CppBindModule::beginModule(const char* name)
     module.rawset("__newindex", &CppBindModuleMetaMethod::newIndex);
     module.rawset("___getters", LuaRef::createTable(L));
     module.rawset("___setters", LuaRef::createTable(L));
+    module.rawset("___values", LuaRef::createTable(L));
     module.rawset("___type", type_name);
     module.rawset("___module", m_meta);
     m_meta.rawset(name, module);

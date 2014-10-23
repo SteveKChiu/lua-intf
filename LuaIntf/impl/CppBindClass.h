@@ -333,7 +333,7 @@ struct CppBindClassMetaMethod
      */
     static void* signature()
     {
-        static bool v;
+        static char v;
         return &v;
     }
 };
@@ -485,7 +485,7 @@ public:
     template <typename V>
     CppBindClass<T, PARENT>& addConstant(const char* name, const V& v)
     {
-        setStaticGetter(name, LuaRef::fromValue(state(), v));
+        m_meta.rawget("___values").rawset(name, LuaRef::fromValue(state(), v));
         setStaticReadOnly(name);
         return *this;
     }
