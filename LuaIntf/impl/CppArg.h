@@ -77,12 +77,7 @@ struct CppArgHolder
 template <typename T>
 struct CppArgHolder <T&>
 {
-    T& value() 
-    {
-        return *holder;
-    }
-
-    const T& value() const 
+    T& value() const
     {
         return *holder;
     }
