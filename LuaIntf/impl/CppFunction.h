@@ -102,6 +102,10 @@ struct LuaType <R(* &)(P...)>
     : LuaCppFunction <R(*)(P...)> {};
 
 template <typename R, typename... P>
+struct LuaType <R(* const)(P...)>
+    : LuaCppFunction <R(*)(P...)> {};
+
+template <typename R, typename... P>
 struct LuaType <R(* const&)(P...)>
     : LuaCppFunction <R(*)(P...)> {};
 
@@ -111,6 +115,10 @@ struct LuaType <std::function<R(P...)>>
 
 template <typename R, typename... P>
 struct LuaType <std::function<R(P...)> &>
+    : LuaCppFunction <std::function<R(P...)>> {};
+
+template <typename R, typename... P>
+struct LuaType <std::function<R(P...)> const>
     : LuaCppFunction <std::function<R(P...)>> {};
 
 template <typename R, typename... P>
