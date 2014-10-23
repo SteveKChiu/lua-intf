@@ -24,38 +24,6 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
-/**
- * A template for temporately object created as lua function (with proper gc)
- * This is usually used for iterator function.
- *
- * To use this, user need to inherit CppFunctor, and override run method and optional descructor.
- * Then call pushToStack to create the functor object on lua stack.
- */
-class CppFunctor
-{
-public:
-    /**
-     * Override destructor if you need to perform any cleanup action
-     */
-    virtual ~CppFunctor() {}
-
-    /**
-     * Override this method to perform lua function
-     */
-    virtual int run(lua_State* L) = 0;
-
-    /**
-     * Create the specified functor as lua function on stack
-     */
-    static void pushToStack(lua_State* L, CppFunctor* f);
-
-private:
-    static int call(lua_State* L);
-    static int gc(lua_State* L);
-};
-
-//----------------------------------------------------------------------------
-
 template <typename T>
 struct CppObjectType
 {
@@ -336,11 +304,14 @@ struct CppObjectTraits
 //----------------------------------------------------------------------------
 
 /**
- * CppObject conversions for pointer type
+ * Lua conversion for pointer to the class type
  */
 template <typename T, typename PTR, bool IS_CONST>
 struct LuaCppObjectPtr
 {
+    static_assert(std::is_class<T>::value,
+        "type is not class, need template specialization");
+
     using ValueType = PTR;
 
     static void push(lua_State* L, const T* p)
@@ -368,15 +339,15 @@ struct LuaCppObjectPtr
 };
 
 template <typename T>
-struct LuaType <T*, typename std::enable_if<std::is_class<T>::value>::type>
+struct LuaType <T*>
     : LuaCppObjectPtr <typename std::decay<T>::type, T*, std::is_const<T>::value> {};
 
 template <typename T>
-struct LuaType <T* &, typename std::enable_if<std::is_class<T>::value>::type>
+struct LuaType <T* &>
     : LuaCppObjectPtr <typename std::decay<T>::type, T*, std::is_const<T>::value> {};
 
 template <typename T>
-struct LuaType <T* const&, typename std::enable_if<std::is_class<T>::value>::type>
+struct LuaType <T* const&>
     : LuaCppObjectPtr <typename std::decay<T>::type, T*, std::is_const<T>::value> {};
 
 //---------------------------------------------------------------------------
@@ -436,11 +407,14 @@ struct LuaCppObjectFactory <SP, T, true, true>
 //---------------------------------------------------------------------------
 
 /**
- * CppObject conversions for reference or value type
+ * Lua conversion for reference or value to the class type
  */
 template <typename T, typename VT, bool IS_REF, bool IS_CONST>
 struct LuaCppObject
 {
+    static_assert(std::is_class<T>::value,
+        "type is not class, need template specialization");
+
     using ValueType = VT;
     using ObjectType = typename CppObjectTraits<T>::ObjectType;
 
@@ -468,9 +442,31 @@ struct LuaCppObject
     }
 };
 
+//---------------------------------------------------------------------------
+
+/**
+ * Lua conversion for the enum type
+ */
 template <typename T>
-struct LuaType <T, typename std::enable_if<std::is_class<typename std::decay<T>::type>::value>::type>
-    : LuaCppObject <typename std::decay<T>::type, T, std::is_reference<T>::value, std::is_const<T>::value> {};
+struct LuaCppEnum
+    : LuaValueType <
+        T,
+        typename std::conditional<
+            std::is_unsigned<typename std::underlying_type<T>::type>::value,
+            lua_Unsigned,
+            lua_Integer
+        >::type
+    > {};
+
+//---------------------------------------------------------------------------
+
+template <typename T>
+struct LuaType
+    : std::conditional<
+        std::is_enum<typename std::decay<T>::type>::value,
+        LuaCppEnum<typename std::decay<T>::type>,
+        LuaCppObject<typename std::decay<T>::type, T, std::is_reference<T>::value, std::is_const<T>::value>
+    >::type {};
 
 //---------------------------------------------------------------------------
 

@@ -25,33 +25,43 @@
 //
 
 #ifndef LUAINTF_H
-#define LUAINTF_H
-
-//---------------------------------------------------------------------------
-
-#include "LuaContext.h"
-
-namespace LuaIntf
-{
-
-//---------------------------------------------------------------------------
-
-#include "impl/CppArg.h"
-#include "impl/CppInvoke.h"
-#include "impl/CppObject.h"
-#include "impl/CppBindModule.h"
-#include "impl/CppBindClass.h"
-#include "impl/CppFunction.h"
-
-#if LUAINTF_HEADERS_ONLY
-#include "src/CppBindModule.cpp"
-#include "src/CppBindClass.cpp"
-#include "src/CppObject.cpp"
-#include "src/CppFunction.cpp"
+    #include "LuaIntf/LuaIntf.h"
+    using namespace LuaIntf;
 #endif
 
 //---------------------------------------------------------------------------
 
+LUA_INLINE int CppFunctor::call(lua_State* L)
+{
+    try {
+        CppFunctor* f = *static_cast<CppFunctor**>(lua_touserdata(L, 1));
+        return f->run(L);
+    } catch (std::exception& e) {
+        return luaL_error(L, e.what());
+    }
 }
 
-#endif
+LUA_INLINE int CppFunctor::gc(lua_State* L)
+{
+    try {
+        CppFunctor* f = *static_cast<CppFunctor**>(lua_touserdata(L, 1));
+        delete f;
+        return 0;
+    } catch (std::exception& e) {
+        return luaL_error(L, e.what());
+    }
+}
+
+LUA_INLINE void CppFunctor::pushToStack(lua_State* L, CppFunctor* f)
+{
+    // need to create userdata, lightuserdata can't be gc
+    CppFunctor** p = static_cast<CppFunctor**>(lua_newuserdata(L, sizeof(CppFunctor*)));
+    *p = f;
+
+    lua_newtable(L);
+    lua_pushcfunction(L, &call);
+    lua_setfield(L, -2, "__call");
+    lua_pushcfunction(L, &gc);
+    lua_setfield(L, -2, "__gc");
+    lua_setmetatable(L, -2);
+}

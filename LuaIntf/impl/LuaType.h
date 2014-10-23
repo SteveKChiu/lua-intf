@@ -38,13 +38,13 @@ enum class LuaTypeID
     LIGHTUSERDATA = LUA_TLIGHTUSERDATA
 };
 
-template <typename T, typename ENABLE = void>
+template <typename T>
 struct LuaType;
-
-//---------------------------------------------------------------------------
 
 template <typename CPP_VALUE, typename LUA_VALUE = CPP_VALUE>
 struct LuaValueType;
+
+//---------------------------------------------------------------------------
 
 template <>
 struct LuaValueType <bool>
@@ -67,6 +67,8 @@ struct LuaValueType <bool>
     }
 };
 
+//---------------------------------------------------------------------------
+
 template <typename T>
 struct LuaValueType <T, lua_Integer>
 {
@@ -87,6 +89,8 @@ struct LuaValueType <T, lua_Integer>
         return static_cast<ValueType>(luaL_optinteger(L, index, static_cast<lua_Integer>(def)));
     }
 };
+
+//---------------------------------------------------------------------------
 
 template <typename T>
 struct LuaValueType <T, lua_Unsigned>
@@ -109,6 +113,8 @@ struct LuaValueType <T, lua_Unsigned>
     }
 };
 
+//---------------------------------------------------------------------------
+
 template <typename T>
 struct LuaValueType <T, lua_Number>
 {
@@ -130,6 +136,8 @@ struct LuaValueType <T, lua_Number>
     }
 };
 
+//---------------------------------------------------------------------------
+
 template <>
 struct LuaValueType <lua_CFunction>
 {
@@ -150,6 +158,8 @@ struct LuaValueType <lua_CFunction>
         return lua_tocfunction(L, index);
     }
 };
+
+//---------------------------------------------------------------------------
 
 template <>
 struct LuaValueType <char>
@@ -173,6 +183,8 @@ struct LuaValueType <char>
         return luaL_optstring(L, index, str)[0];
     }
 };
+
+//---------------------------------------------------------------------------
 
 template <>
 struct LuaValueType <std::string>
@@ -198,6 +210,8 @@ struct LuaValueType <std::string>
         return std::string(p, len);
     }
 };
+
+//---------------------------------------------------------------------------
 
 template <typename T>
 struct LuaValueType <T, const char*>
@@ -330,18 +344,6 @@ struct LuaValueType <unsigned long long, lua_Number>
     : LuaUnsafeInt64Type <unsigned long long> {};
 
 #endif
-
-//---------------------------------------------------------------------------
-
-template <typename T>
-struct LuaType <T, typename std::enable_if<std::is_enum<typename std::decay<T>::type>::value>::type>
-    : LuaValueType <
-        typename std::decay<T>::type,
-        typename std::conditional<
-            std::is_unsigned<typename std::underlying_type<typename std::decay<T>::type>::type>::value,
-            lua_Unsigned,
-            lua_Integer
-        >::type> {};
 
 //---------------------------------------------------------------------------
 
