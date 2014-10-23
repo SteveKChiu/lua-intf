@@ -76,17 +76,8 @@ struct CppObjectType
  */
 class CppObject
 {
-private:
-    static void typeMismatchError(lua_State* L, int index);
-    static CppObject* getExactObject(lua_State* L, int index, void* classid);
-    static CppObject* getObject(lua_State* L, int index, void* base_classid, bool is_const);
-
 protected:
-    explicit CppObject(void* ptr)
-        : m_ptr(ptr)
-    {
-        assert(ptr != nullptr);
-    }
+    CppObject() {}
 
     template <typename T>
     static void* getClassID(bool is_const)
@@ -121,10 +112,7 @@ public:
     /**
      * The object pointer
      */
-    void* ptr() const
-    {
-        return m_ptr;
-    }
+    virtual void* objectPtr() = 0;
 
     /**
      * Returns the CppObject* if the class on the Lua stack is exact the same class (not one of the subclass).
@@ -154,11 +142,13 @@ public:
     template <typename T>
     static T* get(lua_State* L, int index, bool is_const)
     {
-        return static_cast<T*>(getObject<T>(L, index, is_const)->ptr());
+        return static_cast<T*>(getObject<T>(L, index, is_const)->objectPtr());
     }
 
 private:
-    void* m_ptr;
+    static void typeMismatchError(lua_State* L, int index);
+    static CppObject* getExactObject(lua_State* L, int index, void* classid);
+    static CppObject* getObject(lua_State* L, int index, void* base_classid, bool is_const);
 };
 
 //----------------------------------------------------------------------------
@@ -173,13 +163,11 @@ template <typename T>
 class CppObjectValue : public CppObject
 {
 private:
-    CppObjectValue()
-        : CppObject(&m_data[0])
-        {}
+    CppObjectValue() {}
 
     virtual ~CppObjectValue()
     {
-        T* obj = static_cast<T*>(ptr());
+        T* obj = static_cast<T*>(objectPtr());
         obj->~T();
     }
 
@@ -187,19 +175,24 @@ public:
     CppObjectValue<T>(const CppObjectValue<T>&) = delete;
     CppObjectValue<T>& operator = (const CppObjectValue<T>&) = delete;
 
+    virtual void* objectPtr() override
+    {
+        return &m_data[0];
+    }
+
     template <typename... P>
     static void pushToStack(lua_State* L, std::tuple<P...>& args, bool is_const)
     {
         void* mem = allocate<CppObjectValue<T>, T>(L, is_const);
         CppObjectValue<T>* v = ::new (mem) CppObjectValue<T>();
-        CppInvokeClassConstructor<T, P...>::call(v->ptr(), args);
+        CppInvokeClassConstructor<T, P...>::call(v->objectPtr(), args);
     }
 
     static void pushToStack(lua_State* L, const T& obj, bool is_const)
     {
         void* mem = allocate<CppObjectValue<T>, T>(L, is_const);
         CppObjectValue<T>* v = ::new (mem) CppObjectValue<T>();
-        ::new (v->ptr()) T(obj);
+        ::new (v->objectPtr()) T(obj);
     }
 
 private:
@@ -217,12 +210,19 @@ class CppObjectPtr : public CppObject
 {
 private:
     explicit CppObjectPtr(void* obj)
-        : CppObject(obj)
-        {}
+        : m_ptr(obj)
+    {
+        assert(obj != nullptr);
+    }
 
 public:
     CppObjectPtr(const CppObjectPtr&) = delete;
     CppObjectPtr& operator = (const CppObjectPtr&) = delete;
+
+    virtual void* objectPtr() override
+    {
+        return m_ptr;
+    }
 
     template <typename T>
     static void pushToStack(lua_State* L, T* obj, bool is_const)
@@ -230,6 +230,9 @@ public:
         void* mem = allocate<CppObjectPtr, T>(L, is_const);
         ::new (mem) CppObjectPtr(obj);
     }
+
+private:
+    void* m_ptr;
 };
 
 //----------------------------------------------------------------------------
@@ -244,13 +247,11 @@ class CppObjectSharedPtr : public CppObject
 {
 private:
     explicit CppObjectSharedPtr(T* obj)
-        : CppObject(obj)
-        , m_sp(obj)
+        : m_sp(obj)
         {}
 
     explicit CppObjectSharedPtr(const SP& sp)
-        : CppObject(const_cast<T*>(&*sp))
-        , m_sp(sp)
+        : m_sp(sp)
         {}
 
 public:
@@ -260,6 +261,11 @@ public:
     virtual bool isSharedPtr() const override
     {
         return true;
+    }
+
+    virtual void* objectPtr() override
+    {
+        return &*m_sp;
     }
 
     SP& sharedPtr()
@@ -365,7 +371,7 @@ struct LuaCppObjectFactory <T, T, false, false>
 
     static T& cast(lua_State*, CppObject* obj)
     {
-        return *static_cast<T*>(obj->ptr());
+        return *static_cast<T*>(obj->objectPtr());
     }
 };
 
@@ -379,7 +385,7 @@ struct LuaCppObjectFactory <T, T, false, true>
 
     static T& cast(lua_State*, CppObject* obj)
     {
-        return *static_cast<T*>(obj->ptr());
+        return *static_cast<T*>(obj->objectPtr());
     }
 };
 
@@ -475,14 +481,6 @@ struct LuaType
     struct CppObjectTraits <SP<T>> \
     { \
         static constexpr bool IsSharedPtr = true; \
-        static constexpr bool IsSharedConst = false; \
-        using ObjectType = T; \
-    }; \
-    \
-    template <typename T> \
-    struct CppObjectTraits <SP<T const>> \
-    { \
-        static constexpr bool IsSharedPtr = true; \
-        static constexpr bool IsSharedConst = true; \
-        using ObjectType = T; \
+        static constexpr bool IsSharedConst = std::is_const<T>::value; \
+        using ObjectType = typename std::remove_cv<T>::type; \
     };

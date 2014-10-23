@@ -146,8 +146,6 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
 
         if (lua_iscfunction(L, -1)) {
             // if value is a cfunction, call function(value)
-            lua_remove(L, -2);          // pop metatable
-
             // now need to test whether this is object (== userdata)
             int n = 1;
             if (lua_isuserdata(L, 1)) {
