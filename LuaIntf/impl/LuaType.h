@@ -368,6 +368,7 @@ struct LuaType <const char(&)[N]>
 #define LUA_USING_VALUE_TYPE_EXT(T, V) \
     template <> struct LuaType <T> : LuaValueType <T, V> {}; \
     template <> struct LuaType <T&> : LuaValueType <T, V> {}; \
+    template <> struct LuaType <T const> : LuaValueType <T, V> {}; \
     template <> struct LuaType <T const&> : LuaValueType <T, V> {};
 
 #define LUA_USING_VALUE_TYPE(T) \
