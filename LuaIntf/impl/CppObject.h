@@ -85,7 +85,6 @@ protected:
     explicit CppObject(void* ptr)
         : m_ptr(ptr)
     {
-        assert(ptr != nullptr);
     }
 
     template <typename T>
@@ -121,7 +120,7 @@ public:
     /**
      * The object pointer
      */
-    void* ptr() const
+    virtual void* ptr() const
     {
         return m_ptr;
     }
