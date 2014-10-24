@@ -265,7 +265,7 @@ public:
 
     virtual void* objectPtr() override
     {
-        return &*m_sp;
+        return const_cast<T*>(&*m_sp);
     }
 
     SP& sharedPtr()
