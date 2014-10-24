@@ -1091,25 +1091,22 @@ private:
         void* userdata = lua_newuserdata(L, sizeof(T));
         ::new (userdata) T(cpp_obj);
         lua_newtable(L);
-        lua_pushcfunction(L, &Destructor<T>::call);
+        lua_pushcfunction(L, &destructUserdata<T>);
         lua_setfield(L, -2, "__gc");
         lua_setmetatable(L, -2);
     }
 
     template <typename T>
-    struct Destructor
+    static int destructUserdata(lua_State* L)
     {
-        static int call(lua_State* L)
-        {
-            try {
-                T* obj = static_cast<T*>(lua_touserdata(L, 1));
-                obj->~T();
-                return 0;
-            } catch (std::exception& e) {
-                return luaL_error(L, e.what());
-            }
+        try {
+            T* obj = static_cast<T*>(lua_touserdata(L, 1));
+            obj->~T();
+            return 0;
+        } catch (std::exception& e) {
+            return luaL_error(L, e.what());
         }
-    };
+    }
 
     template <typename R, typename... P>
     struct Call
