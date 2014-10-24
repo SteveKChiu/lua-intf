@@ -56,6 +56,34 @@ private:
 
 //----------------------------------------------------------------------------
 
+template <typename FN>
+struct LuaCppFunctionWrapper
+{
+    [[noreturn]]
+    static const FN& get(lua_State* L, int)
+    {
+        luaL_error(L, "invalid c++ function reference");
+    }
+};
+
+#if LUAINTF_LUA_FUNCTION_WRAPPER
+
+template <typename R, typename... P>
+struct LuaCppFunctionWrapper <std::function<R(P...)>>
+{
+    static std::function<R(P...)> get(lua_State* L, int index)
+    {
+        LuaRef ref(L, index);
+        return [ref] (P&&... arg) mutable {
+            return ref.call<R>(std::forward<P>(arg)...);
+        };
+    }
+};
+
+#endif
+
+//----------------------------------------------------------------------------
+
 /**
  * Lua conversion for std::function type
  */
@@ -63,27 +91,39 @@ template <typename FN>
 struct LuaCppFunction
 {
     using ValueType = FN;
+    using ReturnType = typename std::conditional<LUAINTF_LUA_FUNCTION_WRAPPER, FN, const FN&>::type;
 
     static void push(lua_State* L, const ValueType& proc)
     {
         using CppProc = CppBindMethod<ValueType>;
         void* userdata = lua_newuserdata(L, sizeof(ValueType));
         ::new (userdata) ValueType(CppProc::function(proc));
-        lua_pushcclosure(L, &CppProc::call, 1);
+        lua_pushlightuserdata(L, CppSignature<ValueType>::value());
+        lua_pushcclosure(L, &CppProc::call, 2);
     }
 
-    static const ValueType& get(lua_State* L, int index)
+    static ReturnType get(lua_State* L, int index)
     {
-        assert(lua_iscfunction(L, index));
-        const char* name = lua_getupvalue(L, index, 1);
-        assert(name && lua_isuserdata(L, -1));
-        const ValueType& func = *reinterpret_cast<const ValueType*>(lua_touserdata(L, -1));
-        assert(func);
-        lua_pop(L, 1);
-        return func;
+        index = lua_absindex(L, index);
+        if (lua_iscfunction(L, index)) {
+            const char* name = lua_getupvalue(L, index, 1);
+            if (name && lua_isuserdata(L, -1)) {
+                name = lua_getupvalue(L, index, 2);
+                if (name && lua_touserdata(L, -1) == CppSignature<ValueType>::value()) {
+                    const ValueType& func = *reinterpret_cast<const ValueType*>(lua_touserdata(L, -2));
+                    assert(func);
+                    lua_pop(L, 2);
+                    return func;
+                }
+                lua_pop(L, 1);
+            }
+            lua_pop(L, 1);
+        }
+
+        return LuaCppFunctionWrapper<ValueType>::get(L, index);
     }
 
-    static const ValueType& opt(lua_State* L, int index, const ValueType& def)
+    static ReturnType opt(lua_State* L, int index, const ValueType& def)
     {
         if (lua_isnoneornil(L, index)) {
             return def;

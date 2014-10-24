@@ -34,6 +34,12 @@ struct CppLambdaTraits <R(FN::*)(P...) const>
     using FunctionType = std::function<R(P...)>;
 };
 
+template <typename FN, typename R, typename... P>
+struct CppLambdaTraits <R(FN::*)(P...)>
+{
+    using FunctionType = std::function<R(P...)>;
+};
+
 //----------------------------------------------------------------------------
 
 template <typename FN, typename R, typename TUPLE, size_t N, size_t... INDEX>

@@ -62,6 +62,14 @@
 #define LUAINTF_UNSAFE_INT64_CHECK 0
 #endif
 
+/**
+ * Set LUAINTF_LUA_FUNCTION_WRAPPER to 1 if you want to automatically create std::function
+ * wrapper for the Lua function.
+ */
+#ifndef LUAINTF_LUA_FUNCTION_WRAPPER
+#define LUAINTF_LUA_FUNCTION_WRAPPER 1
+#endif
+
 //---------------------------------------------------------------------------
 
 #if !LUAINTF_BUILD_LUA_CXX
