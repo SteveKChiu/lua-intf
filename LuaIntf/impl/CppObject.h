@@ -180,7 +180,7 @@ public:
     }
 
 private:
-    char m_data[sizeof(T)];
+    alignas(T) char m_data[sizeof(T)];
 };
 
 //----------------------------------------------------------------------------
