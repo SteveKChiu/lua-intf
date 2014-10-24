@@ -478,7 +478,7 @@ public:
     {
         LuaRef r = LuaRef::fromValue(state(), v);
         if (r.isFunction()) {
-            r = LuaRef::createFunctionWithUpvalues(state(), &CppBindConstant::call, r);
+            r = LuaRef::createFunctionWith(state(), &CppBindConstant::call, r);
         }
         setStaticGetter(name, r);
         setStaticReadOnly(name);
@@ -512,7 +512,7 @@ public:
     template <typename V>
     CppBindClass<T, PARENT>& addStaticVariable(const char* name, const V* v)
     {
-        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, const_cast<V*>(v)));
+        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, v));
         setStaticReadOnly(name);
         return *this;
     }
@@ -560,7 +560,7 @@ public:
     template <typename V>
     CppBindClass<T, PARENT>& addStaticVariableRef(const char* name, const V* v)
     {
-        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, const V&>::call, const_cast<V*>(v)));
+        setStaticGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, const V&>::call, v));
         setStaticReadOnly(name);
         return *this;
     }

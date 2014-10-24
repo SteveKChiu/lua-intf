@@ -306,7 +306,7 @@ public:
     {
         LuaRef r = LuaRef::fromValue(state(), v);
         if (r.isFunction()) {
-            r = LuaRef::createFunctionWithUpvalues(state(), &CppBindConstant::call, r);
+            r = LuaRef::createFunctionWith(state(), &CppBindConstant::call, r);
         }
         setGetter(name, r);
         setReadOnly(name);
@@ -340,7 +340,7 @@ public:
     template <typename V>
     CppBindModule& addVariable(const char* name, const V* v)
     {
-        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, const_cast<V*>(v)));
+        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, v));
         setReadOnly(name);
         return *this;
     }
@@ -388,7 +388,7 @@ public:
     template <typename V>
     CppBindModule& addVariableRef(const char* name, const V* v)
     {
-        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, const V&>::call, const_cast<V*>(v)));
+        setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, const V&>::call, v));
         setReadOnly(name);
         return *this;
     }
@@ -481,7 +481,7 @@ public:
      */
     CppBindModule& addFactory(const char* name)
     {
-        m_meta.rawset("__call", LuaRef::createFunctionWithUpvalues(state(), &CppBindModuleMetaMethod::forwardCall, name));
+        m_meta.rawset("__call", LuaRef::createFunctionWith(state(), &CppBindModuleMetaMethod::forwardCall, name));
         return *this;
     }
 

@@ -260,6 +260,35 @@ class LuaRef
 {
 public:
     /**
+     * Create new userdata with requested size.
+     *
+     * @param L lua state
+     * @param userdata_size the size of userdata to allocate
+     * @param out_userdata [out] the pointer to allocated userdata, can be nullptr if not needed
+     */
+    static LuaRef createUserdata(lua_State* L, size_t userdata_size, void** out_userdata = nullptr)
+    {
+        void* userdata = lua_newuserdata(L, userdata_size);
+        if (out_userdata) *out_userdata = userdata;
+        return popFromStack(L);
+    }
+
+    /**
+     * Create new userdata with specified object.
+     * The object is copied to userdata (by using copy constructor)
+     * If the given object has non trivial destructor, it will be called upon gc
+     *
+     * @param L lua state
+     * @param cpp_obj the object to be copied
+     */
+    template <typename T>
+    static LuaRef createUserdataFrom(lua_State* L, const T& cpp_obj)
+    {
+        pushUserdataFrom(L, cpp_obj);
+        return popFromStack(L);
+    }
+
+    /**
      * Create new lua_CFunction with multiple upvalues.
      *
      * @param L lua state
@@ -267,47 +296,11 @@ public:
      * @param upvalues as upvalues(n) to the lua_CFunction
      */
     template <typename... P>
-    static LuaRef createFunctionWithUpvalues(lua_State* L, lua_CFunction proc, P&&... upvalues)
+    static LuaRef createFunctionWith(lua_State* L, lua_CFunction proc, P&&... upvalues)
     {
         pushArg(L, std::forward<P>(upvalues)...);
         lua_pushcclosure(L, proc, sizeof...(P));
         return popFromStack(L);
-    }
-
-    /**
-     * Create new lua_CFunction with allocated userdata as upvalue(1).
-     *
-     * @param L lua state
-     * @param proc the lua_CFunction
-     * @param userdata_size the size of userdata to allocate
-     * @param out_userdata [out] the pointer to allocated userdata, can be nullptr if not needed
-     */
-    static LuaRef createFunctionWithNewData(lua_State* L, lua_CFunction proc, size_t userdata_size, void** out_userdata)
-    {
-        void* userdata = lua_newuserdata(L, userdata_size);
-        if (out_userdata) *out_userdata = userdata;
-        lua_pushcclosure(L, proc, 1);
-        return popFromStack(L);
-    }
-
-    /**
-     * Create new lua_CFunction with allocated cpp object as upvalue(1).
-     * The cpp object is constructed by the constructor that matches the given arguments;
-     * the object is allocated inside userdata (in place).
-     *
-     * @param L lua state
-     * @param proc the lua_CFunction
-     * @param args the arguments to the constructor
-     */
-    template <typename T, typename... P>
-    static LuaRef createFunctionWithNewObj(lua_State* L, lua_CFunction proc, P&&... args)
-    {
-        static_assert(!std::is_function<T>::value,
-            "function declaration is not allowed, use function pointer if needed");
-        void* userdata;
-        LuaRef f = createFunctionWithNewData(L, proc, sizeof(T), &userdata);
-        ::new (userdata) T(std::forward<P>(args)...);
-        return f;
     }
 
     /**
@@ -317,30 +310,30 @@ public:
      * @param proc the lua_CFunction
      * @param ptr the context pointer as upvalue(1)
      */
-    static LuaRef createFunctionWithPtr(lua_State* L, lua_CFunction proc, void* ptr)
+    static LuaRef createFunctionWithPtr(lua_State* L, lua_CFunction proc, const void* ptr)
     {
-        lua_pushlightuserdata(L, ptr);
+        lua_pushlightuserdata(L, const_cast<void*>(ptr));
         lua_pushcclosure(L, proc, 1);
         return popFromStack(L);
     }
 
     /**
      * Create new lua_CFunction with allocated object as upvalue(1)
-     * The object is copied to userdata (by using copy constructor)
+     * The object is copied to upvalue(1) (by using copy constructor)
+     * If the given object has non trivial destructor, it will be called upon gc
      *
      * @param L lua state
      * @param proc the lua_CFunction
-     * @param cpp the data to be copied to the
+     * @param cpp_obj the data to be copied as upvalue(1)
      */
     template <typename T>
-    static LuaRef createFunction(lua_State* L, lua_CFunction proc, const T& cpp)
+    static LuaRef createFunction(lua_State* L, lua_CFunction proc, const T& cpp_obj)
     {
         static_assert(!std::is_function<T>::value,
             "function declaration is not allowed, use function pointer if needed");
-        void* userdata;
-        LuaRef f = createFunctionWithNewData(L, proc, sizeof(T), &userdata);
-        ::new (userdata) T(cpp);
-        return f;
+        pushUserdataFrom(L, cpp_obj);
+        lua_pushcclosure(L, proc, 1);
+        return popFromStack(L);
     }
 
     /**
@@ -664,7 +657,7 @@ public:
     /**
      * Cast to the data pointer, if this ref is not pointer, return nullptr
      */
-    void* toPointer() const
+    void* toPtr() const
     {
         pushToStack();
         void* ptr = lua_touserdata(L, -1);
@@ -675,7 +668,7 @@ public:
     /**
      * Create LuaRef from data pointer, the data pointer life time is managed by C++
      */
-    static LuaRef fromPointer(lua_State* L, void* ptr)
+    static LuaRef fromPtr(lua_State* L, void* ptr)
     {
         lua_pushlightuserdata(L, ptr);
         return popFromStack(L);
@@ -1083,6 +1076,41 @@ public:
     }
 
 private:
+    template <typename T>
+    static typename std::enable_if<!std::is_destructible<T>::value || std::is_trivially_destructible<T>::value>::type
+        pushUserdataFrom(lua_State* L, const T& cpp_obj)
+    {
+        void* userdata = lua_newuserdata(L, sizeof(T));
+        ::new (userdata) T(cpp_obj);
+    }
+
+    template <typename T>
+    static typename std::enable_if<std::is_destructible<T>::value && !std::is_trivially_destructible<T>::value>::type
+        pushUserdataFrom(lua_State* L, const T& cpp_obj)
+    {
+        void* userdata = lua_newuserdata(L, sizeof(T));
+        ::new (userdata) T(cpp_obj);
+        lua_newtable(L);
+        lua_pushcfunction(L, &Destructor<T>::call);
+        lua_setfield(L, -2, "__gc");
+        lua_setmetatable(L, -2);
+    }
+
+    template <typename T>
+    struct Destructor
+    {
+        static int call(lua_State* L)
+        {
+            try {
+                T* obj = static_cast<T*>(lua_touserdata(L, 1));
+                obj->~T();
+                return 0;
+            } catch (std::exception& e) {
+                return luaL_error(L, e.what());
+            }
+        }
+    };
+
     template <typename R, typename... P>
     struct Call
     {

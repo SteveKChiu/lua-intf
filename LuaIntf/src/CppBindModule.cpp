@@ -154,7 +154,7 @@ LUA_INLINE void CppBindModule::setSetter(const char* name, const LuaRef& setter)
 LUA_INLINE void CppBindModule::setReadOnly(const char* name)
 {
     std::string full_name = getMemberName(m_meta, name);
-    setSetter(name, LuaRef::createFunctionWithUpvalues(state(), &CppBindModuleMetaMethod::errorReadOnly, full_name));
+    setSetter(name, LuaRef::createFunctionWith(state(), &CppBindModuleMetaMethod::errorReadOnly, full_name));
 }
 
 LUA_INLINE CppBindModule CppBindModule::bind(lua_State* L)
