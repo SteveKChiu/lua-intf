@@ -85,6 +85,58 @@ struct CppBindClassDestructor
     }
 };
 
+//--------------------------------------------------------------------------
+
+template <typename T, typename V, typename PV = V>
+struct CppBindClassVariableGetter
+{
+    /**
+     * lua_CFunction to get a class data member
+     *
+     * The pointer-to-member is in the first upvalue.
+     * The class userdata object is at the top of the Lua stack.
+     */
+    static int call(lua_State* L)
+    {
+        try {
+            assert(lua_isuserdata(L, lua_upvalueindex(1)));
+            auto mp = static_cast<V T::**>(lua_touserdata(L, lua_upvalueindex(1)));
+            assert(mp);
+
+            const T* obj = CppObject::get<T>(L, 1, true);
+            LuaType<PV>::push(L, obj->**mp);
+            return 1;
+        } catch (std::exception& e) {
+            return luaL_error(L, e.what());
+        }
+    }
+};
+
+template <typename T, typename V>
+struct CppBindClassVariableSetter
+{
+    /**
+     * lua_CFunction to set a class data member.
+     *
+     * The pointer-to-member is in the first upvalue.
+     * The class userdata object is at the top of the Lua stack.
+     */
+    static int call(lua_State* L)
+    {
+        try {
+            assert(lua_isuserdata(L, lua_upvalueindex(1)));
+            auto mp = static_cast<V T::**>(lua_touserdata(L, lua_upvalueindex(1)));
+            assert(mp);
+
+            T* obj = CppObject::get<T>(L, 1, false);
+            obj->**mp = LuaType<V>::get(L, 2);
+            return 0;
+        } catch (std::exception& e) {
+            return luaL_error(L, e.what());
+        }
+    }
+};
+
 //----------------------------------------------------------------------------
 
 template <int CHK, typename T, bool IS_PROXY, bool IS_CONST, typename FN, typename R, typename... P>
@@ -247,58 +299,6 @@ struct CppBindClassMethod <T, FN, FN, CHK>
 template <typename T, typename FN, typename... P, int CHK>
 struct CppBindClassMethod <T, FN, _arg(*)(P...), CHK>
     : CppBindClassMethod <T, typename CppLambdaTraits<FN>::FunctionType, _arg(*)(P...), CHK> {};
-
-//--------------------------------------------------------------------------
-
-template <typename T, typename V, typename PV = V>
-struct CppBindClassVariableGetter
-{
-    /**
-     * lua_CFunction to get a class data member
-     *
-     * The pointer-to-member is in the first upvalue.
-     * The class userdata object is at the top of the Lua stack.
-     */
-    static int call(lua_State* L)
-    {
-        try {
-            assert(lua_isuserdata(L, lua_upvalueindex(1)));
-            auto mp = static_cast<V T::**>(lua_touserdata(L, lua_upvalueindex(1)));
-            assert(mp);
-
-            const T* obj = CppObject::get<T>(L, 1, true);
-            LuaType<PV>::push(L, obj->**mp);
-            return 1;
-        } catch (std::exception& e) {
-            return luaL_error(L, e.what());
-        }
-    }
-};
-
-template <typename T, typename V>
-struct CppBindClassVariableSetter
-{
-    /**
-     * lua_CFunction to set a class data member.
-     *
-     * The pointer-to-member is in the first upvalue.
-     * The class userdata object is at the top of the Lua stack.
-     */
-    static int call(lua_State* L)
-    {
-        try {
-            assert(lua_isuserdata(L, lua_upvalueindex(1)));
-            auto mp = static_cast<V T::**>(lua_touserdata(L, lua_upvalueindex(1)));
-            assert(mp);
-
-            T* obj = CppObject::get<T>(L, 1, false);
-            obj->**mp = LuaType<V>::get(L, 2);
-            return 0;
-        } catch (std::exception& e) {
-            return luaL_error(L, e.what());
-        }
-    }
-};
 
 //--------------------------------------------------------------------------
 
@@ -485,7 +485,11 @@ public:
     template <typename V>
     CppBindClass<T, PARENT>& addConstant(const char* name, const V& v)
     {
-        m_meta.rawget("___values").rawset(name, LuaRef::fromValue(state(), v));
+        LuaRef r = LuaRef::fromValue(state(), v);
+        if (r.isFunction()) {
+            r = LuaRef::createFunctionWithUpvalues(state(), &CppBindConstant::call, r);
+        }
+        setStaticGetter(name, r);
         setStaticReadOnly(name);
         return *this;
     }

@@ -24,6 +24,20 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
+struct CppBindConstant
+{
+    /**
+     * lua_CFunction to get a constant
+     *
+     * The constant data is in the first upvalue.
+     */
+    static int call(lua_State* L)
+    {
+        lua_pushvalue(L, lua_upvalueindex(1));
+        return 1;
+    }
+};
+
 template <typename T, typename PT = T>
 struct CppBindVariableGetter
 {
@@ -289,7 +303,11 @@ public:
     template <typename V>
     CppBindModule& addConstant(const char* name, const V& v)
     {
-        m_meta.rawget("___values").rawset(name, LuaRef::fromValue(state(), v));
+        LuaRef r = LuaRef::fromValue(state(), v);
+        if (r.isFunction()) {
+            r = LuaRef::createFunctionWithUpvalues(state(), &CppBindConstant::call, r);
+        }
+        setGetter(name, r);
         setReadOnly(name);
         return *this;
     }
