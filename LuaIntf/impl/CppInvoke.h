@@ -186,7 +186,7 @@ struct CppDispatchClassMethod <T, false, FN, R, TUPLE, 0, INDEX...>
 {
     static R call(T* t, const FN& fn, TUPLE& args)
     {
-        return (const_cast<T*>(t)->*fn)(std::get<INDEX>(args).value()...);
+        return (t->*fn)(std::get<INDEX>(args).value()...);
     }
 };
 
@@ -195,7 +195,7 @@ struct CppDispatchClassMethod <T, true, FN, R, TUPLE, 0, INDEX...>
 {
     static R call(T* t, const FN& fn, TUPLE& args)
     {
-        return fn(const_cast<T*>(t), std::get<INDEX>(args).value()...);
+        return fn(t, std::get<INDEX>(args).value()...);
     }
 };
 
