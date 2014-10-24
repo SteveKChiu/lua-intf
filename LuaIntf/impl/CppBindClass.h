@@ -391,7 +391,7 @@ template <typename T, typename PARENT>
 class CppBindClass : public CppBindClassBase
 {
     friend class CppBindModule;
-    template <typename T2, typename P2> friend class CppBindClass;
+    template <typename TX, typename PX> friend class CppBindClass;
 
 private:
     explicit CppBindClass(const LuaRef& meta)
@@ -893,26 +893,27 @@ public:
     /**
      * Open a new or existing class for registrations.
      */
-    template <typename T2>
-    CppBindClass<T2, CppBindClass<T, PARENT>> beginClass(const char* name)
+    template <typename SUB>
+    CppBindClass<SUB, CppBindClass<T, PARENT>> beginClass(const char* name)
     {
-        return CppBindClass<T2, CppBindClass<T, PARENT>>::bind(m_meta, name);
+        return CppBindClass<SUB, CppBindClass<T, PARENT>>::bind(m_meta, name);
     }
 
     /**
      * Open a new class to extend the base class.
      */
-    template <typename T2, typename SUPER>
-    CppBindClass<T2, CppBindClass<T, PARENT>> beginExtendClass(const char* name)
+    template <typename SUB, typename SUPER>
+    CppBindClass<SUB, CppBindClass<T, PARENT>> beginExtendClass(const char* name)
     {
-        return CppBindClass<T2, CppBindClass<T, PARENT>>::extend(m_meta, name, CppSignature<SUPER>::value());
+        return CppBindClass<SUB, CppBindClass<T, PARENT>>::extend(m_meta, name, CppSignature<SUPER>::value());
     }
     
     /**
      * Continue registration in the enclosing module or class.
      */
-    PARENT endClass() {
-      return PARENT(m_meta.rawget("___parent"));
+    PARENT endClass()
+    {
+        return PARENT(m_meta.rawget("___parent"));
     }
 };
 
