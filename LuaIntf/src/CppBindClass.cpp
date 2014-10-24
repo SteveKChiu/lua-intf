@@ -46,9 +46,8 @@ LUA_INLINE int CppBindClassMetaMethod::index(lua_State* L)
         // not match, panic now -> <error>
         lua_pushliteral(L, "___type");
         lua_rawget(L, -3);
-        const char* name = lua_tostring(L, -1);
-        return luaL_error(L, "get '%s.%s' : metatable is invalid",
-            name ? name : "<unknown>", lua_tostring(L, 2));
+        return luaL_error(L, "invalid meta table found when try to get property '%s.%s'",
+            luaL_optstring(L, -1, "<unknown>"), lua_tostring(L, 2));
     } else {
         // matched, pop <sign_mt> -> <mt>
         lua_pop(L, 1);
@@ -75,7 +74,7 @@ LUA_INLINE int CppBindClassMetaMethod::index(lua_State* L)
         lua_rawget(L, -2);              // lookup key in getters
 
         if (lua_iscfunction(L, -1)) {
-            // getter founction found, need to test whether this is object (== userdata)
+            // getter function found, need to test whether it is object (== userdata)
             int n = 0;
             if (lua_isuserdata(L, 1)) {
                 lua_pushvalue(L, 1);    // push userdata as object param for class method
@@ -122,9 +121,8 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
         // not match, panic now -> <error>
         lua_pushliteral(L, "___type");
         lua_rawget(L, -3);
-        const char* name = lua_tostring(L, -1);
-        return luaL_error(L, "set '%s.%s' : metatable is invalid",
-            name ? name : "<unknown>", lua_tostring(L, 2));
+        return luaL_error(L, "invalid meta table found when try to set property '%s.%s'",
+            luaL_optstring(L, -1, "<unknown>"), lua_tostring(L, 2));
     } else {
         // matched, pop <sign_mt> -> <mt>
         lua_pop(L, 1);
@@ -141,7 +139,7 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
         lua_rawget(L, -2);              // lookup key in setters
 
         if (lua_iscfunction(L, -1)) {
-            // setter function found, now need to test whether this is object (== userdata)
+            // setter function found, now need to test whether it is object (== userdata)
             int n = 1;
             if (lua_isuserdata(L, 1)) {
                 lua_pushvalue(L, 1);    // push userdata as object param for class method
@@ -166,8 +164,8 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
             // give up
             lua_pushliteral(L, "___type");
             lua_rawget(L, -3);
-            return luaL_error(L, "set '%s.%s' : property not found",
-                lua_tostring(L, -1), lua_tostring(L, 2));
+            return luaL_error(L, "property '%s.%s' is not found or not writable",
+                luaL_optstring(L, -1, "<unknown>"), lua_tostring(L, 2));
         }
 
         // yes, now continue with <super_mt>
