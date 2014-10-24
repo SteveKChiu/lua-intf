@@ -327,15 +327,6 @@ struct CppBindClassMetaMethod
      * The name of the function is in the first upvalue.
      */
     static int errorConstMismatch(lua_State* L);
-
-    /**
-     * key for metatable signature.
-     */
-    static void* signature()
-    {
-        static char v;
-        return &v;
-    }
 };
 
 //--------------------------------------------------------------------------
@@ -418,7 +409,7 @@ private:
     {
         LuaRef meta;
         if (buildMetaTable(meta, parent_meta, name,
-            CppObjectType<T>::staticID(), CppObjectType<T>::classID(), CppObjectType<T>::constID()))
+            CppSignature<T>::value(), CppClassSignature<T>::value(), CppConstSignature<T>::value()))
         {
             meta.rawget("___class").rawset("__gc", &CppBindClassDestructor<T, false>::call);
             meta.rawget("___const").rawset("__gc", &CppBindClassDestructor<T, true>::call);
@@ -438,7 +429,7 @@ private:
     {
         LuaRef meta;
         if (buildMetaTable(meta, parent_meta, name,
-            CppObjectType<T>::staticID(), CppObjectType<T>::classID(), CppObjectType<T>::constID(), super_type_id))
+            CppSignature<T>::value(), CppClassSignature<T>::value(), CppConstSignature<T>::value(), super_type_id))
         {
             meta.rawget("___class").rawset("__gc", &CppBindClassDestructor<T, false>::call);
             meta.rawget("___const").rawset("__gc", &CppBindClassDestructor<T, true>::call);
@@ -914,14 +905,14 @@ public:
     template <typename T2, typename SUPER>
     CppBindClass<T2, CppBindClass<T, PARENT>> beginExtendClass(const char* name)
     {
-        return CppBindClass<T2, CppBindClass<T, PARENT>>::extend(m_meta, name, CppObjectType<SUPER>::staticID());
+        return CppBindClass<T2, CppBindClass<T, PARENT>>::extend(m_meta, name, CppSignature<SUPER>::value());
     }
     
     /**
      * Continue registration in the enclosing module or class.
      */
     PARENT endClass() {
-      return PARENT(m_meta.rawget<LuaRef>("___module"));
+      return PARENT(m_meta.rawget("___parent"));
     }
 };
 

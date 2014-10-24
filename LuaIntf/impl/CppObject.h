@@ -24,42 +24,26 @@
 // DEALINGS IN THE SOFTWARE.
 //
 
-template <typename T>
-struct CppObjectType
+template <typename T, int KIND = 0>
+struct CppSignature
 {
     /**
-     * Get the type id for class
+     * Get the signature id for type
      *
-     * The key is unique in the process
+     * The id is unique in the process
      */
-    static void* classID()
+    static void* value()
     {
-        static char value;
-        return &value;
-    }
-
-    /**
-     * Get the type id for static class
-     *
-     * The key is unique in the process
-     */
-    static void* staticID()
-    {
-        static char value;
-        return &value;
-    }
-
-    /**
-     * Get the type id for const class
-     *
-     * The key is unique in the process
-     */
-    static void* constID()
-    {
-        static char value;
-        return &value;
+        static char v;
+        return &v;
     }
 };
+
+template <typename T>
+using CppClassSignature = CppSignature<T, 1>;
+
+template <typename T>
+using CppConstSignature = CppSignature<T, 2>;
 
 //--------------------------------------------------------------------------
 
@@ -82,7 +66,7 @@ protected:
     template <typename T>
     static void* getClassID(bool is_const)
     {
-        return is_const ? CppObjectType<T>::constID() : CppObjectType<T>::classID();
+        return is_const ? CppConstSignature<T>::value() : CppClassSignature<T>::value();
     }
 
     template <typename OBJ, typename T>

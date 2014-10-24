@@ -173,13 +173,13 @@ LUA_INLINE CppBindModule CppBindModule::beginModule(const char* name)
     module.rawset("___getters", LuaRef::createTable(L));
     module.rawset("___setters", LuaRef::createTable(L));
     module.rawset("___type", type_name);
-    module.rawset("___module", m_meta);
+    module.rawset("___parent", m_meta);
     m_meta.rawset(name, module);
     return CppBindModule(module);
 }
 
 LUA_INLINE CppBindModule CppBindModule::endModule()
 {
-    return CppBindModule(m_meta.rawget("___module"));
+    return CppBindModule(m_meta.rawget("___parent"));
 }
 

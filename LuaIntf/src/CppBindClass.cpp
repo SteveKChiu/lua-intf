@@ -38,7 +38,7 @@ LUA_INLINE int CppBindClassMetaMethod::index(lua_State* L)
 
     // get signature metatable -> <mt> <sign_mt>
     lua_getmetatable(L, 1);
-    lua_rawgetp(L, -1, CppBindClassMetaMethod::signature());
+    lua_rawgetp(L, -1, CppSignature<CppBindClassMetaMethod>::value());
     lua_rawget(L, LUA_REGISTRYINDEX);
 
     // check if both are equal
@@ -110,7 +110,7 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
 
     // get signature metatable -> <mt> <sign_mt>
     lua_getmetatable(L, 1);
-    lua_rawgetp(L, -1, CppBindClassMetaMethod::signature());
+    lua_rawgetp(L, -1, CppSignature<CppBindClassMetaMethod>::value());
     lua_rawget(L, LUA_REGISTRYINDEX);
 
     // check if both are equal
@@ -205,7 +205,7 @@ LUA_INLINE bool CppBindClassBase::buildMetaTable(LuaRef& meta, LuaRef& parent, c
     clazz_const.rawset("___setters", LuaRef::createTable(L));
     clazz_const.rawset("___type", "const_" + type_name);
     clazz_const.rawset("___const", clazz_const);
-    clazz_const.rawset(CppBindClassMetaMethod::signature(), type_const);
+    clazz_const.rawset(CppSignature<CppBindClassMetaMethod>::value(), type_const);
 
     LuaRef clazz = LuaRef::createTable(L);
     clazz.setMetaTable(clazz);
@@ -215,7 +215,7 @@ LUA_INLINE bool CppBindClassBase::buildMetaTable(LuaRef& meta, LuaRef& parent, c
     clazz.rawset("___setters", LuaRef::createTable(L));
     clazz.rawset("___type", type_name);
     clazz.rawset("___const", clazz_const);
-    clazz.rawset(CppBindClassMetaMethod::signature(), type_clazz);
+    clazz.rawset(CppSignature<CppBindClassMetaMethod>::value(), type_clazz);
 
     LuaRef clazz_static = LuaRef::createTable(L);
     clazz_static.setMetaTable(clazz_static);
@@ -226,8 +226,8 @@ LUA_INLINE bool CppBindClassBase::buildMetaTable(LuaRef& meta, LuaRef& parent, c
     clazz_static.rawset("___type", "static_" + type_name);
     clazz_static.rawset("___class", clazz);
     clazz_static.rawset("___const", clazz_const);
-    clazz_static.rawset("___module", parent);
-    clazz_static.rawset(CppBindClassMetaMethod::signature(), type_static);
+    clazz_static.rawset("___parent", parent);
+    clazz_static.rawset(CppSignature<CppBindClassMetaMethod>::value(), type_static);
 
     LuaRef registry(L, LUA_REGISTRYINDEX);
     registry.rawset(type_clazz, clazz);

@@ -499,7 +499,7 @@ public:
     template <typename T, typename SUPER>
     CppBindClass<T, CppBindModule> beginExtendClass(const char* name)
     {
-        return CppBindClass<T, CppBindModule>::extend(m_meta, name, CppObjectType<SUPER>::staticID());
+        return CppBindClass<T, CppBindModule>::extend(m_meta, name, CppSignature<SUPER>::value());
     }
 
 private:
