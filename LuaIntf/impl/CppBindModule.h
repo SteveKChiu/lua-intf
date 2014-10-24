@@ -220,7 +220,8 @@ private:
         m_meta.checkTable();
     }
 
-    static std::string getFullName(const LuaRef& module, const char* name);
+    static std::string getFullName(const LuaRef& parent, const char* name);
+    static std::string getMemberName(const LuaRef& parent, const char* name);
 
     void setGetter(const char* name, const LuaRef& getter);
     void setSetter(const char* name, const LuaRef& setter);

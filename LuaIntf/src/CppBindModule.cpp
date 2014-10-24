@@ -114,21 +114,29 @@ LUA_INLINE int CppBindModuleMetaMethod::forwardCall(lua_State* L)
 
 LUA_INLINE int CppBindModuleMetaMethod::errorReadOnly(lua_State* L)
 {
-    return luaL_error(L, "'%s' is read-only", lua_tostring(L, lua_upvalueindex(1)));
+    return luaL_error(L, "property '%s' is read-only", lua_tostring(L, lua_upvalueindex(1)));
 }
 
 //---------------------------------------------------------------------------
 
-LUA_INLINE std::string CppBindModule::getFullName(const LuaRef& module, const char* name)
+LUA_INLINE std::string CppBindModule::getFullName(const LuaRef& parent, const char* name)
 {
-    std::string full_name = module.get<const char*>("___type", "");
+    std::string full_name = parent.get<const char*>("___type", "");
     if (!full_name.empty()) {
         size_t pos = full_name.find('<');
         if (pos != std::string::npos) full_name.erase(0, pos + 1);
         pos = full_name.rfind('>');
         if (pos != std::string::npos) full_name.erase(pos);
-        full_name += "::";
+        full_name += '.';
     }
+    full_name += name;
+    return full_name;
+}
+
+LUA_INLINE std::string CppBindModule::getMemberName(const LuaRef& parent, const char* name)
+{
+    std::string full_name = parent.rawget<const char*>("___type", "<unknown>");
+    full_name += '.';
     full_name += name;
     return full_name;
 }
@@ -145,7 +153,8 @@ LUA_INLINE void CppBindModule::setSetter(const char* name, const LuaRef& setter)
 
 LUA_INLINE void CppBindModule::setReadOnly(const char* name)
 {
-    setSetter(name, LuaRef::createFunctionWithUpvalues(state(), &CppBindModuleMetaMethod::errorReadOnly, name));
+    std::string full_name = getMemberName(m_meta, name);
+    setSetter(name, LuaRef::createFunctionWithUpvalues(state(), &CppBindModuleMetaMethod::errorReadOnly, full_name));
 }
 
 LUA_INLINE CppBindModule CppBindModule::bind(lua_State* L)

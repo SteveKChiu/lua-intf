@@ -44,7 +44,11 @@ LUA_INLINE int CppBindClassMetaMethod::index(lua_State* L)
     // check if both are equal
     if (!lua_rawequal(L, -1, -2)) {
         // not match, panic now -> <error>
-        return luaL_error(L, "access '%s' : metatable is invalid", lua_tostring(L, 2));
+        lua_pushliteral(L, "___type");
+        lua_rawget(L, -3);
+        const char* name = lua_tostring(L, -1);
+        return luaL_error(L, "get '%s.%s' : metatable is invalid",
+            name ? name : "<unknown>", lua_tostring(L, 2));
     } else {
         // matched, pop <sign_mt> -> <mt>
         lua_pop(L, 1);
@@ -116,7 +120,11 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
     // check if both are equal
     if (!lua_rawequal(L, -1, -2)) {
         // not match, panic now -> <error>
-        return luaL_error(L, "access '%s' : metatable is invalid", lua_tostring(L, 2));
+        lua_pushliteral(L, "___type");
+        lua_rawget(L, -3);
+        const char* name = lua_tostring(L, -1);
+        return luaL_error(L, "set '%s.%s' : metatable is invalid",
+            name ? name : "<unknown>", lua_tostring(L, 2));
     } else {
         // matched, pop <sign_mt> -> <mt>
         lua_pop(L, 1);
@@ -156,7 +164,10 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
         // check if there is one
         if (lua_isnil(L, -1)) {
             // give up
-            return luaL_error(L, "no writable class property '%s'", lua_tostring(L, 2));
+            lua_pushliteral(L, "___type");
+            lua_rawget(L, -3);
+            return luaL_error(L, "set '%s.%s' : property not found",
+                lua_tostring(L, -1), lua_tostring(L, 2));
         }
 
         // yes, now continue with <super_mt>
@@ -169,13 +180,13 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
 
 LUA_INLINE int CppBindClassMetaMethod::errorReadOnly(lua_State* L)
 {
-    return luaL_error(L, "class property '%s' is read-only",
+    return luaL_error(L, "property '%s' is read-only",
         lua_tostring(L, lua_upvalueindex(1)));
 }
 
 LUA_INLINE int CppBindClassMetaMethod::errorConstMismatch(lua_State* L)
 {
-    return luaL_error(L, "class member function '%s' can not be access by const object",
+    return luaL_error(L, "member function '%s' can not be access by const object",
         lua_tostring(L, lua_upvalueindex(1)));
 }
 
@@ -265,7 +276,8 @@ LUA_INLINE void CppBindClassBase::setStaticSetter(const char* name, const LuaRef
 
 LUA_INLINE void CppBindClassBase::setStaticReadOnly(const char* name)
 {
-    setStaticSetter(name, LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorReadOnly, name));
+    std::string full_name = CppBindModule::getMemberName(m_meta, name);
+    setStaticSetter(name, LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorReadOnly, full_name));
 }
 
 LUA_INLINE void CppBindClassBase::setMemberGetter(const char* name, const LuaRef& getter, const LuaRef& getter_const)
@@ -281,21 +293,34 @@ LUA_INLINE void CppBindClassBase::setMemberGetter(const char* name, const LuaRef
 
 LUA_INLINE void CppBindClassBase::setMemberSetter(const char* name, const LuaRef& setter)
 {
-    LuaRef err = LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorConstMismatch, name);
-    m_meta.rawget("___class").rawget("___setters").rawset(name, setter);
-    m_meta.rawget("___const").rawget("___setters").rawset(name, err);
+    LuaRef meta_class = m_meta.rawget("___class");
+    LuaRef meta_const = m_meta.rawget("___const");
+    std::string full_name = CppBindModule::getMemberName(meta_class, name);
+    LuaRef err = LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorConstMismatch, full_name);
+    meta_class.rawget("___setters").rawset(name, setter);
+    meta_const.rawget("___setters").rawset(name, err);
 }
 
 LUA_INLINE void CppBindClassBase::setMemberReadOnly(const char* name)
 {
-    LuaRef err = LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorReadOnly, name);
-    m_meta.rawget("___class").rawget("___setters").rawset(name, err);
-    m_meta.rawget("___const").rawget("___setters").rawset(name, err);
+    LuaRef meta_class = m_meta.rawget("___class");
+    LuaRef meta_const = m_meta.rawget("___const");
+    std::string full_name = CppBindModule::getMemberName(meta_class, name);
+    LuaRef err = LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorReadOnly, full_name);
+    meta_class.rawget("___setters").rawset(name, err);
+    meta_const.rawget("___setters").rawset(name, err);
 }
 
 LUA_INLINE void CppBindClassBase::setMemberFunction(const char* name, const LuaRef& proc, bool is_const)
 {
-    m_meta.rawget("___class").rawset(name, proc);
-    m_meta.rawget("___const").rawset(name,
-        is_const ? proc : LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorConstMismatch, name));
+    LuaRef meta_class = m_meta.rawget("___class");
+    LuaRef meta_const = m_meta.rawget("___const");
+    meta_class.rawset(name, proc);
+    if (is_const) {
+        meta_const.rawset(name, proc);
+    } else {
+        std::string full_name = CppBindModule::getMemberName(meta_class, name);
+        LuaRef err = LuaRef::createFunctionWithUpvalues(state(), &CppBindClassMetaMethod::errorConstMismatch, full_name);
+        meta_const.rawset(name, err);
+    }
 }
