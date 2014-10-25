@@ -11,7 +11,6 @@ lua-intf
 
 `lua-intf` is inspired by [vinniefalco's LuaBridge](https://github.com/vinniefalco/LuaBridge) work, but has been rewritten to take advantage of C++11 features.
 
-
 Export C++ class or function to Lua script
 ------------------------------------------
 
@@ -60,6 +59,7 @@ To access the exported `Web` class in Lua:
 	page = w:load("http://www.google.com")		-- page = w.load("http://www.google.com");
 	local url = w.url							-- auto url = w.url();
 ````
+
 Module and class
 ----------------
 
@@ -163,6 +163,7 @@ The member function can be called by the following, note the ':' syntax and obje
 ````lua
 	session:load("http://www.yahoo.com")
 ````
+
 Integrate with Lua module system
 --------------------------------
 
@@ -177,6 +178,7 @@ The lua module system don't register modules in global variables. So you'll need
         return 1;
     }
 ````
+
 C++ error handling
 ------------------
 By default LuaIntf expect the Lua library to build as C++ library, this will allow Lua library to throw exception upon error, and make sure C++ objects on stack to be destructed correctly. For more info about error handling issues, please see:
@@ -188,6 +190,7 @@ If you really want to use Lua as C library and want to live with `longjmp` issue
 #define LUAINTF_BUILD_LUA_CXX 0
 #include "LuaIntf/LuaIntf.h"
 ````
+
 C++ object life-cycle
 ---------------------
 
@@ -224,6 +227,33 @@ For constructing shared pointer inside Lua `userdata`, you can register the cons
 		...
 	.endClass();
 ````
+
+Using custom deleter
+--------------------
+
+If custom deleter is needed instead of the destructor, you can register the constructor with deleter by adding LUA_DEL macro, for example:
+````c++
+     class MyClass
+     {
+     public:
+          MyClass(int, int);
+          void release();
+     };
+     
+     struct MyClassDeleter
+     {
+         void operator () (MyClass* p)
+         {
+             p->release();
+         }
+     };
+     
+    LuaBinding(L).beginClass<MyClass>("MyClass")
+        .addConstructor(LUA_DEL(MyClassDeleter), LUA_ARGS(int, int))
+        ...
+    .endClass();
+```` 
+
 Function calling convention
 ---------------------------
 
@@ -331,6 +361,7 @@ If your C++ function is overloaded, pass `&function` is not enough, you have to 
 
 	.endModule();
 ````
+
 Lua for-loop iteration function
 --------------------------------
 
@@ -378,6 +409,7 @@ To use the iteration function in Lua code:
         ...
     end
 ````
+
 Custom type mapping
 -------------------
 

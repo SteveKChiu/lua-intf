@@ -659,8 +659,9 @@ public:
     }
 
     /**
-     * Add or replace a constructor function, with customer deleter.
-     * The deleter class is a functor like class:
+     * Add or replace a constructor function, with custom deleter.
+     * You can use LUA_DEL macro to specify deleter. For example, MyClass with release() function
+     * and MyClassDeleter as deleter:
      *
      * class MyClass
      * {
