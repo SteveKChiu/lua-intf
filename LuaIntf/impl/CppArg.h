@@ -44,7 +44,6 @@ struct _ref_opt {};
 template <typename T, std::intmax_t DEF_NUM, std::intmax_t DEF_DEN = 1>
 struct _ref_def {};
 
-#define LUA_SP(p) static_cast<p*>(nullptr)
 #define LUA_ARGS_TYPE(...) LuaIntf::_arg(*)(__VA_ARGS__)
 #define LUA_ARGS(...) static_cast<LUA_ARGS_TYPE(__VA_ARGS__)>(nullptr)
 

@@ -384,6 +384,9 @@ protected:
 
 //--------------------------------------------------------------------------
 
+#define LUA_SP(p) static_cast<p*>(nullptr)
+#define LUA_DEL(d) static_cast<d**>(nullptr)
+
 /**
  * Provides a class registration in a lua_State.
  */
@@ -652,6 +655,37 @@ public:
     CppBindClass<T, PARENT>& addConstructor(SP*, ARGS)
     {
         m_meta.rawset("__call", &CppBindClassConstructor<SP, T, ARGS>::call);
+        return *this;
+    }
+
+    /**
+     * Add or replace a constructor function, with customer deleter.
+     * The deleter class is a functor like class:
+     *
+     * class MyClass
+     * {
+     * public:
+     *      MyClass(int, int);
+     *      void release();
+     * };
+     *
+     * struct MyClassDeleter
+     * {
+     *     void operator () (MyClass* p)
+     *     {
+     *         p->release();
+     *     }
+     * };
+     *
+     * addConstructor(LUA_DEL(MyClassDeleter), LUA_ARGS(int, int))
+     *
+     * The constructor is invoked when calling the class type table
+     * like a function. You can have only one constructor or factory function for a lua class.
+     */
+    template <typename DEL, typename ARGS>
+    CppBindClass<T, PARENT>& addConstructor(DEL**, ARGS)
+    {
+        m_meta.rawset("__call", &CppBindClassConstructor<std::unique_ptr<T, DEL>, T, ARGS>::call);
         return *this;
     }
 
