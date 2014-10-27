@@ -147,7 +147,15 @@ template <typename T>
 class CppObjectValue : public CppObject
 {
 private:
-    CppObjectValue() {}
+    CppObjectValue()
+    {
+        if (MaxPadding > 0) {
+            uintptr_t offset = reinterpret_cast<uintptr_t>(&m_data[0]) % alignof(T);
+            if (offset > 0) offset = alignof(T) - offset;
+            assert(offset < MaxPadding);
+            m_data[sizeof(m_data) - 1] = static_cast<unsigned char>(offset);
+        }
+    }
 
     virtual ~CppObjectValue()
     {
@@ -161,7 +169,11 @@ public:
 
     virtual void* objectPtr() override
     {
-        return &m_data[0];
+        if (MaxPadding == 0) {
+            return &m_data[0];
+        } else {
+            return &m_data[0] + m_data[sizeof(m_data) - 1];
+        }
     }
 
     template <typename... P>
@@ -180,7 +192,9 @@ public:
     }
 
 private:
-    alignas(T) char m_data[sizeof(T)];
+    using AlignType = typename std::conditional<alignof(T) == sizeof(double), double, void*>::type;
+    static constexpr int MaxPadding = alignof(T) <= sizeof(AlignType) ? 0 : alignof(T) - sizeof(AlignType) + 1;
+    alignas(AlignType) unsigned char m_data[sizeof(T) + MaxPadding];
 };
 
 //----------------------------------------------------------------------------
