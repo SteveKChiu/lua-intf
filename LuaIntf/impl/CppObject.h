@@ -189,7 +189,7 @@ public:
     }
 
 private:
-    using AlignType = typename std::conditional<alignof(T) == alignof(double), double, void*>::type;
+    using AlignType = typename std::conditional<alignof(T) <= alignof(double), T, void*>::type;
     static constexpr int MaxPadding = alignof(T) <= alignof(AlignType) ? 0 : alignof(T) - alignof(AlignType) + 1;
     alignas(AlignType) unsigned char m_data[sizeof(T) + MaxPadding];
 };
