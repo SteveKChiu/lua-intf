@@ -157,15 +157,12 @@ private:
         }
     }
 
+public:
     virtual ~CppObjectValue()
     {
         T* obj = static_cast<T*>(objectPtr());
         obj->~T();
     }
-
-public:
-    CppObjectValue<T>(const CppObjectValue<T>&) = delete;
-    CppObjectValue<T>& operator = (const CppObjectValue<T>&) = delete;
 
     virtual void* objectPtr() override
     {
@@ -192,8 +189,8 @@ public:
     }
 
 private:
-    using AlignType = typename std::conditional<alignof(T) == sizeof(double), double, void*>::type;
-    static constexpr int MaxPadding = alignof(T) <= sizeof(AlignType) ? 0 : alignof(T) - sizeof(AlignType) + 1;
+    using AlignType = typename std::conditional<alignof(T) == alignof(double), double, void*>::type;
+    static constexpr int MaxPadding = alignof(T) <= alignof(AlignType) ? 0 : alignof(T) - alignof(AlignType) + 1;
     alignas(AlignType) unsigned char m_data[sizeof(T) + MaxPadding];
 };
 
@@ -214,9 +211,6 @@ private:
     }
 
 public:
-    CppObjectPtr(const CppObjectPtr&) = delete;
-    CppObjectPtr& operator = (const CppObjectPtr&) = delete;
-
     virtual void* objectPtr() override
     {
         return m_ptr;
@@ -253,9 +247,6 @@ private:
         {}
 
 public:
-    CppObjectSharedPtr(const CppObjectSharedPtr<SP, T>&) = delete;
-    CppObjectSharedPtr<SP, T>& operator = (const CppObjectSharedPtr<SP, T>&) = delete;
-
     virtual bool isSharedPtr() const override
     {
         return true;
