@@ -448,7 +448,7 @@ public:
     /**
      * Destructor, release the reference
      */
-    virtual ~LuaRef()
+    ~LuaRef()
     {
         if (L) {
             luaL_unref(L, LUA_REGISTRYINDEX, m_ref);
@@ -1182,7 +1182,7 @@ private:
     {
         static void fill(lua_State*, std::tuple<P...>&)
         {
-            // template terminate function, do nothing
+            // template terminate function
         }
     };
 
@@ -1195,7 +1195,7 @@ private:
 
     static void pushArg(lua_State*)
     {
-        // template terminate function, do nothing
+        // template terminate function
     }
 
 private:
