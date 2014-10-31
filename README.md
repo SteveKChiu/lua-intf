@@ -11,6 +11,44 @@ lua-intf
 
 `lua-intf` is inspired by [vinniefalco's LuaBridge](https://github.com/vinniefalco/LuaBridge) work, but has been rewritten to take advantage of C++11 features.
 
+Lua and C++ error handling
+--------------------------
+
+By default LuaIntf expect the Lua library to build under C++, this will allow Lua library to throw exception upon error, and make sure C++ objects on stack to be destructed correctly. For more info about error handling issues, please see:
+
+http://lua-users.org/wiki/ErrorHandlingBetweenLuaAndCplusplus
+
+If you really want to use Lua library compiled under C and want to live with `longjmp` issues, you can define `LUAINTF_LINK_LUA_COMPILED_IN_CXX` to 0 before including `lua-intf` headers:
+````c++
+#define LUAINTF_LINK_LUA_COMPILED_IN_CXX 0
+#include "LuaIntf/LuaIntf.h"
+````
+
+Compile Lua library in C++
+--------------------------
+
+Most distributions of precompiled Lua library are compiled under C, if you need Lua library compiled under C++, you probably need to compile it by yourself. It is actually very easy to build Lua library under C++, first get a copy of source code of the Lua library:
+````
+curl http://www.lua.org/ftp/lua-5.2.3.tar.gz -o lua-5.2.3.tar.gz 
+tar xf lua-5.2.3.tar.gz
+cd lua-5.2.3
+````
+
+To compile on Linux:
+````
+make linux MYCFLAGS="-x c++" CC="g++"
+````
+
+To compile on Mac OSX:
+````
+make macosx MYCFLAGS="-x c++" MYLDFLAGS="-lc++"
+````
+
+To compile on Windows with MINGW and MSYS:
+````
+make mingw MYCFLAGS="-x c++" CC="g++"
+````
+
 Export C++ class or function to Lua script
 ------------------------------------------
 
@@ -177,18 +215,6 @@ The lua module system don't register modules in global variables. So you'll need
         mod.pushToStack();
         return 1;
     }
-````
-
-C++ error handling
-------------------
-By default LuaIntf expect the Lua library to build as C++ library, this will allow Lua library to throw exception upon error, and make sure C++ objects on stack to be destructed correctly. For more info about error handling issues, please see:
-
-http://lua-users.org/wiki/ErrorHandlingBetweenLuaAndCplusplus
-
-If you really want to use Lua as C library and want to live with `longjmp` issues, you can define `LUAINTF_BUILD_LUA_CXX` to 0 before including `lua-intf` headers:
-````c++
-#define LUAINTF_BUILD_LUA_CXX 0
-#include "LuaIntf/LuaIntf.h"
 ````
 
 C++ object life-cycle

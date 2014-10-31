@@ -38,12 +38,22 @@
 #endif
 
 /**
- * Set LUAINTF_BUILD_LUA_CXX to 1 if you compile Lua library code as C++;
- * it is highly recommended to build Lua library as C++, so the exception handling
- * will work correctly.
+ * Set LUAINTF_LINK_LUA_COMPILED_IN_CXX to 1 if you compile Lua library under C++
+ * (it is *Lua* library, not LuaIntf); it is highly recommended to build Lua library
+ * under C++, so it is safer and easier to work with Lua error handling.
+ *
+ * If Lua is compiled under C, it will use longjmp for error handling, longjmp will ignore
+ * any destructor of object on stack, and may cause memory leak and other problem.
+ *
+ * If Lua is compiled under C++, it will throw C++ exception for error handling, and
+ * destructor of object on stack will be called as expected.
  */
-#ifndef LUAINTF_BUILD_LUA_CXX
-#define LUAINTF_BUILD_LUA_CXX 1
+#ifndef LUAINTF_LINK_LUA_COMPILED_IN_CXX
+    #ifdef LUAINTF_BUILD_LUA_CXX
+        #define LUAINTF_LINK_LUA_COMPILED_IN_CXX LUAINTF_BUILD_LUA_CXX
+    #else
+        #define LUAINTF_LINK_LUA_COMPILED_IN_CXX 1
+    #endif
 #endif
 
 /**
@@ -72,7 +82,7 @@
 
 //---------------------------------------------------------------------------
 
-#if !LUAINTF_BUILD_LUA_CXX
+#if !LUAINTF_LINK_LUA_COMPILED_IN_CXX
 extern "C"
 {
 #endif
@@ -80,7 +90,7 @@ extern "C"
 #include "lualib.h"
 #include "lauxlib.h"
 
-#if !LUAINTF_BUILD_LUA_CXX
+#if !LUAINTF_LINK_LUA_COMPILED_IN_CXX
 }
 #endif
 
@@ -96,7 +106,7 @@ extern "C"
 
 #include <stdint.h>
 
-#if !LUAINTF_BUILD_LUA_CXX
+#if !LUAINTF_LINK_LUA_COMPILED_IN_CXX
 extern "C"
 {
 #endif
@@ -162,7 +172,7 @@ int luaL_fileresult(lua_State* L, int stat, const char* fname);
 
 //---------------------------------------------------------------------------
 
-#if !LUAINTF_BUILD_LUA_CXX
+#if !LUAINTF_LINK_LUA_COMPILED_IN_CXX
 }
 #endif
 

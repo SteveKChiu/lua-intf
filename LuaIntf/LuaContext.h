@@ -57,7 +57,7 @@ public:
     {
         L = luaL_newstate();
         if (!L) throw LuaException("can not allocate new lua state");
-#if LUAINTF_BUILD_LUA_CXX
+#if LUAINTF_LINK_LUA_COMPILED_IN_CXX
         lua_atpanic(L, panic);
 #endif
     }
@@ -180,7 +180,7 @@ public:
     }
 
 private:
-#if LUAINTF_BUILD_LUA_CXX
+#if LUAINTF_LINK_LUA_COMPILED_IN_CXX
     static int panic(lua_State* L)
     {
         throw LuaException(L);
