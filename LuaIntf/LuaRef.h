@@ -628,10 +628,7 @@ public:
      */
     static LuaRef popFromStack(lua_State* L)
     {
-        LuaRef r;
-        r.L = L;
-        r.m_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-        return r;
+        return LuaRef(L);
     }
 
     /**
@@ -1076,6 +1073,15 @@ public:
     }
 
 private:
+    /**
+     * Special constructor for popFromStack
+     */
+    explicit LuaRef(lua_State* state)
+        : L(state)
+    {
+        m_ref = luaL_ref(state, LUA_REGISTRYINDEX);
+    }
+
     template <typename T>
     static typename std::enable_if<!std::is_destructible<T>::value || std::is_trivially_destructible<T>::value>::type
         pushUserdataFrom(lua_State* L, const T& cpp_obj)
