@@ -41,6 +41,8 @@ namespace LuaIntf
 #include "impl/LuaException.h"
 #include "impl/LuaType.h"
 
+class LuaRef;
+
 //---------------------------------------------------------------------------
 
 namespace Lua
@@ -73,7 +75,7 @@ namespace Lua
     /**
      * Get value from Lua stack, stack is not changed
      */
-    template <typename T>
+    template <typename T = LuaRef>
     inline T get(lua_State* L, int index)
     {
         return LuaType<T>::get(L, index);
@@ -93,7 +95,7 @@ namespace Lua
      * Pop the value from top of Lua stack,
      * the top value of Lua stack is removed
      */
-    template <typename T>
+    template <typename T = LuaRef>
     inline T pop(lua_State* L)
     {
         T v = LuaType<T>::get(L, -1);
@@ -180,7 +182,7 @@ namespace Lua
     /**
      * Get the named global, the Lua stack is not changed
      */
-    template <typename T>
+    template <typename T = LuaRef>
     inline T getGlobal(lua_State* L, const char* name)
     {
         pushGlobal(L, name);
@@ -221,7 +223,7 @@ namespace Lua
      * @param L the lua state
      * @param lua_expr the lua expression
      */
-    template <typename T>
+    template <typename T = LuaRef>
     inline T eval(lua_State* L, const char* lua_expr)
     {
         std::string expr("return ");
