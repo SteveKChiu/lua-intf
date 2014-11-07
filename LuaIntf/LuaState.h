@@ -713,10 +713,10 @@ public:
     void unref(int ref) const
         { luaL_unref(L, LUA_REGISTRYINDEX, ref); }
 
-    int ref(int table_idx) const
+    int refTable(int table_idx) const
         { return luaL_ref(L, table_idx); }
 
-    void unref(int table_idx, int ref) const
+    void unrefTable(int table_idx, int ref) const
         { luaL_unref(L, table_idx, ref); }
 
 // debug functions
@@ -776,7 +776,7 @@ public:
         { return Lua::pop<T>(L); }
 
     template <typename T>
-    T toGlobalValue(const char* name) const
+    T getGlobalValue(const char* name) const
         { return Lua::getGlobal<T>(L, name); }
 
     template <typename T>
