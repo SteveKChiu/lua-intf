@@ -384,8 +384,8 @@ protected:
 
 //--------------------------------------------------------------------------
 
-#define LUA_SP(p) static_cast<p*>(nullptr)
-#define LUA_DEL(d) static_cast<d**>(nullptr)
+#define LUA_SP(...) static_cast<__VA_ARGS__*>(nullptr)
+#define LUA_DEL(...) static_cast<__VA_ARGS__**>(nullptr)
 
 /**
  * Provides a class registration in a lua_State.
