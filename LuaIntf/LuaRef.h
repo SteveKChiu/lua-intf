@@ -40,26 +40,26 @@ class LuaRef;
 //---------------------------------------------------------------------------
 
 /**
- * Assignable and convertible result of bracket-style lookup
+ * Assignable and convertible result of bracket-style lookup.
  */
 class LuaTableRef
 {
 public:
     /**
-     * Create new index association
+     * Create new index association.
      *
      * @param state the lua state
      * @param table the table reference (no auto unref)
      * @param key the table key reference (it will be unref automatically)
      */
-    constexpr LuaTableRef(lua_State* state, int table, int key)
+    LuaTableRef(lua_State* state, int table, int key)
         : L(state)
         , m_table(table)
         , m_key(key)
         {}
 
     /**
-     * Copy constructor
+     * Copy constructor for LuaTableRef.
      */
     LuaTableRef(const LuaTableRef& that)
         : L(that.L)
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * Move constructor
+     * Move constructor for LuaTableRef.
      */
     LuaTableRef(LuaTableRef&& that)
         : L(that.L)
@@ -81,7 +81,7 @@ public:
     }
 
     /**
-     * Destructor
+     * Destructor for LuaTableRef.
      */
     ~LuaTableRef()
     {
@@ -89,14 +89,14 @@ public:
     }
 
     /**
-     * Copy value from other table[key] reference
+     * Copy value from other table[key] reference.
      *
      * @param that reference from other table[key]
      */
     LuaTableRef& operator = (const LuaTableRef& that);
 
     /**
-     * Assign value for table[key]
+     * Assign value for table[key].
      *
      * @param value new value for table[key]
      * @throw LuaException if V are not convertible to Lua types
@@ -113,7 +113,8 @@ public:
     }
 
     /**
-     * Get value of table[key]
+     * Get value of table[key].
+     * This may raise Lua error or throw LuaException if value is not convertible.
      *
      * @return value of t[k] as type V
      * @throw LuaException if V are not convertible to Lua types
@@ -138,13 +139,13 @@ private:
 //---------------------------------------------------------------------------
 
 /**
- * C++ and java style const iterator for this table
+ * C++ style const iterator for this table
  */
 class LuaTableIterator
 {
 public:
     /**
-     * Create empty LuaTableIterator, it must be assigned to other LuaTableIterator before using
+     * Create empty LuaTableIterator, it must be assigned to other LuaTableIterator before using.
      */
     constexpr LuaTableIterator()
         : L(nullptr)
@@ -154,7 +155,7 @@ public:
         {}
 
     /**
-     * Create LuaTableIterator for table
+     * Create LuaTableIterator for table.
      *
      * @param state the lua state
      * @param table the lua table reference (no auto unref)
@@ -163,22 +164,22 @@ public:
     LuaTableIterator(lua_State* state, int table, bool fetch_next);
 
     /**
-     * Copy constructor
+     * Copy constructor for LuaTableIterator.
      */
     LuaTableIterator(const LuaTableIterator& that);
 
     /**
-     * Move constructor
+     * Move constructor for LuaTableIterator.
      */
     LuaTableIterator(LuaTableIterator&& that);
 
     /**
-     * Destructor
+     * Destructor for LuaTableIterator.
      */
     ~LuaTableIterator();
 
     /**
-     * Get entry (for loop inerator compatibility)
+     * Get entry (for loop inerator compatibility).
      */
     const LuaTableIterator& operator * () const
     {
@@ -186,7 +187,7 @@ public:
     }
 
     /**
-     * Advance to next entry
+     * Advance to next entry.
      */
     LuaTableIterator& operator ++ ()
     {
@@ -195,22 +196,22 @@ public:
     }
 
     /**
-     * Copy assignment
+     * Copy assignment for LuaTableIterator.
      */
     LuaTableIterator& operator = (const LuaTableIterator& that);
 
     /**
-     * Move assignment
+     * Move assignment for LuaTableIterator.
      */
     LuaTableIterator& operator = (LuaTableIterator&& that);
 
     /**
-     * Test whether the two iterator is at same position
+     * Test whether the two iterator is at same position.
      */
     bool operator == (const LuaTableIterator& that) const;
 
     /**
-     * Test whether the two iterator is at same position
+     * Test whether the two iterator is not at same position.
      */
     bool operator != (const LuaTableIterator& that) const
     {
@@ -218,7 +219,8 @@ public:
     }
 
     /**
-     * Get the key of current entry
+     * Get the key of current entry.
+     * This may raise Lua error or throw LuaException if key is not convertible.
      */
     template <typename K = LuaRef>
     K key() const
@@ -229,7 +231,8 @@ public:
     }
 
     /**
-     * Get the value of current entry
+     * Get the value of current entry.
+     * This may raise Lua error or throw LuaException if value is not convertible.
      */
     template <typename V = LuaRef>
     V value() const
@@ -254,7 +257,7 @@ private:
 /**
  * Lightweight reference to a Lua object.
  *
- *   The reference is maintained for the lifetime of the C++ object.
+ * The reference is maintained for the lifetime of the C++ object.
  */
 class LuaRef
 {
@@ -275,8 +278,8 @@ public:
 
     /**
      * Create new userdata with specified object.
-     * The object is copied to userdata (by using copy constructor)
-     * If the given object has non trivial destructor, it will be called upon gc
+     * The object is copied to userdata (by using copy constructor).
+     * If the given object has non trivial destructor, it will be called upon gc.
      *
      * @param L lua state
      * @param cpp_obj the object to be copied
@@ -304,7 +307,7 @@ public:
     }
 
     /**
-     * Create new lua_CFunction with context (lightuserdata) as upvalue(1)
+     * Create new lua_CFunction with context (lightuserdata) as upvalue(1).
      *
      * @param L lua state
      * @param proc the lua_CFunction
@@ -318,9 +321,9 @@ public:
     }
 
     /**
-     * Create new lua_CFunction with allocated object as upvalue(1)
-     * The object is copied to upvalue(1) (by using copy constructor)
-     * If the given object has non trivial destructor, it will be called upon gc
+     * Create new lua_CFunction with allocated object as upvalue(1).
+     * The object is copied to upvalue(1) (by using copy constructor).
+     * If the given object has non trivial destructor, it will be called upon gc.
      *
      * @param L lua state
      * @param proc the lua_CFunction
@@ -337,7 +340,7 @@ public:
     }
 
     /**
-     * Create a new, empty table
+     * Create a new, empty table.
      *
      * @param L lua state
      * @param narr pre-allocate space for this number of array elements
@@ -351,7 +354,7 @@ public:
     }
 
     /**
-     * Create a new table and set the meta table, this behaves like an object
+     * Create a new table and set the meta table, this behaves like an object.
      *
      * @param L lua state
      * @param meta the name of meta table
@@ -366,7 +369,7 @@ public:
     }
 
     /**
-     * Get registry table
+     * Get registry table.
      */
     static LuaRef registry(lua_State* L)
     {
@@ -374,7 +377,7 @@ public:
     }
 
     /**
-     * Get global table (_G)
+     * Get global table (_G).
      */
     static LuaRef globals(lua_State* L)
     {
@@ -383,7 +386,7 @@ public:
     }
 
     /**
-     * Create empty reference
+     * Create empty reference.
      */
     constexpr LuaRef()
         : L(nullptr)
@@ -391,7 +394,7 @@ public:
         {}
 
     /**
-     * Create reference to object on stack, stack is not changed
+     * Create reference to object on stack, stack is not changed.
      *
      * @param L lua state
      * @param index position on stack
@@ -405,7 +408,7 @@ public:
     }
 
     /**
-     * Create reference to lua global
+     * Create reference to lua global.
      *
      * @param L lua state
      * @param name the global name, may contains '.' to access sub obejct
@@ -419,7 +422,7 @@ public:
     }
 
     /**
-     * Copy constructor, this still refer to the same Lua object
+     * Copy constructor, this still refer to the same Lua object.
      */
     LuaRef(const LuaRef& that)
         : L(that.L)
@@ -429,7 +432,7 @@ public:
     }
 
     /**
-     * Move constructor, this still refer to the same Lua object
+     * Move constructor, this still refer to the same Lua object.
      */
     LuaRef(LuaRef&& that)
         : L(that.L)
@@ -439,14 +442,14 @@ public:
     }
 
     /**
-     * Type conversion for LuaTableRef
+     * Type conversion for LuaTableRef.
      */
     LuaRef(const LuaTableRef& that)
         : LuaRef(that.value())
         {}
 
     /**
-     * Destructor, release the reference
+     * Destructor, release the reference.
      */
     ~LuaRef()
     {
@@ -456,12 +459,12 @@ public:
     }
 
     /**
-     * Copy assignment, this only copy the reference, so both refer to the same object
+     * Copy assignment, this only copy the reference, so both refer to the same object.
      */
     LuaRef& operator = (const LuaRef& that);
 
     /**
-     * Move assignment, this only apply to the reference
+     * Move assignment, this only apply to the reference.
      */
     LuaRef& operator = (LuaRef&& that)
     {
@@ -471,7 +474,7 @@ public:
     }
 
     /**
-     * Get the underlying lua state
+     * Get the underlying lua state.
      */
     lua_State* state() const
     {
@@ -479,7 +482,7 @@ public:
     }
 
     /**
-     * Check whether the reference is valid (bind to lua)
+     * Check whether the reference is valid (bind to lua).
      */
     bool isValid() const
     {
@@ -487,7 +490,7 @@ public:
     }
 
     /**
-     * Test whether this ref is table
+     * Test whether this ref is table.
      */
     bool isTable() const
     {
@@ -495,7 +498,7 @@ public:
     }
 
     /**
-     * Test whether this ref is function
+     * Test whether this ref is function.
      */
     bool isFunction() const
     {
@@ -503,12 +506,12 @@ public:
     }
 
     /**
-     * Get the lua type id
+     * Get the lua type id.
      */
     LuaTypeID type() const;
 
     /**
-     * Get the lua type name
+     * Get the lua type name.
      */
     const char* typeName() const
     {
@@ -519,8 +522,8 @@ public:
     }
 
     /**
-     * Check whether the reference is table
-     * may throw LuaException if type is not matched
+     * Check whether the reference is table.
+     * This may raise Lua error if type is not matched.
      */
     const LuaRef& checkTable() const
     {
@@ -528,8 +531,8 @@ public:
     }
 
     /**
-     * Check whether the reference is function
-     * may throw LuaException if type is not matched
+     * Check whether the reference is function.
+     * This may raise Lua error if type is not matched.
      */
     const LuaRef& checkFunction() const
     {
@@ -537,8 +540,8 @@ public:
     }
 
     /**
-     * Check whether the reference is in given type
-     * may throw LuaException if type is not matched
+     * Check whether the reference is in given type.
+     * This may raise Lua error if type is not matched.
      */
     const LuaRef& checkType(LuaTypeID type) const
     {
@@ -549,23 +552,23 @@ public:
     }
 
     /**
-     * Test whether this reference is identical to the other reference (not via any metatable)
+     * Test whether this reference is identical to the other reference (not via any metatable).
      */
     bool isIdenticalTo(const LuaRef& r) const;
 
     /**
-     * Compare this reference to the other reference
-     * @return 0 if equal; -1 is less than; 1 if greater than
+     * Compare this reference to the other reference.
+     * @return 0 if equal; -1 if less than; 1 if greater than
      */
     int compareTo(const LuaRef& r) const;
 
     /**
-     * Test whether this reference is equal to the other reference
+     * Test whether this reference is equal to the other reference.
      */
     bool operator == (const LuaRef& r) const;
 
     /**
-     * Test whether this reference is lua_nil
+     * Test whether this reference is nil.
      */
     bool operator == (std::nullptr_t) const
     {
@@ -573,7 +576,7 @@ public:
     }
 
     /**
-     * Test whether this reference is not equal to the other reference
+     * Test whether this reference is not equal to the other reference.
      */
     bool operator != (const LuaRef& r) const
     {
@@ -581,7 +584,7 @@ public:
     }
 
     /**
-     * Test whether this is not lua_nil
+     * Test whether this is not nil.
      */
     bool operator != (std::nullptr_t r) const
     {
@@ -589,17 +592,17 @@ public:
     }
 
     /**
-     * Test whether this reference is less than the other reference
+     * Test whether this reference is less than the other reference.
      */
     bool operator < (const LuaRef& r) const;
 
     /**
-     * Test whether this reference is less than or equal to the other reference
+     * Test whether this reference is less than or equal to the other reference.
      */
     bool operator <= (const LuaRef& r) const;
 
     /**
-     * Test whether this reference is greater than the other reference
+     * Test whether this reference is greater than the other reference.
      */
     bool operator > (const LuaRef& r) const
     {
@@ -607,7 +610,7 @@ public:
     }
 
     /**
-     * Test whether this reference is greater than or equal to the other reference
+     * Test whether this reference is greater than or equal to the other reference.
      */
     bool operator >= (const LuaRef& r) const
     {
@@ -615,7 +618,7 @@ public:
     }
 
     /**
-     * Push value of this reference into lua stack
+     * Push value of this reference into lua stack.
      */
     void pushToStack() const
     {
@@ -624,7 +627,7 @@ public:
     }
 
     /**
-     * Create LuaRef from top of lua stack, the top value is popped from stack
+     * Create LuaRef from top of lua stack, the top value is popped from stack.
      */
     static LuaRef popFromStack(lua_State* L)
     {
@@ -632,7 +635,8 @@ public:
     }
 
     /**
-     * Cast to the given value type
+     * Cast to the given value type.
+     * This may raise Lua error or throw LuaException if value is not convertible.
      */
     template <typename T>
     T toValue() const
@@ -642,7 +646,8 @@ public:
     }
 
     /**
-     * Create LuaRef from value
+     * Create LuaRef from value.
+     * This may raise Lua error or throw LuaException if value is not convertible.
      */
     template <typename T>
     static LuaRef fromValue(lua_State* L, const T& value)
@@ -652,7 +657,7 @@ public:
     }
 
     /**
-     * Cast to the data pointer, if this ref is not pointer, return nullptr
+     * Cast to the data pointer, if this ref is not pointer, return nullptr.
      */
     void* toPtr() const
     {
@@ -663,7 +668,7 @@ public:
     }
 
     /**
-     * Create LuaRef from data pointer, the data pointer life time is managed by C++
+     * Create LuaRef from data pointer, the data pointer life time is managed by C++.
      */
     static LuaRef fromPtr(lua_State* L, void* ptr)
     {
@@ -672,7 +677,8 @@ public:
     }
 
     /**
-     * Call this function
+     * Call this function.
+     * This may raise Lua error or throw LuaException if arguments are not convertible.
      *
      * @param args arguments to pass to function
      */
@@ -684,6 +690,7 @@ public:
 
     /**
      * Call this function and get return value(s).
+     * This may raise Lua error or throw LuaException if result or arguments are not convertible.
      *
      * To return multiple values from Lua function, use std::tuple as return type:
      *
@@ -707,6 +714,7 @@ public:
      * Call the member function and get return value(s), the member function would
      * expect the first argument as object (table) itself, much like calling function using
      * ':' syntax in Lua.
+     * This may raise Lua error or throw LuaException if result or arguments are not convertible.
      *
      * To return multiple values from Lua function, use std::tuple as return type:
      *
@@ -730,6 +738,7 @@ public:
     /**
      * Call the member function and get return value(s), much like calling function using
      * '.' syntax in Lua.
+     * This may raise Lua error or throw LuaException if result or arguments are not convertible.
      *
      * To return multiple values from Lua function, use std::tuple as return type:
      *
@@ -751,25 +760,25 @@ public:
     }
 
     /**
-     * Get this table's metatable
+     * Get this table's metatable.
      *
      * @return this table's metatable or nil if none
      */
     LuaRef getMetaTable() const;
 
     /**
-     * Set this table's metatable
+     * Set this table's metatable.
      *
      * @param meta new metatable
      */
     void setMetaTable(const LuaRef& meta);
 
     /**
-     * Look up field in table in raw mode (not via metatable)
+     * Look up field in table in raw mode (not via metatable).
+     * This may raise Lua error or throw LuaException if K or V is not convertible.
      *
-     * @param key variable key
-     * @return variable value
-     * @throw LuaException if K or V are not convertible to Lua types
+     * @param key field key
+     * @return field value
      */
     template <typename V = LuaRef, typename K>
     V rawget(const K& key) const
@@ -783,12 +792,12 @@ public:
     }
 
     /**
-     * Look up field in table in raw mode (not via metatable)
+     * Look up field in table in raw mode (not via metatable).
+     * This may raise Lua error or throw LuaException if K or V is not convertible.
      *
-     * @param key variable key
-     * @param def default value
-     * @return variable value
-     * @throw LuaException if K or V are not convertible to Lua types
+     * @param key field key
+     * @param def default value if the field is missing
+     * @return field value
      */
     template <typename V, typename K>
     V rawget(const K& key, const V& def) const
@@ -802,11 +811,11 @@ public:
     }
 
     /**
-     * Set field in table in raw mode (not via metatable)
+     * Set field in table in raw mode (not via metatable).
+     * This may raise Lua error or throw LuaException if K or V is not convertible.
      *
-     * @param key variable key
-     * @param value variable value
-     * @throw LuaException if K or V are not convertible to Lua types
+     * @param key field key
+     * @param value field value
      */
     template <typename K, typename V>
     void rawset(const K& key, const V& value)
@@ -819,11 +828,11 @@ public:
     }
 
     /**
-     * Look up field in table in raw mode (not via metatable)
+     * Look up field in table in raw mode (not via metatable).
+     * This may raise Lua error or throw LuaException if V is not convertible.
      *
-     * @param key lightuserdata key
-     * @return variable value
-     * @throw LuaException if V are not convertible to Lua types
+     * @param p field key
+     * @return field value
      */
     template <typename V = LuaRef>
     V rawget(void* p) const
@@ -836,12 +845,12 @@ public:
     }
 
     /**
-     * Look up field in table in raw mode (not via metatable)
+     * Look up field in table in raw mode (not via metatable).
+     * This may raise Lua error or throw LuaException if V is not convertible.
      *
-     * @param key lightuserdata key
-     * @param def default value
-     * @return variable value
-     * @throw LuaException if V are not convertible to Lua types
+     * @param p field key
+     * @param def default value if the field is missing
+     * @return field value
      */
     template <typename V>
     V rawget(void* p, const V& def) const
@@ -854,11 +863,11 @@ public:
     }
 
     /**
-     * Set field in table in raw mode (not via metatable)
+     * Set field in table in raw mode (not via metatable).
+     * This may raise Lua error or throw LuaException if V is not convertible.
      *
-     * @param p lightuserdata key
-     * @param value variable value
-     * @throw LuaException if V are not convertible to Lua types
+     * @param p field key
+     * @param value field value
      */
     template <typename V>
     void rawset(void* p, const V& value)
@@ -870,11 +879,11 @@ public:
     }
 
     /**
-     * Look up field in table in raw mode (not via metatable)
+     * Look up field in table in raw mode (not via metatable).
+     * This may raise Lua error or throw LuaException if V is not convertible.
      *
-     * @param key lightuserdata key
-     * @return variable value
-     * @throw LuaException if V are not convertible to Lua types
+     * @param i field key
+     * @return field value
      */
     template <typename V = LuaRef>
     V rawget(int i) const
@@ -887,12 +896,12 @@ public:
     }
 
     /**
-     * Look up field in table in raw mode (not via metatable)
+     * Look up field in table in raw mode (not via metatable).
+     * This may raise Lua error or throw LuaException if V is not convertible.
      *
-     * @param key lightuserdata key
-     * @param def default value
-     * @return variable value
-     * @throw LuaException if V are not convertible to Lua types
+     * @param i field key
+     * @param def default value if the field is missing
+     * @return field value
      */
     template <typename V>
     V rawget(int i, const V& def) const
@@ -905,11 +914,11 @@ public:
     }
 
     /**
-     * Set field in table in raw mode (not via metatable)
+     * Set field in table in raw mode (not via metatable).
+     * This may raise Lua error or throw LuaException if V is not convertible.
      *
-     * @param p lightuserdata key
-     * @param value variable value
-     * @throw LuaException if V are not convertible to Lua types
+     * @param i field key
+     * @param value field value
      */
     template <typename V>
     void rawset(int i, const V& value)
@@ -921,7 +930,7 @@ public:
     }
 
     /**
-     * Get the length of this table (the same as # operator of lua, but not via metatable)
+     * Get the length of this table (the same as # operator of lua, but not via metatable).
      */
     int rawlen() const
     {
@@ -932,11 +941,11 @@ public:
     }
 
     /**
-     * Test whether field is in table
+     * Test whether the field is in this table.
+     * This may raise Lua error or throw LuaException if K is not convertible.
      *
-     * @param key variable key
+     * @param key field key
      * @return true if field is available
-     * @throw LuaException if K is not convertible to Lua types
      */
     template <typename K>
     bool has(const K& key) const
@@ -950,11 +959,11 @@ public:
     }
 
     /**
-     * Look up field in table
+     * Look up field in this table.
+     * This may raise Lua error or throw LuaException if K or V is not convertible.
      *
-     * @param key variable key
-     * @return variable value
-     * @throw LuaException if K or V are not convertible to Lua types
+     * @param key field key
+     * @return field value
      */
     template <typename V = LuaRef, typename K>
     V get(const K& key) const
@@ -968,12 +977,12 @@ public:
     }
 
     /**
-     * Look up field in table
+     * Look up field in this table.
+     * This may raise Lua error or throw LuaException if K or V is not convertible.
      *
-     * @param key variable key
-     * @param def default value
-     * @return variable value
-     * @throw LuaException if K or V are not convertible to Lua types
+     * @param key field name
+     * @param def default value if the field is missing
+     * @return field value
      */
     template <typename V, typename K>
     V get(const K& key, const V& def) const
@@ -987,11 +996,11 @@ public:
     }
 
     /**
-     * Set field in table
+     * Set field in this table.
+     * This may raise Lua error or throw LuaException if K or V is not convertible.
      *
-     * @param key variable key
-     * @param value variable value
-     * @throw LuaException if K or V are not convertible to Lua types
+     * @param key field key
+     * @param value field value
      */
     template <typename K, typename V>
     void set(const K& key, const V& value)
@@ -1004,10 +1013,10 @@ public:
     }
 
     /**
-     * Remove field in table
+     * Remove field in table.
+     * This may raise Lua error or throw LuaException if K is not convertible.
      *
-     * @param key variable key
-     * @throw LuaException if K is not convertible to Lua types
+     * @param key field key
      */
     template <typename K>
     void remove(const K& key)
@@ -1020,7 +1029,7 @@ public:
     }
 
     /**
-     * Get the length of this table (the same as # operator of lua)
+     * Get the length of this table (the same as # operator of lua).
      */
     int len() const
     {
@@ -1031,9 +1040,10 @@ public:
     }
 
     /**
-     * Get or set variable in table with bracket-style syntax
+     * Get or set field in this table with bracket-style syntax.
+     * This may raise Lua error or throw LuaException if K is not convertible.
      *
-     * @param key variable key
+     * @param key field key
      * @return assignable and convertible handle for specified key in this table
      */
     template <typename K>
@@ -1044,9 +1054,10 @@ public:
     }
 
     /**
-     * Get variable in table with bracket-style syntax
+     * Get field in table with bracket-style syntax.
+     * This may raise Lua error or throw LuaException if K is not convertible.
      *
-     * @param key variable key
+     * @param key field key
      * @return convertible handle for specified key in this table
      */
     template <typename K>
@@ -1057,7 +1068,7 @@ public:
     }
 
     /**
-     * Get the C++ style const iterator
+     * Get the C++ style const iterator.
      */
     LuaTableIterator begin() const
     {
@@ -1065,7 +1076,7 @@ public:
     }
 
     /**
-     * Get the C++ style const iterator
+     * Get the C++ style const iterator.
      */
     LuaTableIterator end() const
     {
@@ -1074,7 +1085,7 @@ public:
 
 private:
     /**
-     * Special constructor for popFromStack
+     * Special constructor for popFromStack.
      */
     explicit LuaRef(lua_State* state)
         : L(state)
