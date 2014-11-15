@@ -48,7 +48,7 @@ public:
     /**
      * Create new index association.
      *
-     * @param state the lua state
+     * @param state the Lua state
      * @param table the table reference (no auto unref)
      * @param key the table key reference (it will be unref automatically)
      */
@@ -157,8 +157,8 @@ public:
     /**
      * Create LuaTableIterator for table.
      *
-     * @param state the lua state
-     * @param table the lua table reference (no auto unref)
+     * @param state the Lua state
+     * @param table the Lua table reference (no auto unref)
      * @param fetch_next true if fetch next entry first
      */
     LuaTableIterator(lua_State* state, int table, bool fetch_next);
@@ -265,7 +265,7 @@ public:
     /**
      * Create new userdata with requested size.
      *
-     * @param L lua state
+     * @param L Lua state
      * @param userdata_size the size of userdata to allocate
      * @param out_userdata [out] the pointer to allocated userdata, can be nullptr if not needed
      */
@@ -281,7 +281,7 @@ public:
      * The object is copied to userdata (by using copy constructor).
      * If the given object has non trivial destructor, it will be called upon gc.
      *
-     * @param L lua state
+     * @param L Lua state
      * @param cpp_obj the object to be copied
      */
     template <typename T>
@@ -294,7 +294,7 @@ public:
     /**
      * Create new lua_CFunction with multiple upvalues.
      *
-     * @param L lua state
+     * @param L Lua state
      * @param proc the lua_CFunction
      * @param upvalues as upvalues(n) to the lua_CFunction
      */
@@ -309,7 +309,7 @@ public:
     /**
      * Create new lua_CFunction with context (lightuserdata) as upvalue(1).
      *
-     * @param L lua state
+     * @param L Lua state
      * @param proc the lua_CFunction
      * @param ptr the context pointer as upvalue(1)
      */
@@ -325,7 +325,7 @@ public:
      * The object is copied to upvalue(1) (by using copy constructor).
      * If the given object has non trivial destructor, it will be called upon gc.
      *
-     * @param L lua state
+     * @param L Lua state
      * @param proc the lua_CFunction
      * @param cpp_obj the data to be copied as upvalue(1)
      */
@@ -342,7 +342,7 @@ public:
     /**
      * Create a new, empty table.
      *
-     * @param L lua state
+     * @param L Lua state
      * @param narr pre-allocate space for this number of array elements
      * @param nrec pre-allocate space for this number of non-array elements
      * @return empty table
@@ -356,7 +356,7 @@ public:
     /**
      * Create a new table and set the meta table, this behaves like an object.
      *
-     * @param L lua state
+     * @param L Lua state
      * @param meta the name of meta table
      * @return empty table
      */
@@ -394,9 +394,17 @@ public:
         {}
 
     /**
+     * Create reference to Lua nil.
+     */
+    LuaRef(lua_State* state, std::nullptr_t)
+        : L(state)
+        , m_ref(LUA_REFNIL)
+        {}
+
+    /**
      * Create reference to object on stack, stack is not changed.
      *
-     * @param L lua state
+     * @param L Lua state
      * @param index position on stack
      */
     LuaRef(lua_State* state, int index)
@@ -408,9 +416,9 @@ public:
     }
 
     /**
-     * Create reference to lua global.
+     * Create reference to Lua global.
      *
-     * @param L lua state
+     * @param L Lua state
      * @param name the global name, may contains '.' to access sub obejct
      */
     LuaRef(lua_State* state, const char* name)
@@ -474,7 +482,7 @@ public:
     }
 
     /**
-     * Get the underlying lua state.
+     * Get the underlying Lua state.
      */
     lua_State* state() const
     {
@@ -482,11 +490,11 @@ public:
     }
 
     /**
-     * Check whether the reference is valid (bind to lua).
+     * Check whether the reference is valid (has been bind to Lua).
      */
     bool isValid() const
     {
-        return L && m_ref != LUA_NOREF;
+        return m_ref != LUA_NOREF;
     }
 
     /**
@@ -506,12 +514,12 @@ public:
     }
 
     /**
-     * Get the lua type id.
+     * Get the Lua type id.
      */
     LuaTypeID type() const;
 
     /**
-     * Get the lua type name.
+     * Get the Lua type name.
      */
     const char* typeName() const
     {
@@ -618,7 +626,15 @@ public:
     }
 
     /**
-     * Push value of this reference into lua stack.
+     * Test whether this reference is valid and not nil.
+     */
+    explicit operator bool () const
+    {
+        return m_ref != LUA_NOREF && m_ref != LUA_REFNIL;
+    }
+
+    /**
+     * Push value of this reference to Lua stack.
      */
     void pushToStack() const
     {
@@ -627,7 +643,7 @@ public:
     }
 
     /**
-     * Create LuaRef from top of lua stack, the top value is popped from stack.
+     * Create LuaRef from top of Lua stack, the top value is popped from stack.
      */
     static LuaRef popFromStack(lua_State* L)
     {
@@ -930,7 +946,7 @@ public:
     }
 
     /**
-     * Get the length of this table (the same as # operator of lua, but not via metatable).
+     * Get the length of this table (the same as # operator of Lua, but not via metatable).
      */
     int rawlen() const
     {
@@ -1029,7 +1045,7 @@ public:
     }
 
     /**
-     * Get the length of this table (the same as # operator of lua).
+     * Get the length of this table (the same as # operator of Lua).
      */
     int len() const
     {
@@ -1227,9 +1243,13 @@ struct LuaValueType <LuaRef>
 {
     using ValueType = LuaRef;
 
-    static void push(lua_State*, const LuaRef& r)
+    static void push(lua_State* L, const LuaRef& r)
     {
-        r.pushToStack();
+        if (r.isValid()) {
+            r.pushToStack();
+        } else {
+            lua_pushnil(L);
+        }
     }
 
     static LuaRef get(lua_State* L, int index)
