@@ -107,13 +107,15 @@ C++ class or functions exported are organized by module and class. The general l
 		.beginModule(string module_name)
 			.addFactory(function* func)
 
+            .addConstant(string constant_name, VALUE_TYPE value)
+
 			.addVariable(string property_name, VARIABLE_TYPE* var, bool writable = true)
 			.addVariableRef(string property_name, VARIABLE_TYPE* var, bool writable = true)
 
-			.addProperty(string property_name, function* getter, function* setter)
-			.addProperty(string property_name, function* getter)
+			.addProperty(string property_name, FUNCTION_TYPE getter, FUNCTION_TYPE setter)
+			.addProperty(string property_name, FUNCTION_TYPE getter)
 
-			.addFunction(string function_name, function* func)
+			.addFunction(string function_name, FUNCTION_TYPE func)
 
 			.beginModule(string sub_module_name)
 				...
@@ -131,6 +133,8 @@ C++ class or functions exported are organized by module and class. The general l
 		.beginClass<CXX_TYPE>(string class_name)
 			.addFactory(FUNCTION_TYPE func)		// you can only have one addFactory or addConstructor
 			.addConstructor(LUA_ARGS(...))
+
+            .addConstant(string constant_name, VALUE_TYPE value)
 
 			.addStaticVariable(string property_name, VARIABLE_TYPE* var, bool writable = true)
 			.addStaticVariableRef(string property_name, VARIABLE_TYPE* var, bool writable = true)
@@ -160,6 +164,7 @@ C++ class or functions exported are organized by module and class. The general l
 A module binding is like a package or namespace, it can also contain other sub-module or class. A module can have the following bindings:
 
 + factory function - bind to global or static C++ functions, or forward to sub-class constructor or sub-module factory
++ constant - bind to constant value
 + variable - bind to global or static variable, the valued pushed to lua is by-value, can be read-only
 + variable reference - bind to global or static variable, the valued pushed to lua is by-reference, can be read-only
 + property - bind to getter and setter functions, can be read-only
@@ -169,6 +174,7 @@ A class binding is modeled after C++ class, it models the const-ness correctly, 
 
 + constructor - bind to class constructor
 + factory function - bind to global or static function that return the newly created object
++ constant - bind to constant value, constant is static
 + static variable - bind to global or static variable, the valued pushed to lua is by-value, can be read-only
 + static variable reference - bind to global or static variable, the valued pushed to lua is by-reference, can be read-only
 + static property - bind to global or static getter and setter functions, can be read-only
@@ -182,7 +188,7 @@ For module and class, you can have only one constructor or factory function. To 
 ````lua
 	local w = Web("http://www.google.com")
 ````
-The static or module variable and property is accessible by module/class name, it is just like table field:
+The static or module variable, property and constant is accessible by module/class name, it is just like table field:
 ````lua
 	local url = Web.home_url
 	Web.home_url = "http://www.google.com"
