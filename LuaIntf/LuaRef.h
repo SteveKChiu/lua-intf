@@ -432,12 +432,7 @@ public:
     /**
      * Copy constructor, this still refer to the same Lua object.
      */
-    LuaRef(const LuaRef& that)
-        : L(that.L)
-    {
-        lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_ref);
-        m_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    }
+    LuaRef(const LuaRef& that);
 
     /**
      * Move constructor, this still refer to the same Lua object.
