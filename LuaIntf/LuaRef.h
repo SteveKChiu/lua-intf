@@ -472,12 +472,24 @@ public:
     LuaRef& operator = (const LuaRef& that);
 
     /**
-     * Move assignment, this only apply to the reference.
+     * Move assignment, this only apply to the reference, the original object is not changed.
      */
     LuaRef& operator = (LuaRef&& that)
     {
         std::swap(L, that.L);
         std::swap(m_ref, that.m_ref);
+        return *this;
+    }
+
+    /**
+     * Reset to nil reference, the original object is not changed.
+     */
+    LuaRef& operator = (std::nullptr_t)
+    {
+        if (L) {
+            luaL_unref(L, LUA_REGISTRYINDEX, m_ref);
+            m_ref = LUA_REFNIL;
+        }
         return *this;
     }
 
