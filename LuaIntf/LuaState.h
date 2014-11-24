@@ -745,7 +745,7 @@ public:
     const char* setUpvalue(int func_idx, int n) const
         { return lua_setupvalue(L, func_idx, n); }
 
-#if LUA_VERSION_NUM > 501
+#if LUA_VERSION_NUM >= 502
     void* upvalueId(int func_idx, int n) const
         { return lua_upvalueid(L, func_idx, n); }
 
