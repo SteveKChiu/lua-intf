@@ -619,16 +619,22 @@ public:
 #if LUA_VERSION_NUM == 501
     int load(lua_Reader reader, void* dt, const char* chunk_name) const
         { return lua_load(L, reader, dt, chunk_name); }
+
+    int loadFile(const char* filename) const
+        { return luaL_loadfile(L, filename); }
+
+    int loadBuffer(const char* buff, size_t sz, const char* chunk_name) const
+        { return luaL_loadbuffer(L, buff, sz, chunk_name); }
 #else
     int load(lua_Reader reader, void* dt, const char* chunk_name, const char* mode = nullptr) const
         { return lua_load(L, reader, dt, chunk_name, mode); }
-#endif
 
     int loadFile(const char* filename, const char* mode = nullptr) const
         { return luaL_loadfilex(L, filename, mode); }
 
     int loadBuffer(const char* buff, size_t sz, const char* chunk_name, const char* mode = nullptr) const
         { return luaL_loadbufferx(L, buff, sz, chunk_name, mode); }
+#endif
 
     int loadString(const char* s) const
         { return luaL_loadstring(L, s); }
@@ -639,6 +645,9 @@ public:
 #if LUA_VERSION_NUM >= 502
     void require(const char* mod_name, lua_CFunction open_func, bool set_global = true) const
         { luaL_requiref(L, mod_name, open_func, set_global); }
+
+    int execResult(int stat) const
+        { return luaL_execresult(L, stat); }
 #endif
 
     bool doFile(const char* filename) const
@@ -652,9 +661,6 @@ public:
 
     int fileResult(int stat, const char* file_name) const
         { return luaL_fileresult(L, stat, file_name); }
-
-    int execResult(int stat) const
-        { return luaL_execresult(L, stat); }
 
 // coroutine functions
 
@@ -739,11 +745,13 @@ public:
     const char* setUpvalue(int func_idx, int n) const
         { return lua_setupvalue(L, func_idx, n); }
 
+#if LUA_VERSION_NUM > 501
     void* upvalueId(int func_idx, int n) const
         { return lua_upvalueid(L, func_idx, n); }
 
     void upvalueJoin(int func_idx1, int n1, int func_idx2, int n2) const
         { lua_upvaluejoin(L, func_idx1, n1, func_idx2, n2);}
+#endif
 
     int setHook(lua_Hook func, int mask, int count) const
         { return lua_sethook(L, func, mask, count); }
