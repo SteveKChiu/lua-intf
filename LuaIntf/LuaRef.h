@@ -58,7 +58,9 @@ public:
         : L(state)
         , m_table(table)
         , m_key(key)
-        {}
+    {
+        assert(L);
+    }
 
     /**
      * Copy constructor for LuaTableRef.
@@ -67,6 +69,7 @@ public:
         : L(that.L)
         , m_table(that.m_table)
     {
+        assert(L);
         lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_key);
         m_key = luaL_ref(L, LUA_REGISTRYINDEX);
     }
@@ -79,6 +82,7 @@ public:
         , m_table(that.m_table)
         , m_key(that.m_key)
     {
+        assert(L);
         that.m_key = LUA_NOREF;
     }
 
@@ -227,7 +231,7 @@ public:
     template <typename K = LuaRef>
     K key() const
     {
-        if (!L) throw LuaException("invalid key reference");
+        assert(L);
         lua_rawgeti(L, LUA_REGISTRYINDEX, m_key);
         return Lua::pop<K>(L);
     }
@@ -239,7 +243,7 @@ public:
     template <typename V = LuaRef>
     V value() const
     {
-        if (!L) throw LuaException("invalid value reference");
+        assert(L);
         lua_rawgeti(L, LUA_REGISTRYINDEX, m_value);
         return Lua::pop<V>(L);
     }
@@ -412,7 +416,7 @@ public:
     LuaRef(lua_State* state, int index)
         : L(state)
     {
-        if (!L) throw LuaException("invalid state");
+        assert(L);
         lua_pushvalue(L, index);
         m_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     }
@@ -426,7 +430,7 @@ public:
     LuaRef(lua_State* state, const char* name)
         : L(state)
     {
-        if (!L) throw LuaException("invalid state");
+        assert(L);
         Lua::pushGlobal(L, name);
         m_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     }
@@ -647,7 +651,7 @@ public:
      */
     void pushToStack() const
     {
-        if (!L) throw LuaException("invalid reference");
+        assert(L);
         lua_rawgeti(L, LUA_REGISTRYINDEX, m_ref);
     }
 
@@ -710,6 +714,7 @@ public:
     template <typename... P>
     void operator () (P&&... args)
     {
+        assert(L);
         Call<void, P...>::invoke(L, *this, std::forward<P>(args)...);
     }
 
@@ -732,6 +737,7 @@ public:
     template <typename R = void, typename... P>
     R call(P&&... args)
     {
+        assert(L);
         return Call<R, P...>::invoke(L, *this, std::forward<P>(args)...);
     }
 
@@ -757,6 +763,7 @@ public:
     template <typename R = void, typename... P>
     R dispatch(const char* member, P&&... args)
     {
+        assert(L);
         return Call<R, const LuaRef&, P...>::invoke(L, get(member), *this, std::forward<P>(args)...);
     }
 
@@ -781,6 +788,7 @@ public:
     template <typename R = void, typename... P>
     R dispatchStatic(const char* member, P&&... args)
     {
+        assert(L);
         return Call<R, P...>::invoke(L, get(member), std::forward<P>(args)...);
     }
 
@@ -1074,6 +1082,7 @@ public:
     template <typename K>
     LuaTableRef operator [] (const K& key)
     {
+        assert(L);
         Lua::push(L, key);
         return LuaTableRef(L, m_ref, luaL_ref(L, LUA_REGISTRYINDEX));
     }
@@ -1088,6 +1097,7 @@ public:
     template <typename K>
     const LuaTableRef operator [] (const K& key) const
     {
+        assert(L);
         Lua::push(L, key);
         return LuaTableRef(L, m_ref, luaL_ref(L, LUA_REGISTRYINDEX));
     }
@@ -1115,6 +1125,7 @@ private:
     explicit LuaRef(lua_State* state)
         : L(state)
     {
+        assert(L);
         m_ref = luaL_ref(state, LUA_REGISTRYINDEX);
     }
 
