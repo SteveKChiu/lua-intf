@@ -29,11 +29,11 @@
 
 //---------------------------------------------------------------------------
 
+#include "LuaCompat.h"
 #include <cassert>
 #include <cstring>
 #include <string>
 #include <exception>
-#include "LuaCompat.h"
 
 namespace LuaIntf
 {

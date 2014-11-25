@@ -31,6 +31,8 @@
 
 #include "LuaState.h"
 #include <functional>
+#include <tuple>
+#include <memory>
 
 namespace LuaIntf
 {
