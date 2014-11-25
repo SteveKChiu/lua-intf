@@ -334,7 +334,46 @@ For every function registration, `lua-intf` also support C++11 `std::function` t
 			std::bind(&Web::url, other_web_object))
 	.endClass();
 ````
-`lua-intf` make it possible to bind optional `_opt<ARG_TYPE>` or default arguments `_def<ARG_TYPE, DEF_NUM, DEF_DEN = 1>` for Lua. For example:
+
+If your C++ function is overloaded, pass `&function` is not enough, you have to explicitly cast it to proper type:
+````c++
+	static int test(string, int);
+	static string test(string);
+
+	LuaBinding(L).beginModule("utils")
+
+		// this will bind int test(string, int)
+		.addFunction("test_1", static_cast<int(*)(string, int)>(&test))
+
+		// this will bind string test(string), by using our LUA_FN macro
+		// LUA_FN(RETURN_TYPE, FUNC_NAME, ARG_TYPES...)
+		.addFunction("test_2", LUA_FN(string, test, string))
+
+	.endModule();
+````
+
+Function argument passing
+-------------------------
+
+By default the exported function expect every argument to be mandatory, if the argument is missing or not compatible with the expected type, the Lua error will be raised. You can change the function passing requirement by adding argument passing modifiers in `LUA_ARGS`, `lua-intf` supports the following modifiers:
+
++ `_opt<TYPE>`, make the argument optional, if the argument is missing the value is created with default constructor
+
++ `_def<TYPE, DEF_NUM, DEF_DEN = 1>`, make the argument optional, if the argument is missing the default value is used as `DEF_NUM / DEF_DEN`
+
++ `_out<TYPE&>`, specify the argument for output only, the output value will be pushed after the normal function return value, and in argument order if there is multiple output
+
++ `_ref<TYPE&>`, specify the argument for input and output, the argument is mandatory, the output value will be pushed after the normal function return value, and in argument order if there is multiple output
+
++ `_ref_opt<TYPE&>`, combine `_ref<TYPE&>` and `_opt<TYPE>`
+
++ `_ref_def<TYPE&, DEF_NUM, DEF_DEN = 1>`, combine `_ref<TYPE&>` and `_def<TYPE, DEF_NUM, DEF_DEN = 1>`
+
++ If none of the above modifiers are used, the argument is for input only, and is mandatory
+
+All output modifiers requires the argument to be reference type, using pointer type for output is not supported. The reason `_def<TYPE, DEF_NUM, DEF_DEN = 1>` requires DEF_NUM and DEF_DEN is to workaround C++ limitation. The C++ template does not allow floating point number as non-type argument, in order specify default for float, you have to specify numerator and denominator pair, the denominator is 1 by default:
+, for example:
+
 ````c++
 	struct MyString
 	{
@@ -342,6 +381,8 @@ For every function registration, `lua-intf` also support C++11 `std::function` t
 		std::string desc(float number);
 		...
 	};
+
+	#define _def_float(f) _def<float, intmax_t((f) * 1000000), 1000000>
 
 	LuaBinding(L).beginClass<MyString>("mystring")
 
@@ -351,11 +392,19 @@ For every function registration, `lua-intf` also support C++11 `std::function` t
 		// this will make number = 1.333 = (4 / 3) if it is not specified in Lua side
         // because C++ does not allow float as non-type template parameter
         // you have to use ratio to specify floating numbers 1.333 = (4 / 3)
+        // LUA_ARGS(_def<float, 1.33333f>) will result in error
 		.addFunction("indexOf", &MyString::desc, LUA_ARGS(_def<float, 4, 3>))
 
+		// you can define your own macro to make it easier to specify float
+		// please see _def_float for example
+		.addFunction("indexOf2", &MyString::desc, LUA_ARGS(_def_float(1.3333f)))
 	.endClass();
 ````
-It is also possible to return multiple results by telling which argument is for output `_out<ARG_TYPE>` or input-output `_ref<ARG_TYPE>` `_ref_opt<ARG_TYPE>` `_ref_def<ARG_TYPE, DEF_NUM, DEF_DEN = 1>`. For example:
+
+Make function return multiple results
+-------------------------------------
+
+It is possible to return multiple results by telling which argument is for output, for example:
 ````c++
 	static std::string match(const std::string& src, const std::string& pat, int pos, int& found_pos);
 
@@ -374,22 +423,6 @@ Yet another way to return multiple results is to use `std::tuple`:
 
 		// this will return (string) (found_pos)
 		.addFunction("match", &match)
-
-	.endModule();
-````
-If your C++ function is overloaded, pass `&function` is not enough, you have to explicitly cast it to proper type:
-````c++
-	static int test(string, int);
-	static string test(string);
-
-	LuaBinding(L).beginModule("utils")
-
-		// this will bind int test(string, int)
-		.addFunction("test_1", static_cast<int(*)(string, int)>(&test))
-
-		// this will bind string test(string), by using our LUA_FN macro
-		// LUA_FN(RETURN_TYPE, FUNC_NAME, ARG_TYPES...)
-		.addFunction("test_2", LUA_FN(string, test, string))
 
 	.endModule();
 ````
