@@ -49,7 +49,7 @@ To compile on Windows with MINGW and MSYS:
 make mingw MYCFLAGS="-x c++" CC="g++"
 ````
 
-And then install to your chosen directory in <path>:
+And then install to your chosen directory in `<path>`:
 ````
 make install INSTALL_TOP=<path>
 ````
