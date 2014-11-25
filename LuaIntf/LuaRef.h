@@ -275,7 +275,7 @@ public:
      * @param userdata_size the size of userdata to allocate
      * @param out_userdata [out] the pointer to allocated userdata, can be nullptr if not needed
      */
-    static LuaRef createUserdata(lua_State* L, size_t userdata_size, void** out_userdata = nullptr)
+    static LuaRef createUserData(lua_State* L, size_t userdata_size, void** out_userdata = nullptr)
     {
         void* userdata = lua_newuserdata(L, userdata_size);
         if (out_userdata) *out_userdata = userdata;
@@ -291,9 +291,9 @@ public:
      * @param cpp_obj the object to be copied
      */
     template <typename T>
-    static LuaRef createUserdataFrom(lua_State* L, const T& cpp_obj)
+    static LuaRef createUserDataFrom(lua_State* L, const T& cpp_obj)
     {
-        pushUserdataFrom(L, cpp_obj);
+        pushUserDataFrom(L, cpp_obj);
         return popFromStack(L);
     }
 
@@ -340,7 +340,7 @@ public:
     {
         static_assert(!std::is_function<T>::value,
             "function declaration is not allowed, use function pointer if needed");
-        pushUserdataFrom(L, cpp_obj);
+        pushUserDataFrom(L, cpp_obj);
         lua_pushcclosure(L, proc, 1);
         return popFromStack(L);
     }
@@ -405,7 +405,9 @@ public:
     LuaRef(lua_State* state, std::nullptr_t)
         : L(state)
         , m_ref(LUA_REFNIL)
-        {}
+    {
+        assert(L);
+    }
 
     /**
      * Create reference to object on stack, stack is not changed.
@@ -1131,7 +1133,7 @@ private:
 
     template <typename T>
     static typename std::enable_if<!std::is_destructible<T>::value || std::is_trivially_destructible<T>::value>::type
-        pushUserdataFrom(lua_State* L, const T& cpp_obj)
+        pushUserDataFrom(lua_State* L, const T& cpp_obj)
     {
         void* userdata = lua_newuserdata(L, sizeof(T));
         ::new (userdata) T(cpp_obj);
@@ -1139,18 +1141,18 @@ private:
 
     template <typename T>
     static typename std::enable_if<std::is_destructible<T>::value && !std::is_trivially_destructible<T>::value>::type
-        pushUserdataFrom(lua_State* L, const T& cpp_obj)
+        pushUserDataFrom(lua_State* L, const T& cpp_obj)
     {
         void* userdata = lua_newuserdata(L, sizeof(T));
         ::new (userdata) T(cpp_obj);
         lua_newtable(L);
-        lua_pushcfunction(L, &destructUserdata<T>);
+        lua_pushcfunction(L, &destructUserData<T>);
         lua_setfield(L, -2, "__gc");
         lua_setmetatable(L, -2);
     }
 
     template <typename T>
-    static int destructUserdata(lua_State* L)
+    static int destructUserData(lua_State* L)
     {
         try {
             T* obj = static_cast<T*>(lua_touserdata(L, 1));

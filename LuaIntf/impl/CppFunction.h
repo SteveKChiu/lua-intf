@@ -96,7 +96,7 @@ struct LuaCppFunction
     static void push(lua_State* L, const ValueType& proc)
     {
         using CppProc = CppBindMethod<ValueType>;
-        LuaRef ref = LuaRef::createUserdataFrom(L, proc);
+        LuaRef ref = LuaRef::createUserDataFrom(L, proc);
         ref.pushToStack();
         lua_pushlightuserdata(L, CppSignature<ValueType>::value());
         lua_pushcclosure(L, &CppProc::call, 2);
