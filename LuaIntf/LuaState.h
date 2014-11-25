@@ -288,7 +288,7 @@ public:
     lua_CFunction setPanicFunc(lua_CFunction panic_func) const
         { return lua_atpanic(L, panic_func); }
 
-    lua_Alloc getAllocFunc(void** userdata = nullptr) const
+    lua_Alloc allocFunc(void** userdata = nullptr) const
         { return lua_getallocf(L, userdata); }
 
     void setAllocFunc(lua_Alloc func, void* userdata = nullptr) const
@@ -302,7 +302,7 @@ public:
 
 // basic stack manipulation
 
-    int getTop() const
+    int top() const
         { return lua_gettop(L); }
 
     void setTop(int idx) const
@@ -506,10 +506,10 @@ public:
 
 // get functions (Lua -> stack)
 
-    void getRegistry() const
+    void pushRegistryTable() const
         { lua_pushvalue(L, LUA_REGISTRYINDEX); }
 
-    void getGlobals() const
+    void pushGlobalTable() const
         { lua_pushglobaltable(L); }
 
     void getGlobal(const char* name) const
@@ -725,9 +725,9 @@ public:
     void unrefTable(int table_idx, int ref) const
         { luaL_unref(L, table_idx, ref); }
 
-// debug functions
+// debug interface
 
-    bool getStack(int level, lua_Debug* ar) const
+    bool stack(int level, lua_Debug* ar) const
         { return lua_getstack(L, level, ar); }
 
     bool getInfo(const char* what, lua_Debug* ar) const
@@ -756,13 +756,13 @@ public:
     int setHook(lua_Hook func, int mask, int count) const
         { return lua_sethook(L, func, mask, count); }
 
-    lua_Hook getHook() const
+    lua_Hook hook() const
         { return lua_gethook(L); }
 
-    int getHookMask() const
+    int hookMask() const
         { return lua_gethookmask(L); }
 
-    int getHookCount() const
+    int hookCount() const
         { return lua_gethookcount(L); }
 
 // CXX binding
@@ -784,7 +784,7 @@ public:
         { return Lua::pop<T>(L); }
 
     template <typename T>
-    T getGlobalValue(const char* name) const
+    T globalValue(const char* name) const
         { return Lua::getGlobal<T>(L, name); }
 
     template <typename T>
