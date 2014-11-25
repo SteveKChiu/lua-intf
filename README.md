@@ -352,27 +352,26 @@ If your C++ function is overloaded, pass `&function` is not enough, you have to 
 	.endModule();
 ````
 
-Function argument passing
--------------------------
+Function argument modifiers
+---------------------------
 
-By default the exported function expect every argument to be mandatory, if the argument is missing or not compatible with the expected type, the Lua error will be raised. You can change the function passing requirement by adding argument passing modifiers in `LUA_ARGS`, `lua-intf` supports the following modifiers:
+By default the exported functions expect every argument to be mandatory, if the argument is missing or not compatible with the expected type, the Lua error will be raised. You can change the function passing requirement by adding argument passing modifiers in `LUA_ARGS`, `lua-intf` supports the following modifiers:
 
-+ `_opt<TYPE>`, make the argument optional, if the argument is missing the value is created with default constructor
++ `_opt<TYPE>`, specify the argument is optional; if the argument is missing, the value is created with default constructor
 
-+ `_def<TYPE, DEF_NUM, DEF_DEN = 1>`, make the argument optional, if the argument is missing the default value is used as `DEF_NUM / DEF_DEN`
++ `_def<TYPE, DEF_NUM, DEF_DEN = 1>`, specify the argument is optional; if the argument is missing, the default value is used as `DEF_NUM / DEF_DEN`
 
-+ `_out<TYPE&>`, specify the argument for output only, the output value will be pushed after the normal function return value, and in argument order if there is multiple output
++ `_out<TYPE&>`, specify the argument is for output only; the output value will be pushed after the normal function return value, and in argument order if there is multiple output
 
-+ `_ref<TYPE&>`, specify the argument for input and output, the argument is mandatory, the output value will be pushed after the normal function return value, and in argument order if there is multiple output
++ `_ref<TYPE&>`, specify the argument is mandatory and for input/output; the output value will be pushed after the normal function return value, and in argument order if there is multiple output
 
 + `_ref_opt<TYPE&>`, combine `_ref<TYPE&>` and `_opt<TYPE>`
 
 + `_ref_def<TYPE&, DEF_NUM, DEF_DEN = 1>`, combine `_ref<TYPE&>` and `_def<TYPE, DEF_NUM, DEF_DEN = 1>`
 
-+ If none of the above modifiers are used, the argument is for input only, and is mandatory
++ If none of the above modifiers are used, the argument is mandatory and for input only
 
-All output modifiers requires the argument to be reference type, using pointer type for output is not supported. The reason `_def<TYPE, DEF_NUM, DEF_DEN = 1>` requires DEF_NUM and DEF_DEN is to workaround C++ limitation. The C++ template does not allow floating point number as non-type argument, in order specify default for float, you have to specify numerator and denominator pair, the denominator is 1 by default:
-, for example:
+All output modifiers require the argument to be reference type, using pointer type for output is not supported. The reason `_def<TYPE, DEF_NUM, DEF_DEN = 1>` requires DEF_NUM and DEF_DEN is to workaround C++ limitation. The C++ template does not allow floating point number as non-type argument, in order specify default value for float, you have to specify numerator and denominator pair (the denominator is 1 by default). For example:
 
 ````c++
 	struct MyString
@@ -401,8 +400,8 @@ All output modifiers requires the argument to be reference type, using pointer t
 	.endClass();
 ````
 
-Make function return multiple results
--------------------------------------
+Return multiple results for Lua
+-------------------------------
 
 It is possible to return multiple results by telling which argument is for output, for example:
 ````c++
@@ -415,6 +414,7 @@ It is possible to return multiple results by telling which argument is for outpu
 
 	.endModule();
 ````
+
 Yet another way to return multiple results is to use `std::tuple`:
 ````c++
 	static std::tuple<std::string, int> match(const std::string& src, const std::string& pat, int pos);
@@ -427,8 +427,10 @@ Yet another way to return multiple results is to use `std::tuple`:
 	.endModule();
 ````
 
+And you can always use `lua_CFunction` to manually push multiple results by yourself.
+
 Lua for-loop iteration function
---------------------------------
+-------------------------------
 
 `lua-intf` provides a helper class `CppFunctor` to make it easier to implement for-loop iteration function for Lua.  To use it, user need to inherit CppFunctor, and override run method and optional destructor. Then call pushToStack to create the functor object on Lua stack.
 ````c++
