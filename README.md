@@ -381,7 +381,7 @@ All output modifiers require the argument to be reference type, using pointer ty
 		...
 	};
 
-	#define _def_float(f) _def<float, intmax_t((f) * 1000000), 1000000>
+	#define _def_float(f) _def<float, long((f) * 1000000), 1000000>
 
 	LuaBinding(L).beginClass<MyString>("mystring")
 
