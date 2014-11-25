@@ -29,11 +29,11 @@
 
 //---------------------------------------------------------------------------
 
+#include "LuaCompat.h"
 #include <cassert>
 #include <cstring>
 #include <string>
 #include <exception>
-#include "LuaCompat.h"
 
 namespace LuaIntf
 {
@@ -288,7 +288,7 @@ public:
     lua_CFunction setPanicFunc(lua_CFunction panic_func) const
         { return lua_atpanic(L, panic_func); }
 
-    lua_Alloc getAllocFunc(void** userdata = nullptr) const
+    lua_Alloc allocFunc(void** userdata = nullptr) const
         { return lua_getallocf(L, userdata); }
 
     void setAllocFunc(lua_Alloc func, void* userdata = nullptr) const
@@ -302,7 +302,7 @@ public:
 
 // basic stack manipulation
 
-    int getTop() const
+    int top() const
         { return lua_gettop(L); }
 
     void setTop(int idx) const
@@ -506,10 +506,10 @@ public:
 
 // get functions (Lua -> stack)
 
-    void getRegistry() const
+    void pushRegistryTable() const
         { lua_pushvalue(L, LUA_REGISTRYINDEX); }
 
-    void getGlobals() const
+    void pushGlobalTable() const
         { lua_pushglobaltable(L); }
 
     void getGlobal(const char* name) const
@@ -619,16 +619,22 @@ public:
 #if LUA_VERSION_NUM == 501
     int load(lua_Reader reader, void* dt, const char* chunk_name) const
         { return lua_load(L, reader, dt, chunk_name); }
+
+    int loadFile(const char* filename) const
+        { return luaL_loadfile(L, filename); }
+
+    int loadBuffer(const char* buff, size_t sz, const char* chunk_name) const
+        { return luaL_loadbuffer(L, buff, sz, chunk_name); }
 #else
     int load(lua_Reader reader, void* dt, const char* chunk_name, const char* mode = nullptr) const
         { return lua_load(L, reader, dt, chunk_name, mode); }
-#endif
 
     int loadFile(const char* filename, const char* mode = nullptr) const
         { return luaL_loadfilex(L, filename, mode); }
 
     int loadBuffer(const char* buff, size_t sz, const char* chunk_name, const char* mode = nullptr) const
         { return luaL_loadbufferx(L, buff, sz, chunk_name, mode); }
+#endif
 
     int loadString(const char* s) const
         { return luaL_loadstring(L, s); }
@@ -639,6 +645,9 @@ public:
 #if LUA_VERSION_NUM >= 502
     void require(const char* mod_name, lua_CFunction open_func, bool set_global = true) const
         { luaL_requiref(L, mod_name, open_func, set_global); }
+
+    int execResult(int stat) const
+        { return luaL_execresult(L, stat); }
 #endif
 
     bool doFile(const char* filename) const
@@ -652,9 +661,6 @@ public:
 
     int fileResult(int stat, const char* file_name) const
         { return luaL_fileresult(L, stat, file_name); }
-
-    int execResult(int stat) const
-        { return luaL_execresult(L, stat); }
 
 // coroutine functions
 
@@ -719,9 +725,9 @@ public:
     void unrefTable(int table_idx, int ref) const
         { luaL_unref(L, table_idx, ref); }
 
-// debug functions
+// debug interface
 
-    bool getStack(int level, lua_Debug* ar) const
+    bool stack(int level, lua_Debug* ar) const
         { return lua_getstack(L, level, ar); }
 
     bool getInfo(const char* what, lua_Debug* ar) const
@@ -739,22 +745,24 @@ public:
     const char* setUpvalue(int func_idx, int n) const
         { return lua_setupvalue(L, func_idx, n); }
 
+#if LUA_VERSION_NUM >= 502
     void* upvalueId(int func_idx, int n) const
         { return lua_upvalueid(L, func_idx, n); }
 
     void upvalueJoin(int func_idx1, int n1, int func_idx2, int n2) const
         { lua_upvaluejoin(L, func_idx1, n1, func_idx2, n2);}
+#endif
 
     int setHook(lua_Hook func, int mask, int count) const
         { return lua_sethook(L, func, mask, count); }
 
-    lua_Hook getHook() const
+    lua_Hook hook() const
         { return lua_gethook(L); }
 
-    int getHookMask() const
+    int hookMask() const
         { return lua_gethookmask(L); }
 
-    int getHookCount() const
+    int hookCount() const
         { return lua_gethookcount(L); }
 
 // CXX binding
@@ -776,7 +784,7 @@ public:
         { return Lua::pop<T>(L); }
 
     template <typename T>
-    T getGlobalValue(const char* name) const
+    T globalValue(const char* name) const
         { return Lua::getGlobal<T>(L, name); }
 
     template <typename T>

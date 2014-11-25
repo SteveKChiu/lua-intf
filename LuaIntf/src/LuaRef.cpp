@@ -50,6 +50,7 @@ LUA_INLINE LuaTableIterator::LuaTableIterator(lua_State* state, int table, bool 
     , m_key(LUA_NOREF)
     , m_value(LUA_NOREF)
 {
+    assert(L);
     if (fetch_next) {
         next();
     }
@@ -59,10 +60,15 @@ LUA_INLINE LuaTableIterator::LuaTableIterator(const LuaTableIterator& that)
     : L(that.L)
     , m_table(that.m_table)
 {
-    lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_key);
-    m_key = luaL_ref(L, LUA_REGISTRYINDEX);
-    lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_value);
-    m_value = luaL_ref(L, LUA_REGISTRYINDEX);
+    if (L) {
+        lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_key);
+        m_key = luaL_ref(L, LUA_REGISTRYINDEX);
+        lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_value);
+        m_value = luaL_ref(L, LUA_REGISTRYINDEX);
+    } else {
+        m_key = LUA_NOREF;
+        m_value = LUA_NOREF;
+    }
 }
 
 LUA_INLINE LuaTableIterator::LuaTableIterator(LuaTableIterator&& that)
@@ -85,16 +91,23 @@ LUA_INLINE LuaTableIterator::~LuaTableIterator()
 
 LUA_INLINE LuaTableIterator& LuaTableIterator::operator = (const LuaTableIterator& that)
 {
-    if (L) {
-        luaL_unref(L, LUA_REGISTRYINDEX, m_key);
-        luaL_unref(L, LUA_REGISTRYINDEX, m_value);
+    if (this != &that) {
+        if (L) {
+            luaL_unref(L, LUA_REGISTRYINDEX, m_key);
+            luaL_unref(L, LUA_REGISTRYINDEX, m_value);
+        }
+        L = that.L;
+        m_table = that.m_table;
+        if (L) {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_key);
+            m_key = luaL_ref(L, LUA_REGISTRYINDEX);
+            lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_value);
+            m_value = luaL_ref(L, LUA_REGISTRYINDEX);
+        } else {
+            m_key = LUA_NOREF;
+            m_value = LUA_NOREF;
+        }
     }
-    L = that.L;
-    m_table = that.m_table;
-    lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_key);
-    m_key = luaL_ref(L, LUA_REGISTRYINDEX);
-    lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_value);
-    m_value = luaL_ref(L, LUA_REGISTRYINDEX);
     return *this;
 }
 
@@ -124,7 +137,7 @@ LUA_INLINE bool LuaTableIterator::operator == (const LuaTableIterator& that) con
 
 LUA_INLINE void LuaTableIterator::next()
 {
-    if (!L) throw LuaException("invalid table reference");
+    assert(L);
     lua_rawgeti(L, LUA_REGISTRYINDEX, m_table);
     lua_rawgeti(L, LUA_REGISTRYINDEX, m_key);
     luaL_unref(L, LUA_REGISTRYINDEX, m_key);
@@ -152,15 +165,17 @@ LUA_INLINE LuaRef::LuaRef(const LuaRef& that)
 
 LUA_INLINE LuaRef& LuaRef::operator = (const LuaRef& that)
 {
-    if (L) {
-        luaL_unref(L, LUA_REGISTRYINDEX, m_ref);
-    }
-    L = that.L;
-    if (L) {
-        lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_ref);
-        m_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-    } else {
-        m_ref = LUA_NOREF;
+    if (this != &that) {
+        if (L) {
+            luaL_unref(L, LUA_REGISTRYINDEX, m_ref);
+        }
+        L = that.L;
+        if (L) {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_ref);
+            m_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+        } else {
+            m_ref = LUA_NOREF;
+        }
     }
     return *this;
 }
