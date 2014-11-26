@@ -12,20 +12,20 @@ namespace LuaIntf
 }
 
 struct TestClass {
-    int number; ///< Set as a member variable
-    std::string string; ///< Set as a member property using lambda getters/setters
-    float other; ///< Set as a member property using defined getters/setters
-    const int const_int = 8; ///< Set as member variable
+	int number; ///< Set as a member variable
+	std::string string; ///< Set as a member property using lambda getters/setters
+	float other; ///< Set as a member property using defined getters/setters
+	const int const_int = 8; ///< Set as member variable
 
-    static int static_number; ///< Set as a static variable
-    static std::string static_string; ///< Set as a static property using lambda getters/setters
-    static float static_other; ///< Set as a static property using defined getters/setters
-    static const int static_const; ///< Set as a static variable
+	static int static_number; ///< Set as a static variable
+	static std::string static_string; ///< Set as a static property using lambda getters/setters
+	static float static_other; ///< Set as a static property using defined getters/setters
+	static const int static_const; ///< Set as a static variable
 
-    TestClass(int num = 0, std::string text = "default"): number(num), string(text), other(0.5f)
-    {
-    	++instance_counter;
-    }
+	TestClass(int num = 0, std::string text = "default"): number(num), string(text), other(0.5f)
+	{
+		++instance_counter;
+	}
 
 	TestClass(TestClass&& that)
 	{
@@ -40,37 +40,37 @@ struct TestClass {
 		number = that.number;
 		string = that.string;
 		other = that.other;
-    	++instance_counter;
+		++instance_counter;
 	}
 
-    ~TestClass()
-    {
-    	--instance_counter;
-    }
+	~TestClass()
+	{
+		--instance_counter;
+	}
 
-    TestClass& operator=(const TestClass& other) = delete;
-    TestClass& operator=(TestClass&& other) = delete;
+	TestClass& operator=(const TestClass& other) = delete;
+	TestClass& operator=(TestClass&& other) = delete;
 
 
-    float GetFloat() const
-    {
-    	return other;
-    }
+	float GetFloat() const
+	{
+		return other;
+	}
 
-    void SetFloat(float value)
-    {
-    	other = value;
-    }
+	void SetFloat(float value)
+	{
+		other = value;
+	}
 
-    static float GetStatic()
-    {
-    	return static_other;
-    }
+	static float GetStatic()
+	{
+		return static_other;
+	}
 
-    static void SetStatic(float value)
-    {
-    	static_other = value;
-    }
+	static void SetStatic(float value)
+	{
+		static_other = value;
+	}
 
 	/// Member Function
 	std::string Print() const

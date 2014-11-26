@@ -10,7 +10,7 @@ int TestClass::instance_counter = 0;
 SCENARIO("Static functions of classes can be bound", "[binding][class]")
 {
 	LuaContext state;
-    TestClass::Register(state);
+	TestClass::Register(state);
 
 	WHEN("static variables are modified in C++")
 	{
@@ -33,7 +33,7 @@ SCENARIO("Static functions of classes can be bound", "[binding][class]")
 SCENARIO("An object is created in Lua", "[binding][class]")
 {
 	LuaContext state;
-    TestClass::Register(state);
+	TestClass::Register(state);
 
 	state.doString("test = TestClass(5)");
 
@@ -77,7 +77,7 @@ SCENARIO("An object is created in Lua", "[binding][class]")
 SCENARIO("An object is created in C++", "[binding][class]")
 {
 	LuaContext state;
-    TestClass::Register(state);
+	TestClass::Register(state);
 
 	GIVEN("the object is passed by reference")
 	{
@@ -196,7 +196,7 @@ struct OtherClass
 SCENARIO("Classes constructed with other classes are bound.", "[binding][class]")
 {
 	LuaContext state;
-    TestClass::Register(state);
+	TestClass::Register(state);
 	LuaBinding(state).beginClass<OtherClass>("OtherClass")
 		.addConstructor(LUA_ARGS(TestClass*))
 		.addFunction("Print", &OtherClass::Print)
