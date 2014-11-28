@@ -179,6 +179,15 @@ public:
         return LuaRef::registry(L);
     }
 
+    /**
+     * Access Lua garbage collection.
+     * Defaults to collecting all garbage.
+     */
+    int gc(int what = LUA_GCCOLLECT, int data = 0)
+    {
+        return lua_gc(L, what, data);
+    }
+
 private:
 #if LUAINTF_LINK_LUA_COMPILED_IN_CXX
     static int panic(lua_State* L)
