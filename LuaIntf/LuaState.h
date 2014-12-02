@@ -673,17 +673,17 @@ public:
 #endif
 
 #if LUA_VERSION_NUM == 501
-    int resume(const LuaState&, int num_args) const
+    int resume(int num_args) const
         { return lua_resume(L, num_args); }
 #else
-    int resume(const LuaState& from, int num_args) const
-        { return lua_resume(L, from.L, num_args); }
+    int resume(int num_args, lua_State* from = nullptr) const
+        { return lua_resume(L, from, num_args); }
 #endif
 
     int status() const
         { return lua_status(L); }
 
-    int gc(int what, int data) const
+    int gc(int what = LUA_GCCOLLECT, int data = 0) const
         { return lua_gc(L, what, data); }
 
 // miscellaneous functions
