@@ -149,10 +149,10 @@ class CppObjectValue : public CppObject
 private:
     CppObjectValue()
     {
-        if (MaxPadding > 0) {
+        if (MAX_PADDING > 0) {
             uintptr_t offset = reinterpret_cast<uintptr_t>(&m_data[0]) % alignof(T);
             if (offset > 0) offset = alignof(T) - offset;
-            assert(offset < MaxPadding);
+            assert(offset < MAX_PADDING);
             m_data[sizeof(m_data) - 1] = static_cast<unsigned char>(offset);
         }
     }
@@ -166,7 +166,7 @@ public:
 
     virtual void* objectPtr() override
     {
-        if (MaxPadding == 0) {
+        if (MAX_PADDING == 0) {
             return &m_data[0];
         } else {
             return &m_data[0] + m_data[sizeof(m_data) - 1];
@@ -190,8 +190,8 @@ public:
 
 private:
     using AlignType = typename std::conditional<alignof(T) <= alignof(double), T, void*>::type;
-    static constexpr int MaxPadding = alignof(T) <= alignof(AlignType) ? 0 : alignof(T) - alignof(AlignType) + 1;
-    alignas(AlignType) unsigned char m_data[sizeof(T) + MaxPadding];
+    static constexpr int MAX_PADDING = alignof(T) <= alignof(AlignType) ? 0 : alignof(T) - alignof(AlignType) + 1;
+    alignas(AlignType) unsigned char m_data[sizeof(T) + MAX_PADDING];
 };
 
 //----------------------------------------------------------------------------
@@ -291,8 +291,8 @@ private:
 template <typename T>
 struct CppObjectTraits
 {
-    static constexpr bool IsSharedPtr = false;
-    static constexpr bool IsSharedConst = false;
+    static constexpr bool isSharedPtr = false;
+    static constexpr bool isSharedConst = false;
     using ObjectType = T;
 };
 
@@ -413,19 +413,19 @@ struct LuaCppObject
     using ValueType = VT;
     using ObjectType = typename CppObjectTraits<T>::ObjectType;
 
-    static constexpr bool IsShared = CppObjectTraits<T>::IsSharedPtr;
-    static constexpr bool IsRef = IsShared ? true : IS_REF;
-    static constexpr bool IsConst = IsShared ? CppObjectTraits<T>::IsSharedConst : IS_CONST;
+    static constexpr bool isShared = CppObjectTraits<T>::isSharedPtr;
+    static constexpr bool isRef = isShared ? true : IS_REF;
+    static constexpr bool isConst = isShared ? CppObjectTraits<T>::isSharedConst : IS_CONST;
 
     static void push(lua_State* L, const T& t)
     {
-        LuaCppObjectFactory<T, ObjectType, IsShared, IsRef>::push(L, t, IsConst);
+        LuaCppObjectFactory<T, ObjectType, isShared, isRef>::push(L, t, isConst);
     }
 
     static T& get(lua_State* L, int index)
     {
-        CppObject* obj = CppObject::getObject<ObjectType>(L, index, IsConst);
-        return LuaCppObjectFactory<T, ObjectType, IsShared, IsRef>::cast(L, obj);
+        CppObject* obj = CppObject::getObject<ObjectType>(L, index, isConst);
+        return LuaCppObjectFactory<T, ObjectType, isShared, isRef>::cast(L, obj);
     }
 
     static T& opt(lua_State* L, int index, const T&)
@@ -469,7 +469,7 @@ struct LuaType
     template <typename T> \
     struct CppObjectTraits <SP<T>> \
     { \
-        static constexpr bool IsSharedPtr = true; \
-        static constexpr bool IsSharedConst = std::is_const<T>::value; \
+        static constexpr bool isSharedPtr = true; \
+        static constexpr bool isSharedConst = std::is_const<T>::value; \
         using ObjectType = typename std::remove_cv<T>::type; \
     };

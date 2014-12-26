@@ -97,26 +97,26 @@ struct CppArgTraits
     using Type = T;
     using ValueType = typename LuaType<T>::ValueType;
     using HolderType = CppArgHolder<ValueType>;
-    static constexpr bool IsInput = true;
-    static constexpr bool IsOutput = false;
-    static constexpr bool IsOptonal = false;
-    static constexpr bool HasDefault = false;
+    static constexpr bool isInput = true;
+    static constexpr bool isOutput = false;
+    static constexpr bool isOptonal = false;
+    static constexpr bool hasDefault = false;
 };
 
 template <typename T>
 struct CppArgTraits <_opt<T>>
     : CppArgTraits <T>
 {
-    static constexpr bool IsOptonal = true;
+    static constexpr bool isOptonal = true;
 };
 
 template <typename T, std::intmax_t NUM, std::intmax_t DEN>
 struct CppArgTraits <_def<T, NUM, DEN>>
     : CppArgTraits <T>
 {
-    static constexpr bool IsOptonal = true;
-    static constexpr bool HasDefault = true;
-    static constexpr T DefaultValue = T(T(NUM) / DEN);
+    static constexpr bool isOptonal = true;
+    static constexpr bool hasDefault = true;
+    static constexpr T defaultValue = T(T(NUM) / DEN);
 };
 
 template <typename T>
@@ -125,8 +125,8 @@ struct CppArgTraits <_out<T>>
 {
     static_assert(!std::is_const<T>::value && std::is_lvalue_reference<T>::value,
         "argument with out spec must be non-const reference type");
-    static constexpr bool IsInput = false;
-    static constexpr bool IsOutput = true;
+    static constexpr bool isInput = false;
+    static constexpr bool isOutput = true;
 };
 
 template <typename T>
@@ -135,7 +135,7 @@ struct CppArgTraits <_ref<T>>
 {
     static_assert(!std::is_const<T>::value && std::is_lvalue_reference<T>::value,
         "argument with ref spec must be non-const reference type");
-    static constexpr bool IsOutput = true;
+    static constexpr bool isOutput = true;
 };
 
 template <typename T>
@@ -144,8 +144,8 @@ struct CppArgTraits <_ref_opt<T>>
 {
     static_assert(!std::is_const<T>::value && std::is_lvalue_reference<T>::value,
         "argument with ref spec must be non-const reference type");
-    static constexpr bool IsOptonal = true;
-    static constexpr bool IsOutput = true;
+    static constexpr bool isOptonal = true;
+    static constexpr bool isOutput = true;
 };
 
 template <typename T, std::intmax_t NUM, std::intmax_t DEN>
@@ -154,10 +154,10 @@ struct CppArgTraits <_ref_def<T, NUM, DEN>>
 {
     static_assert(!std::is_const<T>::value && std::is_lvalue_reference<T>::value,
         "argument with ref spec must be non-const reference type");
-    static constexpr bool IsOptonal = true;
-    static constexpr bool IsOutput = true;
-    static constexpr bool HasDefault = true;
-    static constexpr T DefaultValue = T(T(NUM) / DEN);
+    static constexpr bool isOptonal = true;
+    static constexpr bool isOutput = true;
+    static constexpr bool hasDefault = true;
+    static constexpr T defaultValue = T(T(NUM) / DEN);
 };
 
 template <>
@@ -166,10 +166,10 @@ struct CppArgTraits <lua_State*>
     using Type = lua_State*;
     using ValueType = lua_State*;
     using HolderType = CppArgHolder<ValueType>;
-    static constexpr bool IsInput = false;
-    static constexpr bool IsOutput = false;
-    static constexpr bool IsOptonal = false;
-    static constexpr bool HasDefault = false;
+    static constexpr bool isInput = false;
+    static constexpr bool isOutput = false;
+    static constexpr bool isOptonal = false;
+    static constexpr bool hasDefault = false;
 };
 
 template <>
@@ -178,10 +178,10 @@ struct CppArgTraits <LuaState>
     using Type = LuaState;
     using ValueType = LuaState;
     using HolderType = CppArgHolder<ValueType>;
-    static constexpr bool IsInput = false;
-    static constexpr bool IsOutput = false;
-    static constexpr bool IsOptonal = false;
-    static constexpr bool HasDefault = false;
+    static constexpr bool isInput = false;
+    static constexpr bool isOutput = false;
+    static constexpr bool isOptonal = false;
+    static constexpr bool hasDefault = false;
 };
 
 //---------------------------------------------------------------------------
@@ -224,7 +224,7 @@ struct CppArgInput <Traits, true, true, true>
 {
     static int get(lua_State* L, int index, typename Traits::HolderType& r)
     {
-        r.hold(LuaType<typename Traits::Type>::opt(L, index, Traits::DefaultValue));
+        r.hold(LuaType<typename Traits::Type>::opt(L, index, Traits::defaultValue));
         return 1;
     }
 };
@@ -232,7 +232,7 @@ struct CppArgInput <Traits, true, true, true>
 template <>
 struct CppArgInput <CppArgTraits<lua_State*>, false, false, false>
 {
-    static int get(lua_State* L, int, typename CppArgTraits<lua_State*>::HolderType& r)
+    static int get(lua_State* L, int, CppArgHolder<lua_State*>& r)
     {
         r.hold(L);
         return 0;
@@ -242,7 +242,7 @@ struct CppArgInput <CppArgTraits<lua_State*>, false, false, false>
 template <>
 struct CppArgInput <CppArgTraits<LuaState>, false, false, false>
 {
-    static int get(lua_State* L, int, typename CppArgTraits<LuaState>::HolderType& r)
+    static int get(lua_State* L, int, CppArgHolder<LuaState>& r)
     {
         r.hold(L);
         return 0;
@@ -285,12 +285,12 @@ struct CppArg
 
     static int get(lua_State* L, int index, HolderType& r)
     {
-        return CppArgInput<Traits, Traits::IsInput, Traits::IsOptonal, Traits::HasDefault>::get(L, index, r);
+        return CppArgInput<Traits, Traits::isInput, Traits::isOptonal, Traits::hasDefault>::get(L, index, r);
     }
 
     static int push(lua_State* L, const HolderType& v)
     {
-        return CppArgOutput<Traits, Traits::IsOutput>::push(L, v.value());
+        return CppArgOutput<Traits, Traits::isOutput>::push(L, v.value());
     }
 };
 

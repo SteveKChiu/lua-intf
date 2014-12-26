@@ -58,12 +58,12 @@ struct LuaValueType <bool>
 
     static bool get(lua_State* L, int index)
     {
-        return lua_toboolean(L, index);
+        return lua_toboolean(L, index) != 0;
     }
 
     static bool opt(lua_State* L, int index, bool def)
     {
-        return lua_isnone(L, index) ? def : lua_toboolean(L, index);
+        return lua_isnone(L, index) ? def : lua_toboolean(L, index) != 0;
     }
 };
 

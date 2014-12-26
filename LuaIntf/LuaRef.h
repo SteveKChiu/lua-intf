@@ -336,10 +336,27 @@ public:
      * @param cpp_obj the data to be copied as upvalue(1)
      */
     template <typename T>
-    static LuaRef createFunction(lua_State* L, lua_CFunction proc, const T& cpp_obj)
+    static typename std::enable_if<std::is_function<T>::value, LuaRef>::type
+        createFunction(lua_State* L, lua_CFunction proc, const T& cpp_obj)
     {
-        static_assert(!std::is_function<T>::value,
-            "function declaration is not allowed, use function pointer if needed");
+        pushUserDataFrom<T*>(L, &cpp_obj);
+        lua_pushcclosure(L, proc, 1);
+        return popFromStack(L);
+    }
+
+    /**
+     * Create new lua_CFunction with allocated object as upvalue(1).
+     * The object is copied to upvalue(1) (by using copy constructor).
+     * If the given object has non trivial destructor, it will be called upon gc.
+     *
+     * @param L Lua state
+     * @param proc the lua_CFunction
+     * @param cpp_obj the data to be copied as upvalue(1)
+     */
+    template <typename T>
+    static typename std::enable_if<!std::is_function<T>::value, LuaRef>::type
+        createFunction(lua_State* L, lua_CFunction proc, const T& cpp_obj)
+    {
         pushUserDataFrom(L, cpp_obj);
         lua_pushcclosure(L, proc, 1);
         return popFromStack(L);

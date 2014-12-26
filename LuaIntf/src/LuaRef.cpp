@@ -129,7 +129,7 @@ LUA_INLINE bool LuaTableIterator::operator == (const LuaTableIterator& that) con
     } else {
         lua_rawgeti(L, LUA_REGISTRYINDEX, m_key);
         lua_rawgeti(L, LUA_REGISTRYINDEX, that.m_key);
-        bool ok = lua_rawequal(L, -1, -2);
+        bool ok = lua_rawequal(L, -1, -2) != 0;
         lua_pop(L, 2);
         return ok;
     }
@@ -198,7 +198,7 @@ LUA_INLINE bool LuaRef::isIdenticalTo(const LuaRef& r) const
 {
     pushToStack();
     r.pushToStack();
-    bool b = lua_rawequal(L, -2, -1);
+    bool b = lua_rawequal(L, -2, -1) != 0;
     lua_pop(L, 2);
     return b;
 }
@@ -218,7 +218,7 @@ LUA_INLINE bool LuaRef::operator == (const LuaRef& r) const
 {
     pushToStack();
     r.pushToStack();
-    bool b = lua_compare(L, -2, -1, LUA_OPEQ);
+    bool b = lua_compare(L, -2, -1, LUA_OPEQ) != 0;
     lua_pop(L, 2);
     return b;
 }
@@ -227,7 +227,7 @@ LUA_INLINE bool LuaRef::operator < (const LuaRef& r) const
 {
     pushToStack();
     r.pushToStack();
-    bool b = lua_compare(L, -2, -1, LUA_OPLT);
+    bool b = lua_compare(L, -2, -1, LUA_OPLT) != 0;
     lua_pop(L, 2);
     return b;
 }
@@ -236,7 +236,7 @@ LUA_INLINE bool LuaRef::operator <= (const LuaRef& r) const
 {
     pushToStack();
     r.pushToStack();
-    bool b = lua_compare(L, -2, -1, LUA_OPLE);
+    bool b = lua_compare(L, -2, -1, LUA_OPLE) != 0;
     lua_pop(L, 2);
     return b;
 }

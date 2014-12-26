@@ -25,6 +25,18 @@
 //
 
 template <typename FN>
+struct CppCouldBeLambda
+{
+	static constexpr bool value = std::is_class<FN>::value;
+};
+
+template <typename R, typename... P>
+struct CppCouldBeLambda <std::function<R(P...)>>
+{
+	static constexpr bool value = false;
+};
+
+template <typename FN>
 struct CppLambdaTraits
     : public CppLambdaTraits <decltype(&FN::operator())> {};
 

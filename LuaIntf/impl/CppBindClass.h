@@ -142,13 +142,13 @@ struct CppBindClassVariableSetter
 template <int CHK, typename T, bool IS_PROXY, bool IS_CONST, typename FN, typename R, typename... P>
 struct CppBindClassMethodBase
 {
-    static_assert(CHK != 1 || (!std::is_same<R, void>::value && sizeof...(P) == 0),
+    static_assert(CHK != CHK_GETTER || (!std::is_same<R, void>::value && sizeof...(P) == 0),
         "the specified function is not getter function");
 
-    static_assert(CHK != -1 || (std::is_same<R, void>::value && sizeof...(P) == 1),
+    static_assert(CHK != CHK_SETTER || (std::is_same<R, void>::value && sizeof...(P) == 1),
         "the specified function is not setter function");
 
-    static constexpr bool IsConst = IS_CONST;
+    static constexpr bool isConst = IS_CONST;
 
     /**
      * lua_CFunction to call a class member function
@@ -181,7 +181,7 @@ struct CppBindClassMethodBase
     }
 };
 
-template <typename T, typename FN, typename ARGS = FN, int CHK = 0>
+template <typename T, typename FN, typename ARGS = FN, int CHK = CHK_NORMAL, typename ENABLED = void>
 struct CppBindClassMethod;
 
 template <typename T, typename TF, typename R, typename... P, int CHK>
@@ -201,7 +201,8 @@ struct CppBindClassMethod <T, R(TF::*)(P...) const, R(TF::*)(P...) const, CHK>
 };
 
 template <typename T, typename TF, typename R, typename... P, int CHK>
-struct CppBindClassMethod <T, R(*)(TF*, P...), R(*)(TF*, P...), CHK>
+struct CppBindClassMethod <T, R(*)(TF*, P...), R(*)(TF*, P...), CHK,
+		typename std::enable_if<!std::is_const<TF>::value>::type>
     : CppBindClassMethodBase <CHK, T, true, false, R(*)(T*, P...), R, P...>
 {
     static_assert(std::is_base_of<TF, T>::value,
@@ -217,7 +218,8 @@ struct CppBindClassMethod <T, R(*)(const TF*, P...), R(*)(const TF*, P...), CHK>
 };
 
 template <typename T, typename TF, typename R, typename... P, int CHK>
-struct CppBindClassMethod <T, std::function<R(TF*, P...)>, std::function<R(TF*, P...)>, CHK>
+struct CppBindClassMethod <T, std::function<R(TF*, P...)>, std::function<R(TF*, P...)>, CHK,
+		typename std::enable_if<!std::is_const<TF>::value>::type>
     : CppBindClassMethodBase <CHK, T, true, false, std::function<R(T*, P...)>, R, P...>
 {
     static_assert(std::is_base_of<TF, T>::value,
@@ -253,7 +255,8 @@ struct CppBindClassMethod <T, R(TF::*)(A...) const, _arg(*)(P...), CHK>
 };
 
 template <typename T, typename TF, typename R, typename... A, typename... P, int CHK>
-struct CppBindClassMethod <T, R(*)(TF*, A...), _arg(*)(P...), CHK>
+struct CppBindClassMethod <T, R(*)(TF*, A...), _arg(*)(P...), CHK,
+		typename std::enable_if<!std::is_const<TF>::value>::type>
     : CppBindClassMethodBase <CHK, T, true, false, R(*)(T*, A...), R, P...>
 {
     static_assert(std::is_base_of<TF, T>::value,
@@ -273,7 +276,8 @@ struct CppBindClassMethod <T, R(*)(const TF*, A...), _arg(*)(P...), CHK>
 };
 
 template <typename T, typename TF, typename R, typename... A, typename... P, int CHK>
-struct CppBindClassMethod <T, std::function<R(TF*, A...)>, _arg(*)(P...), CHK>
+struct CppBindClassMethod <T, std::function<R(TF*, A...)>, _arg(*)(P...), CHK,
+		typename std::enable_if<!std::is_const<TF>::value>::type>
     : CppBindClassMethodBase <CHK, T, true, false, std::function<R(T*, A...)>, R, P...>
 {
     static_assert(std::is_base_of<TF, T>::value,
@@ -293,12 +297,24 @@ struct CppBindClassMethod <T, std::function<R(const TF*, A...)>, _arg(*)(P...), 
 };
 
 template <typename T, typename FN, int CHK>
-struct CppBindClassMethod <T, FN, FN, CHK>
+struct CppBindClassMethod <T, FN, FN, CHK,
+		typename std::enable_if<CppCouldBeLambda<FN>::value>::type>
     : CppBindClassMethod <T, typename CppLambdaTraits<FN>::FunctionType, typename CppLambdaTraits<FN>::FunctionType, CHK> {};
 
 template <typename T, typename FN, typename... P, int CHK>
-struct CppBindClassMethod <T, FN, _arg(*)(P...), CHK>
-    : CppBindClassMethod <T, typename CppLambdaTraits<FN>::FunctionType, _arg(*)(P...), CHK> {};
+struct CppBindClassMethod <T, FN, _arg(*)(P...), CHK,
+		typename std::enable_if<CppCouldBeLambda<FN>::value>::type>
+	: CppBindClassMethod <T, typename CppLambdaTraits<FN>::FunctionType, _arg(*)(P...), CHK> {};
+
+template <typename T, typename FN, int CHK>
+struct CppBindClassMethod <T, FN, FN, CHK,
+		typename std::enable_if<std::is_function<FN>::value>::type>
+	: CppBindClassMethod <T, FN*, FN*, CHK> {};
+
+template <typename T, typename FN, typename... P, int CHK>
+struct CppBindClassMethod <T, FN, _arg(*)(P...), CHK,
+		typename std::enable_if<std::is_function<FN>::value>::type>
+	: CppBindClassMethod <T, FN*, _arg(*)(P...), CHK> {};
 
 //--------------------------------------------------------------------------
 
@@ -574,12 +590,8 @@ public:
     template <typename FG, typename FS>
     CppBindClass<T, PARENT>& addStaticProperty(const char* name, const FG& get, const FS& set)
     {
-        static_assert(!std::is_function<FG>::value,
-            "function pointer is needed, please prepend & to function name");
-        static_assert(!std::is_function<FS>::value,
-            "function pointer is needed, please prepend & to function name");
-        using CppGetter = CppBindMethod<FG, FG, 1, 1>;
-        using CppSetter = CppBindMethod<FS, FS, 1, -1>;
+        using CppGetter = CppBindMethod<FG, FG, 1, CHK_GETTER>;
+        using CppSetter = CppBindMethod<FS, FS, 1, CHK_SETTER>;
         setStaticGetter(name, LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)));
         setStaticSetter(name, LuaRef::createFunction(state(), &CppSetter::call, CppSetter::function(set)));
         return *this;
@@ -591,9 +603,7 @@ public:
     template <typename FN>
     CppBindClass<T, PARENT>& addStaticProperty(const char* name, const FN& get)
     {
-        static_assert(!std::is_function<FN>::value,
-            "function pointer is needed, please prepend & to function name");
-        using CppGetter = CppBindMethod<FN, FN, 1, 1>;
+        using CppGetter = CppBindMethod<FN, FN, 1, CHK_GETTER>;
         setStaticGetter(name, LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)));
         setStaticReadOnly(name);
         return *this;
@@ -605,8 +615,6 @@ public:
     template <typename FN>
     CppBindClass<T, PARENT>& addStaticFunction(const char* name, const FN& proc)
     {
-        static_assert(!std::is_function<FN>::value,
-            "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindMethod<FN>;
         m_meta.rawset(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
         return *this;
@@ -618,8 +626,6 @@ public:
     template <typename FN, typename ARGS>
     CppBindClass<T, PARENT>& addStaticFunction(const char* name, const FN& proc, ARGS)
     {
-        static_assert(!std::is_function<FN>::value,
-            "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindMethod<FN, ARGS>;
         m_meta.rawset(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
         return *this;
@@ -704,8 +710,6 @@ public:
     template <typename FN>
     CppBindClass<T, PARENT>& addFactory(const FN& proc)
     {
-        static_assert(!std::is_function<FN>::value,
-            "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindMethod<FN, FN, 2>;
         m_meta.rawset("__call", LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
         return *this;
@@ -725,8 +729,6 @@ public:
     template <typename FN, typename ARGS>
     CppBindClass<T, PARENT>& addFactory(const FN& proc, ARGS)
     {
-        static_assert(!std::is_function<FN>::value,
-            "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindMethod<FN, ARGS, 2>;
         m_meta.rawset("__call", LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
         return *this;
@@ -822,12 +824,8 @@ public:
     template <typename FG, typename FS>
     CppBindClass<T, PARENT>& addProperty(const char* name, const FG& get, const FS& set)
     {
-        static_assert(!std::is_function<FG>::value,
-            "function pointer is needed, please prepend & to function name");
-        static_assert(!std::is_function<FS>::value,
-            "function pointer is needed, please prepend & to function name");
-        using CppGetter = CppBindClassMethod<T, FG, FG, 1>;
-        using CppSetter = CppBindClassMethod<T, FS, FS, -1>;
+        using CppGetter = CppBindClassMethod<T, FG, FG, CHK_GETTER>;
+        using CppSetter = CppBindClassMethod<T, FS, FS, CHK_SETTER>;
         setMemberGetter(name, LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)));
         setMemberSetter(name, LuaRef::createFunction(state(), &CppSetter::call, CppSetter::function(set)));
         return *this;
@@ -840,15 +838,9 @@ public:
     template <typename FG, typename FGC, typename FS>
     CppBindClass<T, PARENT>& addProperty(const char* name, const FG& get, const FGC& get_const, const FS& set)
     {
-        static_assert(!std::is_function<FG>::value,
-            "function pointer is needed, please prepend & to function name");
-        static_assert(!std::is_function<FGC>::value,
-            "function pointer is needed, please prepend & to function name");
-        static_assert(!std::is_function<FS>::value,
-            "function pointer is needed, please prepend & to function name");
-        using CppGetter = CppBindClassMethod<T, FG, FG, 1>;
-        using CppGetterConst = CppBindClassMethod<T, FGC, FGC, 1>;
-        using CppSetter = CppBindClassMethod<T, FS, FS, -1>;
+        using CppGetter = CppBindClassMethod<T, FG, FG, CHK_GETTER>;
+        using CppGetterConst = CppBindClassMethod<T, FGC, FGC, CHK_GETTER>;
+        using CppSetter = CppBindClassMethod<T, FS, FS, CHK_SETTER>;
         setMemberGetter(name,
             LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)),
             LuaRef::createFunction(state(), &CppGetterConst::call, CppGetterConst::function(get_const)));
@@ -871,9 +863,7 @@ public:
     template <typename FN>
     CppBindClass<T, PARENT>& addPropertyReadOnly(const char* name, const FN& get)
     {
-        static_assert(!std::is_function<FN>::value,
-            "function pointer is needed, please prepend & to function name");
-        using CppGetter = CppBindClassMethod<T, FN, FN, 1>;
+        using CppGetter = CppBindClassMethod<T, FN, FN, CHK_GETTER>;
         setMemberGetter(name, LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)));
         setMemberReadOnly(name);
         return *this;
@@ -886,12 +876,8 @@ public:
     template <typename FN, typename FNC>
     CppBindClass<T, PARENT>& addPropertyReadOnly(const char* name, const FN& get, const FNC& get_const)
     {
-        static_assert(!std::is_function<FN>::value,
-            "function pointer is needed, please prepend & to function name");
-        static_assert(!std::is_function<FNC>::value,
-            "function pointer is needed, please prepend & to function name");
-        using CppGetter = CppBindClassMethod<T, FN, FN, 1>;
-        using CppGetterConst = CppBindClassMethod<T, FNC, FNC, 1>;
+        using CppGetter = CppBindClassMethod<T, FN, FN, CHK_GETTER>;
+        using CppGetterConst = CppBindClassMethod<T, FNC, FNC, CHK_GETTER>;
         setMemberGetter(name,
             LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)),
             LuaRef::createFunction(state(), &CppGetterConst::call, CppGetterConst::function(get_const)));
@@ -905,10 +891,8 @@ public:
     template <typename FN>
     CppBindClass<T, PARENT>& addFunction(const char* name, const FN& proc)
     {
-        static_assert(!std::is_function<FN>::value,
-            "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindClassMethod<T, FN>;
-        setMemberFunction(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)), CppProc::IsConst);
+        setMemberFunction(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)), CppProc::isConst);
         return *this;
     }
 
@@ -918,10 +902,8 @@ public:
     template <typename FN, typename ARGS>
     CppBindClass<T, PARENT>& addFunction(const char* name, const FN& proc, ARGS)
     {
-        static_assert(!std::is_function<FN>::value,
-            "function pointer is needed, please prepend & to function name");
         using CppProc = CppBindClassMethod<T, FN, ARGS>;
-        setMemberFunction(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)), CppProc::IsConst);
+        setMemberFunction(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)), CppProc::isConst);
         return *this;
     }
 

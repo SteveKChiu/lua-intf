@@ -338,25 +338,25 @@ public:
 // access functions (stack -> CXX)
 
     bool isNumber(int idx) const
-        { return lua_isnumber(L, idx); }
+        { return lua_isnumber(L, idx) != 0; }
 
     bool isString(int idx) const
-        { return lua_isstring(L, idx); }
+        { return lua_isstring(L, idx) != 0; }
 
     bool isCFunction(int idx) const
-        { return lua_iscfunction(L, idx); }
+        { return lua_iscfunction(L, idx) != 0; }
 
     bool isUserData(int idx) const
-        { return lua_isuserdata(L, idx); }
+        { return lua_isuserdata(L, idx) != 0; }
 
     bool isFunction(int idx) const
-        { return lua_isfunction(L, idx); }
+        { return lua_isfunction(L, idx) != 0; }
 
     bool isTable(int idx) const
-        { return lua_istable(L, idx); }
+        { return lua_istable(L, idx) != 0; }
 
     bool isLightUserData(int idx) const
-        { return lua_islightuserdata(L, idx); }
+        { return lua_islightuserdata(L, idx) != 0; }
 
     bool isNil(int idx) const
         { return lua_isnil(L, idx); }
@@ -416,7 +416,7 @@ public:
         { return luaL_optunsigned(L, idx, def); }
 
     bool toBool(int idx) const
-        { return lua_toboolean(L, idx); }
+        { return lua_toboolean(L, idx) != 0; }
 
     const char* toString(int idx, size_t* len = nullptr) const
         { return lua_tolstring(L, idx, len); }
@@ -462,7 +462,7 @@ public:
 #endif
 
     bool rawequal(int idx1, int idx2) const
-        { return lua_rawequal(L, idx1, idx2); }
+        { return lua_rawequal(L, idx1, idx2) != 0; }
 
     int compare(int idx1, int idx2, int op) const
         { return lua_compare(L, idx1, idx2, op); }
@@ -519,7 +519,7 @@ public:
         { lua_gettable(L, table_idx); }
 
     bool getSubTable(int idx, const char* field) const
-        { return luaL_getsubtable(L, idx, field); }
+        { return luaL_getsubtable(L, idx, field) != 0; }
 
     void getField(int table_idx, const char* field) const
         { lua_getfield(L, table_idx, field); }
@@ -537,7 +537,7 @@ public:
         { lua_createtable(L, num_items, num_fields); }
 
     bool newMetaTable(const char* type_name) const
-        { return luaL_newmetatable(L, type_name); }
+        { return luaL_newmetatable(L, type_name) != 0; }
 
     bool getMetaTable(int table_idx) const
         { return lua_getmetatable(L, table_idx) != 0; }
@@ -546,7 +546,7 @@ public:
         { luaL_getmetatable(L, type_name); }
 
     bool getMetaField(int table_idx, const char* field) const
-        { return luaL_getmetafield(L, table_idx, field); }
+        { return luaL_getmetafield(L, table_idx, field) != 0; }
 
     void* newUserData(size_t sz) const
         { return lua_newuserdata(L, sz); }
@@ -614,7 +614,7 @@ public:
 #endif
 
     bool callMeta(int idx, const char* field) const
-        { return luaL_callmeta(L, idx, field); }
+        { return luaL_callmeta(L, idx, field) != 0; }
 
 #if LUA_VERSION_NUM == 501
     int load(lua_Reader reader, void* dt, const char* chunk_name) const
@@ -728,7 +728,7 @@ public:
 // debug interface
 
     bool stack(int level, lua_Debug* ar) const
-        { return lua_getstack(L, level, ar); }
+        { return lua_getstack(L, level, ar) != 0; }
 
     bool getInfo(const char* what, lua_Debug* ar) const
         { return lua_getinfo(L, what, ar) != 0; }
