@@ -92,9 +92,9 @@ struct CppBindVariableSetter
 
 enum CppBindMethodCheck
 {
-	CHK_NORMAL,
-	CHK_GETTER,
-	CHK_SETTER
+    CHK_NORMAL,
+    CHK_GETTER,
+    CHK_SETTER
 };
 
 template <int CHK, typename FN, int IARG, typename R, typename... P>
@@ -164,23 +164,23 @@ struct CppBindMethod <std::function<R(A...)>, _arg(*)(P...), IARG, CHK>
 
 template <typename FN, int IARG, int CHK>
 struct CppBindMethod <FN, FN, IARG, CHK,
-		typename std::enable_if<CppCouldBeLambda<FN>::value>::type>
-	: CppBindMethod <typename CppLambdaTraits<FN>::FunctionType, typename CppLambdaTraits<FN>::FunctionType, IARG, CHK> {};
+        typename std::enable_if<CppCouldBeLambda<FN>::value>::type>
+    : CppBindMethod <typename CppLambdaTraits<FN>::FunctionType, typename CppLambdaTraits<FN>::FunctionType, IARG, CHK> {};
 
 template <typename FN, typename... P, int IARG, int CHK>
 struct CppBindMethod <FN, _arg(*)(P...), IARG, CHK,
-		typename std::enable_if<CppCouldBeLambda<FN>::value>::type>
-	: CppBindMethod <typename CppLambdaTraits<FN>::FunctionType, _arg(*)(P...), IARG, CHK> {};
+        typename std::enable_if<CppCouldBeLambda<FN>::value>::type>
+    : CppBindMethod <typename CppLambdaTraits<FN>::FunctionType, _arg(*)(P...), IARG, CHK> {};
 
 template <typename FN, int IARG, int CHK>
 struct CppBindMethod <FN, FN, IARG, CHK,
-		typename std::enable_if<std::is_function<FN>::value>::type>
-	: CppBindMethod <FN*, FN*, IARG, CHK> {};
+        typename std::enable_if<std::is_function<FN>::value>::type>
+    : CppBindMethod <FN*, FN*, IARG, CHK> {};
 
 template <typename FN, typename... P, int IARG, int CHK>
 struct CppBindMethod <FN, _arg(*)(P...), IARG, CHK,
-		typename std::enable_if<std::is_function<FN>::value>::type>
-	: CppBindMethod <FN*, _arg(*)(P...), IARG, CHK> {};
+        typename std::enable_if<std::is_function<FN>::value>::type>
+    : CppBindMethod <FN*, _arg(*)(P...), IARG, CHK> {};
 
 //----------------------------------------------------------------------------
 

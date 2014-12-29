@@ -27,13 +27,13 @@
 template <typename FN>
 struct CppCouldBeLambda
 {
-	static constexpr bool value = std::is_class<FN>::value;
+    static constexpr bool value = std::is_class<FN>::value;
 };
 
 template <typename R, typename... P>
 struct CppCouldBeLambda <std::function<R(P...)>>
 {
-	static constexpr bool value = false;
+    static constexpr bool value = false;
 };
 
 template <typename FN>

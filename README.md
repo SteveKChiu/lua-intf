@@ -29,7 +29,7 @@ Compile Lua library in C++
 
 Most distributions of precompiled Lua library are compiled under C, if you need Lua library compiled under C++, you probably need to compile it by yourself. It is actually very easy to build Lua library under C++, first get a copy of source code of the Lua library:
 ````
-curl http://www.lua.org/ftp/lua-5.2.3.tar.gz -o lua-5.2.3.tar.gz 
+curl http://www.lua.org/ftp/lua-5.2.3.tar.gz -o lua-5.2.3.tar.gz
 tar xf lua-5.2.3.tar.gz
 cd lua-5.2.3
 ````
@@ -59,48 +59,48 @@ Export C++ class or function to Lua script
 
 You can easily export C++ class or function for Lua script, consider the following C++ class:
 ````c++
-	class Web
-	{
-	public:
-		// base_url is optional
-		Web(const std::string& base_url);
-		~Web();
+    class Web
+    {
+    public:
+        // base_url is optional
+        Web(const std::string& base_url);
+        ~Web();
 
-		static void go_home();
+        static void go_home();
 
-		static std::string home_url();
-		static void set_home_url(const std::string& url);
+        static std::string home_url();
+        static void set_home_url(const std::string& url);
 
-		std::string url() const;
-		void set_url(const std::string& url);
-		std::string resolve_url(const std::string& uri);
+        std::string url() const;
+        void set_url(const std::string& url);
+        std::string resolve_url(const std::string& uri);
 
-		// doing reload if uri is empty
-		std::string load(const std::string& uri);
-	};
+        // doing reload if uri is empty
+        std::string load(const std::string& uri);
+    };
 ````
 You can export the `Web` class by the following code:
 ````c++
     LuaBinding(L).beginClass<Web>("Web")
-		.addConstructor(LUA_ARGS(_opt<std::string>))
-		.addStaticProperty("home_url", &Web::home_url, &Web::set_home_url)
-		.addStaticFunction("go_home", &Web::go_home)
-		.addProperty("url", &Web::url, &Web::set_url)
-		.addFunction("resolve_url", &Web::resolve_url)
-		.addFunction("load", &Web::load, LUA_ARGS(_opt<std::string>))
-		.addStaticFunction("lambda", [] {
-			// you can use C++11 lambda expression here too
-			return "yes";
-		})
-	.endClass();
+        .addConstructor(LUA_ARGS(_opt<std::string>))
+        .addStaticProperty("home_url", &Web::home_url, &Web::set_home_url)
+        .addStaticFunction("go_home", &Web::go_home)
+        .addProperty("url", &Web::url, &Web::set_url)
+        .addFunction("resolve_url", &Web::resolve_url)
+        .addFunction("load", &Web::load, LUA_ARGS(_opt<std::string>))
+        .addStaticFunction("lambda", [] {
+            // you can use C++11 lambda expression here too
+            return "yes";
+        })
+    .endClass();
 ````
 To access the exported `Web` class in Lua:
 ````lua
-	local w = Web()								-- auto w = Web("");
-	w.url = "http://www.yahoo.com"				-- w.set_url("http://www.yahoo.com");
-	local page = w:load()						-- auto page = w.load("");
-	page = w:load("http://www.google.com")		-- page = w.load("http://www.google.com");
-	local url = w.url							-- auto url = w.url();
+    local w = Web()								-- auto w = Web("");
+    w.url = "http://www.yahoo.com"				-- w.set_url("http://www.yahoo.com");
+    local page = w:load()						-- auto page = w.load("");
+    page = w:load("http://www.google.com")		-- page = w.load("http://www.google.com");
+    local url = w.url							-- auto url = w.url();
 ````
 
 Module and class
@@ -108,63 +108,63 @@ Module and class
 
 C++ class or functions exported are organized by module and class. The general layout of binding looks like:
 ````c++
-	LuaBinding(L)
-		.beginModule(string module_name)
-			.addFactory(function* func)
+    LuaBinding(L)
+        .beginModule(string module_name)
+            .addFactory(function* func)
 
             .addConstant(string constant_name, VALUE_TYPE value)
 
-			.addVariable(string property_name, VARIABLE_TYPE* var, bool writable = true)
-			.addVariableRef(string property_name, VARIABLE_TYPE* var, bool writable = true)
+            .addVariable(string property_name, VARIABLE_TYPE* var, bool writable = true)
+            .addVariableRef(string property_name, VARIABLE_TYPE* var, bool writable = true)
 
-			.addProperty(string property_name, FUNCTION_TYPE getter, FUNCTION_TYPE setter)
-			.addProperty(string property_name, FUNCTION_TYPE getter)
+            .addProperty(string property_name, FUNCTION_TYPE getter, FUNCTION_TYPE setter)
+            .addProperty(string property_name, FUNCTION_TYPE getter)
 
-			.addFunction(string function_name, FUNCTION_TYPE func)
+            .addFunction(string function_name, FUNCTION_TYPE func)
 
-			.beginModule(string sub_module_name)
-				...
-			.endModule()
+            .beginModule(string sub_module_name)
+                ...
+            .endModule()
 
-			.beginClass<CXX_TYPE>(string class_name)
-				...
-			.endClass()
+            .beginClass<CXX_TYPE>(string class_name)
+                ...
+            .endClass()
 
-			.beginExtendClass<CXX_TYPE, SUPER_CXX_TYPE>(string sub_class_name)
-				...
-			.endClass()
-		.endModule()
+            .beginExtendClass<CXX_TYPE, SUPER_CXX_TYPE>(string sub_class_name)
+                ...
+            .endClass()
+        .endModule()
 
-		.beginClass<CXX_TYPE>(string class_name)
-			.addFactory(FUNCTION_TYPE func)		// you can only have one addFactory or addConstructor
-			.addConstructor(LUA_ARGS(...))
+        .beginClass<CXX_TYPE>(string class_name)
+            .addFactory(FUNCTION_TYPE func)		// you can only have one addFactory or addConstructor
+            .addConstructor(LUA_ARGS(...))
 
             .addConstant(string constant_name, VALUE_TYPE value)
 
-			.addStaticVariable(string property_name, VARIABLE_TYPE* var, bool writable = true)
-			.addStaticVariableRef(string property_name, VARIABLE_TYPE* var, bool writable = true)
+            .addStaticVariable(string property_name, VARIABLE_TYPE* var, bool writable = true)
+            .addStaticVariableRef(string property_name, VARIABLE_TYPE* var, bool writable = true)
 
-			.addStaticProperty(string property_name, FUNCTION_TYPE getter, FUNCTION_TYPE setter)
-			.addStaticProperty(string property_name, FUNCTION_TYPE getter)
+            .addStaticProperty(string property_name, FUNCTION_TYPE getter, FUNCTION_TYPE setter)
+            .addStaticProperty(string property_name, FUNCTION_TYPE getter)
 
-			.addStaticFunction(string function_name, FUNCTION_TYPE func)
+            .addStaticFunction(string function_name, FUNCTION_TYPE func)
 
-			.addVariable(string property_name, CXX_TYPE::FIELD_TYPE* var, bool writable = true)
-			.addVariableRef(string property_name, CXX_TYPE::FIELD_TYPE* var, bool writable = true)
+            .addVariable(string property_name, CXX_TYPE::FIELD_TYPE* var, bool writable = true)
+            .addVariableRef(string property_name, CXX_TYPE::FIELD_TYPE* var, bool writable = true)
 
-			.addProperty(string property_name, CXX_TYPE::FUNCTION_TYPE getter, CXX_TYPE::FUNCTION_TYPE setter)
-			.addProperty(string property_name, CXX_TYPE::FUNCTION_TYPE getter, CXX_TYPE::FUNCTION_TYPE getter_const, CXX_TYPE::FUNCTION_TYPE setter)
-			.addProperty(string property_name, CXX_TYPE::FUNCTION_TYPE getter)
+            .addProperty(string property_name, CXX_TYPE::FUNCTION_TYPE getter, CXX_TYPE::FUNCTION_TYPE setter)
+            .addProperty(string property_name, CXX_TYPE::FUNCTION_TYPE getter, CXX_TYPE::FUNCTION_TYPE getter_const, CXX_TYPE::FUNCTION_TYPE setter)
+            .addProperty(string property_name, CXX_TYPE::FUNCTION_TYPE getter)
 
-			.addPropertyReadOnly(string property_name, CXX_TYPE::FUNCTION_TYPE getter, CXX_TYPE::FUNCTION_TYPE getter_const)
-			.addPropertyReadOnly(string property_name, CXX_TYPE::FUNCTION_TYPE getter)
+            .addPropertyReadOnly(string property_name, CXX_TYPE::FUNCTION_TYPE getter, CXX_TYPE::FUNCTION_TYPE getter_const)
+            .addPropertyReadOnly(string property_name, CXX_TYPE::FUNCTION_TYPE getter)
 
-			.addFunction(string function_name, CXX_TYPE::FUNCTION_TYPE func)
-		.endClass()
+            .addFunction(string function_name, CXX_TYPE::FUNCTION_TYPE func)
+        .endClass()
 
-		.beginExtendClass<CXX_TYPE, SUPER_CXX_TYPE>(string sub_class_name)
-			...
-		.endClass()
+        .beginExtendClass<CXX_TYPE, SUPER_CXX_TYPE>(string sub_class_name)
+            ...
+        .endClass()
 ````
 A module binding is like a package or namespace, it can also contain other sub-module or class. A module can have the following bindings:
 
@@ -191,26 +191,26 @@ A class binding is modeled after C++ class, it models the const-ness correctly, 
 
 For module and class, you can have only one constructor or factory function. To access the factory or constructor in Lua script, you call the module or class name like a function, for example the above `Web` class:
 ````lua
-	local w = Web("http://www.google.com")
+    local w = Web("http://www.google.com")
 ````
 The static or module variable, property and constant is accessible by module/class name, it is just like table field:
 ````lua
-	local url = Web.home_url
-	Web.home_url = "http://www.google.com"
+    local url = Web.home_url
+    Web.home_url = "http://www.google.com"
 ````
 The static function can be called by the following, note the '.' syntax and class name:
 ````lua
-	Web.go_home()
+    Web.go_home()
 ````
 The member variable and property is associated with object, so it is accessible by variable:
 ````lua
-	local session = Web("http://www.google.com")
-	local url = session.url
-	session.url = "http://www.google.com"
+    local session = Web("http://www.google.com")
+    local url = session.url
+    session.url = "http://www.google.com"
 ````
 The member function can be called by the following, note the ':' syntax and object name:
 ````lua
-	session:load("http://www.yahoo.com")
+    session:load("http://www.yahoo.com")
 ````
 
 Integrate with Lua module system
@@ -218,7 +218,7 @@ Integrate with Lua module system
 
 The lua module system don't register modules in global variables. So you'll need to pass a local reference to `LuaBinding`. For example:
 ````c++
-    extern "C" int luaopen_modname(lua_State* L) 
+    extern "C" int luaopen_modname(lua_State* L)
     {
         LuaRef mod = LuaRef::createTable(L);
         LuaBinding(mod)
@@ -246,23 +246,23 @@ If both C++ and Lua code need to access the same object, it is usually better to
 
 + `operator ->`
 + `operator *`
-+ `operator bool` 
++ `operator bool`
 + default constructor
 + copy constructor
 
 Before you can use it, you need to register it with `lua-intf`, take `std::shared_ptr` for example:
 ````c++
-	namespace LuaIntf
-	{
-		LUA_USING_SHARED_PTR_TYPE(std::shared_ptr)
-	}
+    namespace LuaIntf
+    {
+        LUA_USING_SHARED_PTR_TYPE(std::shared_ptr)
+    }
 ````
 For constructing shared pointer inside Lua `userdata`, you can register the constructor by adding LUA_SP macro and the actual shared pointer type, for example:
 ````c++
     LuaBinding(L).beginClass<Web>("web")
-		.addConstructor(LUA_SP(std::shared_ptr<Web>), LUA_ARGS(_opt<std::string>))
-		...
-	.endClass();
+        .addConstructor(LUA_SP(std::shared_ptr<Web>), LUA_ARGS(_opt<std::string>))
+        ...
+    .endClass();
 ````
 
 Using custom deleter
@@ -276,7 +276,7 @@ If custom deleter is needed instead of the destructor, you can register the cons
           MyClass(int, int);
           void release();
      };
-     
+
      struct MyClassDeleter
      {
          void operator () (MyClass* p)
@@ -284,12 +284,12 @@ If custom deleter is needed instead of the destructor, you can register the cons
              p->release();
          }
      };
-     
+
     LuaBinding(L).beginClass<MyClass>("MyClass")
         .addConstructor(LUA_DEL(MyClassDeleter), LUA_ARGS(int, int))
         ...
     .endClass();
-```` 
+````
 
 Function calling convention
 ---------------------------
@@ -302,59 +302,59 @@ C++ function exported to Lua can follow one of the two calling conventions:
 
 `lua-intf` extends `lua_CFunction` convention by allowing more arguments besides `lua_State*`, the following functions will all follow the `lua_CFunction` convention:
 ````c++
-	// regular lua_CFunction convention
-	int func_1(lua_state* L);
+    // regular lua_CFunction convention
+    int func_1(lua_state* L);
 
-	// lua_CFunction convention, but allow arg1, arg2 to map to arguments
-	int func_2(lua_state* L, const std::string& arg1, int arg2);
+    // lua_CFunction convention, but allow arg1, arg2 to map to arguments
+    int func_2(lua_state* L, const std::string& arg1, int arg2);
 
-	// this is *NOT* lua_CFunction
-	// the L can be placed anywhere, and it is stub to capture lua_State*,
-	// and do not contribute to actual Lua arguments
-	int func_3(const std::string& arg1, lua_state* L);
+    // this is *NOT* lua_CFunction
+    // the L can be placed anywhere, and it is stub to capture lua_State*,
+    // and do not contribute to actual Lua arguments
+    int func_3(const std::string& arg1, lua_state* L);
 
-	class Object
-	{
-	public:
-		// class method can follow lua_CFunction convention too
-		int func_1(lua_state* L);
+    class Object
+    {
+    public:
+        // class method can follow lua_CFunction convention too
+        int func_1(lua_state* L);
 
-		// class lua_CFunction convention, but allow arg1, arg2 to map to arguments
-		int func_2(lua_state* L, const std::string& arg1, int arg2);
-	};
+        // class lua_CFunction convention, but allow arg1, arg2 to map to arguments
+        int func_2(lua_state* L, const std::string& arg1, int arg2);
+    };
 
-	// the following can also be lua_CFunction convention if it is added as class functions
-	// note the first argument must be the pointer type of the registered class
-	int obj_func_1(Object* obj, lua_state* L);
-	int obj_func_2(Object* obj, lua_state* L, const std::string& arg1, int arg2);
+    // the following can also be lua_CFunction convention if it is added as class functions
+    // note the first argument must be the pointer type of the registered class
+    int obj_func_1(Object* obj, lua_state* L);
+    int obj_func_2(Object* obj, lua_state* L, const std::string& arg1, int arg2);
 ````
 For every function registration, `lua-intf` also support C++11 `std::function` type, so you can use `std::bind` or lambda expression if needed. You can use lambda expression freely without giving full `std::function` declaration; `std::bind` on the other hand, must be declared:
 ````c++
     LuaBinding(L).beginClass<Web>("Web")
-		.addStaticFunction("lambda", [] {
-			// you can use C++11 lambda expression here too
-			return "yes";
-		})
-		.addStaticFunction<std::function<std::string()>>("bind",
-			std::bind(&Web::url, other_web_object))
-	.endClass();
+        .addStaticFunction("lambda", [] {
+            // you can use C++11 lambda expression here too
+            return "yes";
+        })
+        .addStaticFunction<std::function<std::string()>>("bind",
+            std::bind(&Web::url, other_web_object))
+    .endClass();
 ````
 
 If your C++ function is overloaded, pass `&function` is not enough, you have to explicitly cast it to proper type:
 ````c++
-	static int test(string, int);
-	static string test(string);
+    static int test(string, int);
+    static string test(string);
 
-	LuaBinding(L).beginModule("utils")
+    LuaBinding(L).beginModule("utils")
 
-		// this will bind int test(string, int)
-		.addFunction("test_1", static_cast<int(*)(string, int)>(&test))
+        // this will bind int test(string, int)
+        .addFunction("test_1", static_cast<int(*)(string, int)>(&test))
 
-		// this will bind string test(string), by using our LUA_FN macro
-		// LUA_FN(RETURN_TYPE, FUNC_NAME, ARG_TYPES...)
-		.addFunction("test_2", LUA_FN(string, test, string))
+        // this will bind string test(string), by using our LUA_FN macro
+        // LUA_FN(RETURN_TYPE, FUNC_NAME, ARG_TYPES...)
+        .addFunction("test_2", LUA_FN(string, test, string))
 
-	.endModule();
+    .endModule();
 ````
 
 Function argument modifiers
@@ -379,30 +379,30 @@ By default the exported functions expect every argument to be mandatory, if the 
 All output modifiers require the argument to be reference type, using pointer type for output is not supported. The reason `_def<TYPE, DEF_NUM, DEF_DEN = 1>` requires DEF_NUM and DEF_DEN is to workaround C++ limitation. The C++ template does not allow floating point number as non-type argument, in order specify default value for float, you have to specify numerator and denominator pair (the denominator is 1 by default). For example:
 
 ````c++
-	struct MyString
-	{
-		std::string indexOf(const std::string& str, int pos);
-		std::string desc(float number);
-		...
-	};
+    struct MyString
+    {
+        std::string indexOf(const std::string& str, int pos);
+        std::string desc(float number);
+        ...
+    };
 
-	#define _def_float(f) _def<float, long((f) * 1000000), 1000000>
+    #define _def_float(f) _def<float, long((f) * 1000000), 1000000>
 
-	LuaBinding(L).beginClass<MyString>("mystring")
+    LuaBinding(L).beginClass<MyString>("mystring")
 
-		// this will make pos = 1 if it is not specified in Lua side
-		.addFunction("indexOf", &MyString::indexOf, LUA_ARGS(std::string, _def<int, 1>))
+        // this will make pos = 1 if it is not specified in Lua side
+        .addFunction("indexOf", &MyString::indexOf, LUA_ARGS(std::string, _def<int, 1>))
 
-		// this will make number = 1.333 = (4 / 3) if it is not specified in Lua side
+        // this will make number = 1.333 = (4 / 3) if it is not specified in Lua side
         // because C++ does not allow float as non-type template parameter
         // you have to use ratio to specify floating numbers 1.333 = (4 / 3)
         // LUA_ARGS(_def<float, 1.33333f>) will result in error
-		.addFunction("indexOf", &MyString::desc, LUA_ARGS(_def<float, 4, 3>))
+        .addFunction("indexOf", &MyString::desc, LUA_ARGS(_def<float, 4, 3>))
 
-		// you can define your own macro to make it easier to specify float
-		// please see _def_float for example
-		.addFunction("indexOf2", &MyString::desc, LUA_ARGS(_def_float(1.3333f)))
-	.endClass();
+        // you can define your own macro to make it easier to specify float
+        // please see _def_float for example
+        .addFunction("indexOf2", &MyString::desc, LUA_ARGS(_def_float(1.3333f)))
+    .endClass();
 ````
 
 Return multiple results for Lua
@@ -410,26 +410,26 @@ Return multiple results for Lua
 
 It is possible to return multiple results by telling which argument is for output, for example:
 ````c++
-	static std::string match(const std::string& src, const std::string& pat, int pos, int& found_pos);
+    static std::string match(const std::string& src, const std::string& pat, int pos, int& found_pos);
 
-	LuaBinding(L).beginModule("utils")
+    LuaBinding(L).beginModule("utils")
 
-		// this will return (string) (found_pos)
-		.addFunction("match", &match, LUA_ARGS(std::string, std::string, _def<int, 1>, _out<int&>))
+        // this will return (string) (found_pos)
+        .addFunction("match", &match, LUA_ARGS(std::string, std::string, _def<int, 1>, _out<int&>))
 
-	.endModule();
+    .endModule();
 ````
 
 Yet another way to return multiple results is to use `std::tuple`:
 ````c++
-	static std::tuple<std::string, int> match(const std::string& src, const std::string& pat, int pos);
+    static std::tuple<std::string, int> match(const std::string& src, const std::string& pat, int pos);
 
-	LuaBinding(L).beginModule("utils")
+    LuaBinding(L).beginModule("utils")
 
-		// this will return (string) (found_pos)
-		.addFunction("match", &match)
+        // this will return (string) (found_pos)
+        .addFunction("match", &match)
 
-	.endModule();
+    .endModule();
 ````
 
 And you can always use `lua_CFunction` to manually push multiple results by yourself.
@@ -441,23 +441,23 @@ Lua for-loop iteration function
 ````c++
     class MyIterator : public CppFunctor
     {
-        MyIterator(...) 
-        { 
-            ... 
+        MyIterator(...)
+        {
+            ...
         }
-        
-        virtual ~MyIterator() 
-        { 
-            ... 
+
+        virtual ~MyIterator()
+        {
+            ...
         }
-        
+
         // the for-loop will call this function for each step until it return 0
         virtual int run(lua_State* L) override
-        { 
-            ... 
+        {
+            ...
             // return the number of variables for each step of for-loop
             // or return 0 to end the for-loop
-            return 2; 
+            return 2;
         }
     }
 
@@ -471,9 +471,9 @@ To register the for-loop iteration function:
 ````c++
     LuaBinding(L).beginModule("utils")
 
-		.addFunction("xpairs", &xpairs)
+        .addFunction("xpairs", &xpairs)
 
-	.endModule();
+    .endModule();
 ````
 To use the iteration function in Lua code:
 ````lua
@@ -489,51 +489,51 @@ It is possible to add primitive type mapping to the `lua-intf`, all you need to 
 
 + provide `void push(lua_State* L, const Type& v)`
 + provide `Type get(lua_State* L, int index)`
-+ provide `Type opt(lua_State* L, int index, const Type& def)` 
++ provide `Type opt(lua_State* L, int index, const Type& def)`
 
 For example, to add `std::wstring` mapping to Lua string:
 ````c++
-	namespace LuaIntf
-	{
+    namespace LuaIntf
+    {
 
-	template <>
-	struct LuaTypeMapping <std::wstring>
-	{
-	    static void push(lua_State* L, const std::wstring& str)
-	    {
-	        if (str.empty()) {
-	            lua_pushliteral(L, "");
-	        } else {
-	        	std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-    			std::string buf = conv.to_bytes(str);
-	            lua_pushlstring(L, buf.data(), buf.length());
-	        }
-	    }
+    template <>
+    struct LuaTypeMapping <std::wstring>
+    {
+        static void push(lua_State* L, const std::wstring& str)
+        {
+            if (str.empty()) {
+                lua_pushliteral(L, "");
+            } else {
+                std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+                std::string buf = conv.to_bytes(str);
+                lua_pushlstring(L, buf.data(), buf.length());
+            }
+        }
 
-	    static std::wstring get(lua_State* L, int index)
-	    {
-	        size_t len;
-	        const char* p = luaL_checklstring(L, index, &len);
-	        std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-	        return conv.from_bytes(p, p + len);
-	    }
+        static std::wstring get(lua_State* L, int index)
+        {
+            size_t len;
+            const char* p = luaL_checklstring(L, index, &len);
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+            return conv.from_bytes(p, p + len);
+        }
 
-	    static std::wstring opt(lua_State* L, int index, const std::wstring& def)
-	    {
-	        return lua_isnoneornil(L, index) ? def : get(L, index);
-	    }
-	};
+        static std::wstring opt(lua_State* L, int index, const std::wstring& def)
+        {
+            return lua_isnoneornil(L, index) ? def : get(L, index);
+        }
+    };
 
-	} // namespace LuaIntf
+    } // namespace LuaIntf
 ````
 After that, you are able to push `std::wstring` onto or get `std::wstring` from Lua stack directly:
 ````c++
-	std::wstring s = ...;
-	Lua::push(L, s);
+    std::wstring s = ...;
+    Lua::push(L, s);
 
-	...
+    ...
 
-	s = Lua::pop<std::wstring>(L);
+    s = Lua::pop<std::wstring>(L);
 ````
 
 High level API to access Lua object
@@ -541,7 +541,7 @@ High level API to access Lua object
 
 `LuaRef` is designed to provide easy access to Lua object, and in most case you don't have to deal with Lua stack like the low level API. For example:
 ````c++
-	lua_State* L = ...;
+    lua_State* L = ...;
     lua_getglobal(L, "module");
     lua_getfield(L, -1, "method");
     lua_pushintteger(L, 1);
@@ -551,35 +551,35 @@ High level API to access Lua object
 ````
 The above code can be rewritten as:
 ````c++
-	LuaRef func(L, "module.method");
-	func(1, "yes", true);
+    LuaRef func(L, "module.method");
+    func(1, "yes", true);
 ````
 Table access is as simple:
 ````c++
-	LuaRef table(L, "my_table");
-	table["value"] = 15;
-	int value = table.get<int>("value");
+    LuaRef table(L, "my_table");
+    table["value"] = 15;
+    int value = table.get<int>("value");
 
-	for (auto& e : table) {
-		std::string key = e.key<std::string>();
-		LuaRef value = e.value<LuaRef>();
-		...
-	}
+    for (auto& e : table) {
+        std::string key = e.key<std::string>();
+        LuaRef value = e.value<LuaRef>();
+        ...
+    }
 ````
 And you can mix it with the low level API:
 ````c++
-	lua_State* L = ...;
-	LuaRef v = ...;
+    lua_State* L = ...;
+    LuaRef v = ...;
     lua_getglobal(L, "my_method");
     Lua::push(L, 1);					// the same as lua_pushinteger
     Lua::push(L, v);					// push v to lua stack
     Lua::push(L, true);					// the same as lua_pushboolean
     lua_call(L, 3, 2);
-	LuaRef r(L, -2); 					// map r to lua stack index -2
+    LuaRef r(L, -2); 					// map r to lua stack index -2
 ````
 You can use the `std::tuple` for multiple return values:
 ````c++
-	LuaRef func(L, "utils.match");
+    LuaRef func(L, "utils.match");
     std::string found;
     int found_pos;
     std::tie(found, found_pos) = func.call<std::tuple<std::string, int>>("this is test", "test");
@@ -590,7 +590,7 @@ Low level API as simple wrapper for Lua C API
 
 `LuaState` is a simple wrapper of one-to-one mapping for Lua C API, consider the following code:
 ````c++
-	lua_State* L = ...;
+    lua_State* L = ...;
     lua_getglobal(L, "module");
     lua_getfield(L, -1, "method");
     lua_pushintteger(L, 1);
@@ -600,13 +600,13 @@ Low level API as simple wrapper for Lua C API
 ````
 It can be effectively rewritten as:
 ````c++
-	LuaState lua = L;
+    LuaState lua = L;
     lua.getGlobal("module");
     lua.getField(-1, "method");
-	lua.push(1);
-	lua.push("yes");
-	lua.push(true);
-	lua.call(3, 0);
+    lua.push(1);
+    lua.push("yes");
+    lua.push(true);
+    lua.call(3, 0);
 ````
 This low level API is completely optional, and you can still use the C API, or mix the usage. `LuaState` is designed to be a lightweight wrapper, and has very little overhead (if not as fast as the C API), and mostly can be auto-casting to or from `lua_State*`. In the `lua-intf`, `LuaState` and `lua_State*` are inter-changeable, you can pick the coding style you like most.
 

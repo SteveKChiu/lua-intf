@@ -202,7 +202,7 @@ struct CppBindClassMethod <T, R(TF::*)(P...) const, R(TF::*)(P...) const, CHK>
 
 template <typename T, typename TF, typename R, typename... P, int CHK>
 struct CppBindClassMethod <T, R(*)(TF*, P...), R(*)(TF*, P...), CHK,
-		typename std::enable_if<!std::is_const<TF>::value>::type>
+        typename std::enable_if<!std::is_const<TF>::value>::type>
     : CppBindClassMethodBase <CHK, T, true, false, R(*)(T*, P...), R, P...>
 {
     static_assert(std::is_base_of<TF, T>::value,
@@ -219,7 +219,7 @@ struct CppBindClassMethod <T, R(*)(const TF*, P...), R(*)(const TF*, P...), CHK>
 
 template <typename T, typename TF, typename R, typename... P, int CHK>
 struct CppBindClassMethod <T, std::function<R(TF*, P...)>, std::function<R(TF*, P...)>, CHK,
-		typename std::enable_if<!std::is_const<TF>::value>::type>
+        typename std::enable_if<!std::is_const<TF>::value>::type>
     : CppBindClassMethodBase <CHK, T, true, false, std::function<R(T*, P...)>, R, P...>
 {
     static_assert(std::is_base_of<TF, T>::value,
@@ -256,7 +256,7 @@ struct CppBindClassMethod <T, R(TF::*)(A...) const, _arg(*)(P...), CHK>
 
 template <typename T, typename TF, typename R, typename... A, typename... P, int CHK>
 struct CppBindClassMethod <T, R(*)(TF*, A...), _arg(*)(P...), CHK,
-		typename std::enable_if<!std::is_const<TF>::value>::type>
+        typename std::enable_if<!std::is_const<TF>::value>::type>
     : CppBindClassMethodBase <CHK, T, true, false, R(*)(T*, A...), R, P...>
 {
     static_assert(std::is_base_of<TF, T>::value,
@@ -277,7 +277,7 @@ struct CppBindClassMethod <T, R(*)(const TF*, A...), _arg(*)(P...), CHK>
 
 template <typename T, typename TF, typename R, typename... A, typename... P, int CHK>
 struct CppBindClassMethod <T, std::function<R(TF*, A...)>, _arg(*)(P...), CHK,
-		typename std::enable_if<!std::is_const<TF>::value>::type>
+        typename std::enable_if<!std::is_const<TF>::value>::type>
     : CppBindClassMethodBase <CHK, T, true, false, std::function<R(T*, A...)>, R, P...>
 {
     static_assert(std::is_base_of<TF, T>::value,
@@ -298,23 +298,23 @@ struct CppBindClassMethod <T, std::function<R(const TF*, A...)>, _arg(*)(P...), 
 
 template <typename T, typename FN, int CHK>
 struct CppBindClassMethod <T, FN, FN, CHK,
-		typename std::enable_if<CppCouldBeLambda<FN>::value>::type>
+        typename std::enable_if<CppCouldBeLambda<FN>::value>::type>
     : CppBindClassMethod <T, typename CppLambdaTraits<FN>::FunctionType, typename CppLambdaTraits<FN>::FunctionType, CHK> {};
 
 template <typename T, typename FN, typename... P, int CHK>
 struct CppBindClassMethod <T, FN, _arg(*)(P...), CHK,
-		typename std::enable_if<CppCouldBeLambda<FN>::value>::type>
-	: CppBindClassMethod <T, typename CppLambdaTraits<FN>::FunctionType, _arg(*)(P...), CHK> {};
+        typename std::enable_if<CppCouldBeLambda<FN>::value>::type>
+    : CppBindClassMethod <T, typename CppLambdaTraits<FN>::FunctionType, _arg(*)(P...), CHK> {};
 
 template <typename T, typename FN, int CHK>
 struct CppBindClassMethod <T, FN, FN, CHK,
-		typename std::enable_if<std::is_function<FN>::value>::type>
-	: CppBindClassMethod <T, FN*, FN*, CHK> {};
+        typename std::enable_if<std::is_function<FN>::value>::type>
+    : CppBindClassMethod <T, FN*, FN*, CHK> {};
 
 template <typename T, typename FN, typename... P, int CHK>
 struct CppBindClassMethod <T, FN, _arg(*)(P...), CHK,
-		typename std::enable_if<std::is_function<FN>::value>::type>
-	: CppBindClassMethod <T, FN*, _arg(*)(P...), CHK> {};
+        typename std::enable_if<std::is_function<FN>::value>::type>
+    : CppBindClassMethod <T, FN*, _arg(*)(P...), CHK> {};
 
 //--------------------------------------------------------------------------
 
