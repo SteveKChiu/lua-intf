@@ -335,6 +335,11 @@ public:
     void pop(int n = 1) const
         { lua_pop(L, n); }
 
+#if LUA_VERSION_NUM >= 503
+    void rotate(int idx, int n = 1) const
+        { lua_rotate(L, idx, n); }
+#endif
+
 // access functions (stack -> CXX)
 
     bool isNumber(int idx) const
@@ -414,6 +419,14 @@ public:
 
     lua_Unsigned optUnsigned(int idx, lua_Unsigned def) const
         { return luaL_optunsigned(L, idx, def); }
+
+#if LUA_VERSION_NUM >= 503
+    bool numberToInteger(lua_Number n, lua_Integer* p) const
+        { return lua_numbertointeger(n, p); }
+
+    bool getNumber(const char* s) const
+        { return lua_stringtonumber(L, s) != 0; }
+#endif
 
     bool toBool(int idx) const
         { return lua_toboolean(L, idx) != 0; }
@@ -524,13 +537,18 @@ public:
     void getField(int table_idx, const char* field) const
         { lua_getfield(L, table_idx, field); }
 
+#if LUA_VERSION_NUM >= 503
+    void getField(int table_idx, int field) const
+        { lua_geti(L, table_idx, field); }
+#endif
+
     void rawgetTable(int table_idx) const
         { lua_rawget(L, table_idx); }
 
-    void rawgetTable(int table_idx, int i) const
+    void rawgetField(int table_idx, int i) const
         { lua_rawgeti(L, table_idx, i); }
 
-    void rawgetTable(int table_idx, const void* p) const
+    void rawgetField(int table_idx, const void* p) const
         { lua_rawgetp(L, table_idx, p); }
 
     void newTable(int num_items = 0, int num_fields = 0) const
@@ -574,13 +592,18 @@ public:
     void setField(int table_idx, const char* k) const
         { lua_setfield(L, table_idx, k); }
 
+#if LUA_VERSION_NUM >= 503
+    void setField(int table_idx, int i) const
+        { lua_seti(L, table_idx, i); }
+#endif
+
     void rawsetTable(int table_idx) const
         { lua_rawset(L, table_idx); }
 
-    void rawsetTable(int table_idx, int i) const
+    void rawsetField(int table_idx, int i) const
         { lua_rawseti(L, table_idx, i);}
 
-    void rawsetTable(int table_idx, const void* p) const
+    void rawsetField(int table_idx, const void* p) const
         { lua_rawsetp(L, table_idx, p);}
 
     void setMetaTable(int table_idx) const
@@ -600,16 +623,22 @@ public:
 #if LUA_VERSION_NUM == 501
     void call(int num_args, int num_results) const
         { lua_call(L, num_args, num_results); }
-#else
+#elif LUA_VERSION_NUM == 502
     void call(int num_args, int num_results, int ctx = 0, lua_CFunction k = nullptr) const
+        { lua_callk(L, num_args, num_results, ctx, k); }
+#else
+    void call(int num_args, int num_results, int ctx = 0, lua_KFunction k = nullptr) const
         { lua_callk(L, num_args, num_results, ctx, k); }
 #endif
 
 #if LUA_VERSION_NUM == 501
     int pcall(int num_args, int num_results, int err_func_idx) const
         { return lua_pcall(L, num_args, num_results, err_func_idx); }
-#else
+#elif LUA_VERSION_NUM == 502
     int pcall(int num_args, int num_results, int err_func_idx, int ctx = 0, lua_CFunction k = nullptr) const
+        { return lua_pcallk(L, num_args, num_results, err_func_idx, ctx, k); }
+#else
+    int pcall(int num_args, int num_results, int err_func_idx, int ctx = 0, lua_KFunction k = nullptr) const
         { return lua_pcallk(L, num_args, num_results, err_func_idx, ctx, k); }
 #endif
 
@@ -656,19 +685,32 @@ public:
     bool doString(const char* s) const
         { return luaL_dostring(L, s); }
 
+#if LUA_VERSION_NUM <= 502
     int dump(lua_Writer writer, void* data) const
         { return lua_dump(L, writer, data); }
+#else
+    int dump(lua_Writer writer, void* data, bool strip = false) const
+        { return lua_dump(L, writer, data, strip); }
+#endif
 
     int fileResult(int stat, const char* file_name) const
         { return luaL_fileresult(L, stat, file_name); }
 
 // coroutine functions
 
+#if LUA_VERSION_NUM >= 503
+    bool lua_isYieldable() const
+        { return lua_isyieldable(L) != 0; }
+#endif
+
 #if LUA_VERSION_NUM == 501
     int yield(int num_results) const
         { return lua_yield(L, num_results); }
-#else
+#elif LUA_VERSION_NUM == 502
     int yield(int num_results, int ctx = 0, lua_CFunction k = nullptr) const
+        { return lua_yieldk(L, num_results, ctx, k); }
+#else
+    int yield(int num_results, int ctx = 0, lua_KFunction k = nullptr) const
         { return lua_yieldk(L, num_results, ctx, k); }
 #endif
 
@@ -753,8 +795,8 @@ public:
         { lua_upvaluejoin(L, func_idx1, n1, func_idx2, n2);}
 #endif
 
-    int setHook(lua_Hook func, int mask, int count) const
-        { return lua_sethook(L, func, mask, count); }
+    void setHook(lua_Hook func, int mask, int count) const
+        { lua_sethook(L, func, mask, count); }
 
     lua_Hook hook() const
         { return lua_gethook(L); }
@@ -791,7 +833,7 @@ public:
     void setGlobalValue(const char* name, T&& v) const
         { Lua::setGlobal(L, name, std::forward(v)); }
 
-    void exec(const char* expr, int num_results = 0)
+    void exec(const char* expr, int num_results = 0) const
         { Lua::exec(L, expr, num_results); }
 
     template <typename T>

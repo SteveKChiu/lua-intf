@@ -33,7 +33,7 @@
     #include "LuaIntf/LuaCompat.h"
 #endif
 
-#if !defined(LUA_VERSION_NUM) || LUA_VERSION_NUM == 501
+#if LUA_VERSION_NUM == 501
 
 #include <errno.h>
 #include <string.h>

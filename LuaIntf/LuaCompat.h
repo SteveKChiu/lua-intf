@@ -54,6 +54,9 @@
 
 /**
  * Set LUAINTF_UNSAFE_INT64 to 1 if you want to include partial int64_t support.
+ *
+ * This option applys to lua 5.2 or eailier version only, or with 32-bit configuration.
+ * This option has no effect to lua 5.3 or later version, which has native 64 bit int support.
  */
 #ifndef LUAINTF_UNSAFE_INT64
     #define LUAINTF_UNSAFE_INT64 1
@@ -62,7 +65,9 @@
 /**
  * Set LUAINTF_UNSAFE_INT64_CHECK to 1 if you want to make sure every pushed int64_t is safe,
  * that is, it can be converted from/to lua_Number without loss.
+ *
  * This check will throw Lua runtime error if the conversion is not safe.
+ * This check has no effect to lua 5.3 or later version, which has native 64 bit int support.
  */
 #ifndef LUAINTF_UNSAFE_INT64_CHECK
     #define LUAINTF_UNSAFE_INT64_CHECK 0
@@ -114,8 +119,6 @@ extern "C"
 {
 #endif
 
-//---------------------------------------------------------------------------
-
 typedef uint32_t lua_Unsigned;
 
 #define LUA_OK 0
@@ -152,8 +155,6 @@ void lua_rawsetp(lua_State* L, int i, const void* p);
 void lua_getuservalue(lua_State* L, int i);
 void lua_setuservalue(lua_State* L, int i);
 
-//---------------------------------------------------------------------------
-
 #define luaL_newlib(L, l) \
     (lua_newtable(L), luaL_setfuncs(L, l, 0))
 
@@ -173,16 +174,39 @@ int luaL_getsubtable(lua_State* L, int i, const char* name);
 void luaL_traceback(lua_State* L, lua_State* L1, const char* msg, int level);
 int luaL_fileresult(lua_State* L, int stat, const char* fname);
 
-//---------------------------------------------------------------------------
-
 #if !LUAINTF_LINK_LUA_COMPILED_IN_CXX
 }
 #endif
 
-#if LUAINTF_HEADERS_ONLY
-#include "src/LuaCompat.cpp"
+//---------------------------------------------------------------------------
+
+#elif LUA_VERSION_NUM >= 503
+
+    #ifndef lua_pushunsigned
+        #define lua_pushunsigned(L, n) \
+            lua_pushinteger(L, static_cast<lua_Integer>(n))
+
+        #define lua_tounsignedx(L, i, is) \
+            static_cast<lua_Unsigned>(lua_tointegerx(L, i, is))
+
+        #define lua_tounsigned(L, i) \
+            lua_tounsignedx(L, (i), nullptr)
+    #endif
+
+    #ifndef luaL_checkunsigned
+        #define luaL_checkunsigned(L, a) \
+            static_cast<lua_Unsigned>(luaL_checkinteger(L, a))
+
+        #define luaL_optunsigned(L, a, d) \
+            static_cast<lua_Unsigned>(luaL_optinteger(L, a, static_cast<lua_Integer>(d)))
+    #endif
+
 #endif
 
+//---------------------------------------------------------------------------
+
+#if LUAINTF_HEADERS_ONLY
+#include "src/LuaCompat.cpp"
 #endif
 
 //---------------------------------------------------------------------------

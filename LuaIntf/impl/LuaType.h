@@ -52,7 +52,7 @@ struct LuaTypeTest
     using type = T;
 };
 
-template <class T>
+template <typename T>
 typename LuaTypeTest<decltype(T()), std::true_type>::type LuaTypeExists(T&&);
 
 std::false_type LuaTypeExists(...);
@@ -130,6 +130,8 @@ struct LuaTypeMapping <long>
 
 //---------------------------------------------------------------------------
 
+#if LUA_VERSION_NUM <= 502
+
 template <typename T>
 struct LuaUnsignedTypeMapping
 {
@@ -148,6 +150,13 @@ struct LuaUnsignedTypeMapping
         return static_cast<T>(luaL_optunsigned(L, index, static_cast<lua_Unsigned>(def)));
     }
 };
+
+#else
+
+template <typename T>
+using LuaUnsignedTypeMapping = LuaIntegerTypeMapping<T>;
+
+#endif
 
 template <>
 struct LuaTypeMapping <unsigned char>
@@ -200,7 +209,7 @@ struct LuaTypeMapping <long double>
 
 //---------------------------------------------------------------------------
 
-#if LUAINTF_UNSAFE_INT64
+#if LUAINTF_UNSAFE_INT64 && (LUA_VERSION_NUM <= 502 || defined(LUA_32BITS))
 
 template <typename T>
 struct LuaUnsafeInt64TypeMapping
@@ -235,6 +244,16 @@ struct LuaTypeMapping <long long>
 template <>
 struct LuaTypeMapping <unsigned long long>
     : LuaUnsafeInt64TypeMapping <unsigned long long> {};
+
+#else
+
+template <>
+struct LuaTypeMapping <long long>
+    : LuaIntegerTypeMapping <long long> {};
+
+template <>
+struct LuaTypeMapping <unsigned long long>
+    : LuaIntegerTypeMapping <unsigned long long> {};
 
 #endif
 
@@ -423,6 +442,8 @@ struct LuaTypeMapping <LuaString>
 /**
  * Default type mapping to catch all enum conversion
  */
+ #if LUA_VERSION_NUM <= 502
+
 template <typename T>
 struct LuaTypeMapping <T, typename std::enable_if<std::is_enum<T>::value>::type>
     : std::conditional<
@@ -430,3 +451,11 @@ struct LuaTypeMapping <T, typename std::enable_if<std::is_enum<T>::value>::type>
         LuaUnsignedTypeMapping<T>,
         LuaIntegerTypeMapping<T>
     >::type {};
+
+#else
+
+template <typename T>
+struct LuaTypeMapping <T, typename std::enable_if<std::is_enum<T>::value>::type>
+    : LuaIntegerTypeMapping<T> {};
+
+#endif
