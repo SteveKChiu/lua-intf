@@ -245,7 +245,7 @@ template <>
 struct LuaTypeMapping <unsigned long long>
     : LuaUnsafeInt64TypeMapping <unsigned long long> {};
 
-#else
+#elif LUA_VERSION_NUM >= 503
 
 template <>
 struct LuaTypeMapping <long long>
