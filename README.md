@@ -485,64 +485,55 @@ To use the iteration function in Lua code:
 Custom type mapping
 -------------------
 
-It is possible to add primitive type mapping to the `lua-intf`, all you need to do is to add template specialization to LuaValueType. You need to:
+It is possible to add primitive type mapping to the `lua-intf`, all you need to do is to add template specialization to `LuaTypeMapping<Type>`. You need to:
 
-+ define `ValueType` type
-+ provide `void push(lua_State* L, const ValueType& v)`
-+ provide `ValueType get(lua_State* L, int index)`
-+ provide `ValueType opt(lua_State* L, int index, const ValueType& def)` 
++ provide `void push(lua_State* L, const Type& v)`
++ provide `Type get(lua_State* L, int index)`
++ provide `Type opt(lua_State* L, int index, const Type& def)` 
 
-For example, to add Qt `QString` mapping to Lua string:
+For example, to add `std::wstring` mapping to Lua string:
 ````c++
 	namespace LuaIntf
 	{
 
 	template <>
-	struct LuaValueType <QString>
+	struct LuaTypeMapping <std::wstring>
 	{
-	    using ValueType = QString;
-
-	    static void push(lua_State* L, const ValueType& str)
+	    static void push(lua_State* L, const std::wstring& str)
 	    {
-	        if (str.isEmpty()) {
+	        if (str.empty()) {
 	            lua_pushliteral(L, "");
 	        } else {
-	            QByteArray buf = str.toUtf8();
+	        	std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+    			std::string buf = conv.to_bytes(str);
 	            lua_pushlstring(L, buf.data(), buf.length());
 	        }
 	    }
 
-	    static ValueType get(lua_State* L, int index)
+	    static std::wstring get(lua_State* L, int index)
 	    {
 	        size_t len;
 	        const char* p = luaL_checklstring(L, index, &len);
-	        return QString::fromUtf8(p, len);
+	        std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+	        return conv.from_bytes(p, p + len);
 	    }
 
-	    static ValueType opt(lua_State* L, int index, const ValueType& def)
+	    static std::wstring opt(lua_State* L, int index, const std::wstring& def)
 	    {
-	        if (lua_isnoneornil(L, index)) {
-	            return def;
-	        } else {
-	            size_t len;
-	            const char* p = luaL_checklstring(L, index, &len);
-	            return QString::fromUtf8(p, len);
-	        }
+	        return lua_isnoneornil(L, index) ? def : get(L, index);
 	    }
 	};
 
-	LUA_USING_VALUE_TYPE(QString)
-
 	} // namespace LuaIntf
 ````
-After that, you are able to push QString onto or get QString from Lua stack directly:
+After that, you are able to push `std::wstring` onto or get `std::wstring` from Lua stack directly:
 ````c++
-	QString s = ...;
+	std::wstring s = ...;
 	Lua::push(L, s);
 
 	...
 
-	s = Lua::pop<QString>(L);
+	s = Lua::pop<std::wstring>(L);
 ````
 
 High level API to access Lua object

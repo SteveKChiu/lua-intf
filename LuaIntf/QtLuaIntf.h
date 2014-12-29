@@ -74,10 +74,8 @@ namespace Lua
 //---------------------------------------------------------------------------
 
 template <>
-struct LuaValueType <QByteArray>
+struct LuaTypeMapping <QByteArray>
 {
-    using ValueType = QByteArray;
-
     static void push(lua_State* L, const QByteArray& str)
     {
         if (str.isEmpty()) {
@@ -96,23 +94,15 @@ struct LuaValueType <QByteArray>
 
     static QByteArray opt(lua_State* L, int index, const QByteArray& def)
     {
-        if (lua_isnoneornil(L, index)) {
-            return def;
-        } else {
-            size_t len;
-            const char* p = luaL_checklstring(L, index, &len);
-            return QByteArray(p, len);
-        }
+        return lua_isnoneornil(L, index) ? def : get(L, index);
     }
 };
 
 //---------------------------------------------------------------------------
 
 template <>
-struct LuaValueType <QString>
+struct LuaTypeMapping <QString>
 {
-    using ValueType = QString;
-
     static void push(lua_State* L, const QString& str)
     {
         if (str.isEmpty()) {
@@ -132,23 +122,15 @@ struct LuaValueType <QString>
 
     static QString opt(lua_State* L, int index, const QString& def)
     {
-        if (lua_isnoneornil(L, index)) {
-            return def;
-        } else {
-            size_t len;
-            const char* p = luaL_checklstring(L, index, &len);
-            return QString::fromUtf8(p, len);
-        }
+        return lua_isnoneornil(L, index) ? def : get(L, index);
     }
 };
 
 //---------------------------------------------------------------------------
 
 template <>
-struct LuaValueType <QVariant>
+struct LuaTypeMapping <QVariant>
 {
-    using ValueType = QVariant;
-
     static void push(lua_State* L, const QVariant& v)
     {
         Lua::pushVariant(L, v);
@@ -172,10 +154,8 @@ struct LuaValueType <QVariant>
 //---------------------------------------------------------------------------
 
 template <>
-struct LuaValueType <QVariantMap>
+struct LuaTypeMapping <QVariantMap>
 {
-    using ValueType = QVariantMap;
-
     static void push(lua_State* L, const QVariantMap& v)
     {
         if (v.isEmpty()) {
@@ -207,10 +187,8 @@ struct LuaValueType <QVariantMap>
 //---------------------------------------------------------------------------
 
 template <>
-struct LuaValueType <QVariantList>
+struct LuaTypeMapping <QVariantList>
 {
-    using ValueType = QVariantList;
-
     static void push(lua_State* L, const QVariantList& v)
     {
         if (v.isEmpty()) {
@@ -242,10 +220,8 @@ struct LuaValueType <QVariantList>
 //---------------------------------------------------------------------------
 
 template <>
-struct LuaValueType <QStringList>
+struct LuaTypeMapping <QStringList>
 {
-    using ValueType = QStringList;
-
     static void push(lua_State* L, const QStringList& v)
     {
         if (v.isEmpty()) {
@@ -275,13 +251,6 @@ struct LuaValueType <QStringList>
 };
 
 //---------------------------------------------------------------------------
-
-LUA_USING_VALUE_TYPE(QByteArray)
-LUA_USING_VALUE_TYPE(QString)
-LUA_USING_VALUE_TYPE(QStringList)
-LUA_USING_VALUE_TYPE(QVariant)
-LUA_USING_VALUE_TYPE(QVariantList)
-LUA_USING_VALUE_TYPE(QVariantMap)
 
 #if LUAINTF_HEADERS_ONLY
 #include "src/QtLuaIntf.cpp"

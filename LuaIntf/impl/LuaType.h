@@ -38,19 +38,43 @@ enum class LuaTypeID
     LIGHTUSERDATA = LUA_TLIGHTUSERDATA
 };
 
-template <typename T>
-struct LuaType;
+template <typename T, typename ENABLED = void>
+struct LuaTypeMapping;
 
-template <typename CPP_VALUE, typename LUA_VALUE = CPP_VALUE>
-struct LuaValueType;
+template <typename T, bool IS_CONST, bool IS_REF>
+struct LuaClassMapping;
+
+//---------------------------------------------------------------------------
+
+template <typename, typename T>
+struct LuaTypeTest
+{
+    using type = T;
+};
+
+template <class T>
+typename LuaTypeTest<decltype(T()), std::true_type>::type LuaTypeExists(T&&);
+
+std::false_type LuaTypeExists(...);
+
+template <typename T>
+struct LuaTypeMappingExists
+    : decltype(LuaTypeExists(std::declval<LuaTypeMapping<T>>())) {};
+
+template <typename T>
+struct LuaType
+    : std::conditional<
+        std::is_class<typename std::decay<T>::type>::value
+            && !LuaTypeMappingExists<typename std::decay<T>::type>::value,
+        LuaClassMapping<typename std::decay<T>::type, std::is_const<T>::value, std::is_reference<T>::value>,
+        LuaTypeMapping<typename std::decay<T>::type>
+    >::type {};
 
 //---------------------------------------------------------------------------
 
 template <>
-struct LuaValueType <bool>
+struct LuaTypeMapping <bool>
 {
-    using ValueType = bool;
-
     static void push(lua_State* L, bool value)
     {
         lua_pushboolean(L, value);
@@ -70,102 +94,155 @@ struct LuaValueType <bool>
 //---------------------------------------------------------------------------
 
 template <typename T>
-struct LuaValueType <T, lua_Integer>
+struct LuaIntegerTypeMapping
 {
-    using ValueType = T;
-
-    static void push(lua_State* L, ValueType value)
+    static void push(lua_State* L, T value)
     {
         lua_pushinteger(L, static_cast<lua_Integer>(value));
     }
 
-    static ValueType get(lua_State* L, int index)
+    static T get(lua_State* L, int index)
     {
-        return static_cast<ValueType>(luaL_checkinteger(L, index));
+        return static_cast<T>(luaL_checkinteger(L, index));
     }
 
-    static ValueType opt(lua_State* L, int index, ValueType def)
+    static T opt(lua_State* L, int index, T def)
     {
-        return static_cast<ValueType>(luaL_optinteger(L, index, static_cast<lua_Integer>(def)));
+        return static_cast<T>(luaL_optinteger(L, index, static_cast<lua_Integer>(def)));
     }
 };
+
+template <>
+struct LuaTypeMapping <signed char>
+    : LuaIntegerTypeMapping <signed char> {};
+
+template <>
+struct LuaTypeMapping <short>
+    : LuaIntegerTypeMapping <short> {};
+
+template <>
+struct LuaTypeMapping <int>
+    : LuaIntegerTypeMapping <int> {};
+
+template <>
+struct LuaTypeMapping <long>
+    : LuaIntegerTypeMapping <long> {};
 
 //---------------------------------------------------------------------------
 
 template <typename T>
-struct LuaValueType <T, lua_Unsigned>
+struct LuaUnsignedTypeMapping
 {
-    using ValueType = T;
-
-    static void push(lua_State* L, ValueType value)
+    static void push(lua_State* L, T value)
     {
         lua_pushunsigned(L, static_cast<lua_Unsigned>(value));
     }
 
-    static ValueType get(lua_State* L, int index)
+    static T get(lua_State* L, int index)
     {
-        return static_cast<ValueType>(luaL_checkunsigned(L, index));
+        return static_cast<T>(luaL_checkunsigned(L, index));
     }
 
-    static ValueType opt(lua_State* L, int index, ValueType def)
+    static T opt(lua_State* L, int index, T def)
     {
-        return static_cast<ValueType>(luaL_optunsigned(L, index, static_cast<lua_Unsigned>(def)));
+        return static_cast<T>(luaL_optunsigned(L, index, static_cast<lua_Unsigned>(def)));
     }
 };
+
+template <>
+struct LuaTypeMapping <unsigned char>
+    : LuaUnsignedTypeMapping <unsigned char> {};
+
+template <>
+struct LuaTypeMapping <unsigned short>
+    : LuaUnsignedTypeMapping <unsigned short> {};
+
+template <>
+struct LuaTypeMapping <unsigned int>
+    : LuaUnsignedTypeMapping <unsigned int> {};
+
+template <>
+struct LuaTypeMapping <unsigned long>
+    : LuaUnsignedTypeMapping <unsigned long> {};
 
 //---------------------------------------------------------------------------
 
 template <typename T>
-struct LuaValueType <T, lua_Number>
+struct LuaNumberTypeMapping
 {
-    using ValueType = T;
-
-    static void push(lua_State* L, ValueType value)
+    static void push(lua_State* L, T value)
     {
         lua_pushnumber(L, static_cast<lua_Number>(value));
     }
 
-    static ValueType get(lua_State* L, int index)
+    static T get(lua_State* L, int index)
     {
-        return static_cast<ValueType>(luaL_checknumber(L, index));
+        return static_cast<T>(luaL_checknumber(L, index));
     }
 
-    static ValueType opt(lua_State* L, int index, ValueType def)
+    static T opt(lua_State* L, int index, T def)
     {
-        return static_cast<ValueType>(luaL_optnumber(L, index, static_cast<lua_Number>(def)));
+        return static_cast<T>(luaL_optnumber(L, index, static_cast<lua_Number>(def)));
     }
 };
+
+template <>
+struct LuaTypeMapping <float>
+    : LuaNumberTypeMapping <float> {};
+
+template <>
+struct LuaTypeMapping <double>
+    : LuaNumberTypeMapping <double> {};
+
+template <>
+struct LuaTypeMapping <long double>
+    : LuaNumberTypeMapping <long double> {};
+
+//---------------------------------------------------------------------------
+
+#if LUAINTF_UNSAFE_INT64
+
+template <typename T>
+struct LuaUnsafeInt64TypeMapping
+{
+    static void push(lua_State* L, T value)
+    {
+        lua_Number f = static_cast<lua_Number>(value);
+#if LUAINTF_UNSAFE_INT64_CHECK
+        T verify = static_cast<T>(f);
+        if (value != verify) {
+            luaL_error(L, "unsafe cast from 64-bit int");
+        }
+#endif
+        lua_pushnumber(L, f);
+    }
+
+    static T get(lua_State* L, int index)
+    {
+        return static_cast<T>(luaL_checknumber(L, index));
+    }
+
+    static T opt(lua_State* L, int index, T def)
+    {
+        return lua_isnoneornil(L, index) ? def : static_cast<T>(luaL_checknumber(L, index));
+    }
+};
+
+template <>
+struct LuaTypeMapping <long long>
+    : LuaUnsafeInt64TypeMapping <long long> {};
+
+template <>
+struct LuaTypeMapping <unsigned long long>
+    : LuaUnsafeInt64TypeMapping <unsigned long long> {};
+
+#endif
 
 //---------------------------------------------------------------------------
 
 template <>
-struct LuaValueType <lua_CFunction>
+struct LuaTypeMapping <char>
 {
-    using ValueType = lua_CFunction;
-
-    static void push(lua_State* L, lua_CFunction f)
-    {
-        lua_pushcfunction(L, f);
-    }
-
-    static lua_CFunction get(lua_State* L, int index)
-    {
-        return lua_tocfunction(L, index);
-    }
-
-    static lua_CFunction opt(lua_State* L, int index, lua_CFunction)
-    {
-        return lua_tocfunction(L, index);
-    }
-};
-
-//---------------------------------------------------------------------------
-
-template <>
-struct LuaValueType <char>
-{
-    using ValueType = char;
-
     static void push(lua_State* L, char value)
     {
         char str[] = { value, 0 };
@@ -179,45 +256,15 @@ struct LuaValueType <char>
 
     static char opt(lua_State* L, int index, char def)
     {
-        char str[] = { def, 0 };
-        return luaL_optstring(L, index, str)[0];
+        return lua_isnoneornil(L, index) ? def : get(L, index);
     }
 };
 
 //---------------------------------------------------------------------------
 
 template <>
-struct LuaValueType <std::string>
+struct LuaTypeMapping <const char*>
 {
-    using ValueType = std::string;
-
-    static void push(lua_State* L, const std::string& str)
-    {
-        lua_pushlstring(L, str.data(), str.length());
-    }
-
-    static std::string get(lua_State* L, int index)
-    {
-        size_t len;
-        const char* p = luaL_checklstring(L, index, &len);
-        return std::string(p, len);
-    }
-
-    static std::string opt(lua_State* L, int index, const std::string& def)
-    {
-        size_t len;
-        const char* p = luaL_optlstring(L, index, def.c_str(), &len);
-        return std::string(p, len);
-    }
-};
-
-//---------------------------------------------------------------------------
-
-template <typename T>
-struct LuaValueType <T, const char*>
-{
-    using ValueType = const char*;
-
     static void push(lua_State* L, const char* str)
     {
         if (str != nullptr) {
@@ -237,6 +284,78 @@ struct LuaValueType <T, const char*>
         return luaL_optstring(L, index, def);
     }
 };
+
+template <>
+struct LuaTypeMapping <char*>
+    : LuaTypeMapping <const char*> {};
+
+//---------------------------------------------------------------------------
+
+template <>
+struct LuaTypeMapping <std::string>
+{
+    static void push(lua_State* L, const std::string& str)
+    {
+        lua_pushlstring(L, str.data(), str.length());
+    }
+
+    static std::string get(lua_State* L, int index)
+    {
+        size_t len;
+        const char* p = luaL_checklstring(L, index, &len);
+        return std::string(p, len);
+    }
+
+    static std::string opt(lua_State* L, int index, const std::string& def)
+    {
+        return lua_isnoneornil(L, index) ? def : get(L, index);
+    }
+};
+
+//---------------------------------------------------------------------------
+
+#if LUAINTF_STD_WIDE_STRING
+
+} // end namespace LuaIntf
+
+#include <locale>
+#include <codecvt>
+
+namespace LuaIntf
+{
+
+template <typename CH>
+struct LuaTypeMapping <std::basic_string<CH>>
+{
+    using WString = std::basic_string<CH>;
+    using WStringConvert = std::wstring_convert<std::codecvt_utf8<CH>, CH>;
+
+    static void push(lua_State* L, const WString& str)
+    {
+        if (str.empty()) {
+            lua_pushliteral(L, "");
+        } else {
+            WStringConvert conv;
+            std::string buf = conv.to_bytes(str);
+            lua_pushlstring(L, buf.data(), buf.length());
+        }
+    }
+
+    static WString get(lua_State* L, int index)
+    {
+        size_t len;
+        const char* p = luaL_checklstring(L, index, &len);
+        WStringConvert conv;
+        return conv.from_bytes(p, p + len);
+    }
+
+    static WString opt(lua_State* L, int index, const WString& def)
+    {
+        return lua_isnoneornil(L, index) ? def : get(L, index);
+    }
+};
+
+#endif
 
 //---------------------------------------------------------------------------
 
@@ -277,13 +396,11 @@ struct LuaString
 };
 
 template <>
-struct LuaValueType <LuaString>
+struct LuaTypeMapping <LuaString>
 {
-    using ValueType = LuaString;
-
     static void push(lua_State* L, const LuaString& str)
     {
-        if (str.data != nullptr) {
+        if (str.data) {
             lua_pushlstring(L, str.data, str.size);
         } else {
             lua_pushnil(L);
@@ -297,103 +414,19 @@ struct LuaValueType <LuaString>
 
     static LuaString opt(lua_State* L, int index, const LuaString& def)
     {
-        if (lua_isnoneornil(L, index)) return def;
-        return LuaString(L, index);
+        return lua_isnoneornil(L, index) ? def : LuaString(L, index);
     }
 };
 
 //---------------------------------------------------------------------------
 
-#if LUAINTF_UNSAFE_INT64
-
+/**
+ * Default type mapping to catch all enum conversion
+ */
 template <typename T>
-struct LuaUnsafeInt64Type
-{
-    using ValueType = T;
-
-    static void push(lua_State* L, ValueType value)
-    {
-        lua_Number f = static_cast<lua_Number>(value);
-#if LUAINTF_UNSAFE_INT64_CHECK
-        ValueType verify = static_cast<ValueType>(f);
-        if (value != verify) {
-            luaL_error(L, "unsafe cast from 64-bit int");
-        }
-#endif
-        lua_pushnumber(L, f);
-    }
-
-    static ValueType get(lua_State* L, int index)
-    {
-        return static_cast<ValueType>(luaL_checknumber(L, index));
-    }
-
-    static ValueType opt(lua_State* L, int index, ValueType def)
-    {
-        if (lua_isnoneornil(L, index)) return def;
-        return static_cast<ValueType>(luaL_checknumber(L, index));
-    }
-};
-
-template <>
-struct LuaValueType <long long, lua_Number>
-    : LuaUnsafeInt64Type <long long> {};
-
-template <>
-struct LuaValueType <unsigned long long, lua_Number>
-    : LuaUnsafeInt64Type <unsigned long long> {};
-
-#endif
-
-//---------------------------------------------------------------------------
-
-template <size_t N>
-struct LuaType <char[N]>
-    : LuaValueType <const char*> {};
-
-template <size_t N>
-struct LuaType <char(&)[N]>
-    : LuaValueType <const char*> {};
-
-template <size_t N>
-struct LuaType <const char[N]>
-    : LuaValueType <const char*> {};
-
-template <size_t N>
-struct LuaType <const char(&)[N]>
-    : LuaValueType <const char*> {};
-
-//---------------------------------------------------------------------------
-
-#define LUA_USING_VALUE_TYPE_EXT(T, V) \
-    template <> struct LuaType <T> : LuaValueType <T, V> {}; \
-    template <> struct LuaType <T&> : LuaValueType <T, V> {}; \
-    template <> struct LuaType <T const> : LuaValueType <T, V> {}; \
-    template <> struct LuaType <T const&> : LuaValueType <T, V> {};
-
-#define LUA_USING_VALUE_TYPE(T) \
-    LUA_USING_VALUE_TYPE_EXT(T, T)
-
-LUA_USING_VALUE_TYPE(bool)
-LUA_USING_VALUE_TYPE(char)
-LUA_USING_VALUE_TYPE_EXT(signed char, lua_Integer)
-LUA_USING_VALUE_TYPE_EXT(unsigned char, lua_Integer)
-LUA_USING_VALUE_TYPE_EXT(short, lua_Integer)
-LUA_USING_VALUE_TYPE_EXT(unsigned short, lua_Integer)
-LUA_USING_VALUE_TYPE_EXT(int, lua_Integer)
-LUA_USING_VALUE_TYPE_EXT(unsigned int, lua_Unsigned)
-LUA_USING_VALUE_TYPE_EXT(long, lua_Integer)
-LUA_USING_VALUE_TYPE_EXT(unsigned long, lua_Unsigned)
-LUA_USING_VALUE_TYPE_EXT(float, lua_Number)
-LUA_USING_VALUE_TYPE_EXT(double, lua_Number)
-LUA_USING_VALUE_TYPE_EXT(long double, lua_Number)
-LUA_USING_VALUE_TYPE(lua_CFunction)
-LUA_USING_VALUE_TYPE(std::string)
-LUA_USING_VALUE_TYPE(const char*)
-LUA_USING_VALUE_TYPE_EXT(char*, const char*)
-LUA_USING_VALUE_TYPE(LuaString)
-
-#if LUAINTF_UNSAFE_INT64
-    LUA_USING_VALUE_TYPE_EXT(long long, lua_Number)
-    LUA_USING_VALUE_TYPE_EXT(unsigned long long, lua_Number)
-#endif
+struct LuaTypeMapping <T, typename std::enable_if<std::is_enum<T>::value>::type>
+    : std::conditional<
+        std::is_unsigned<typename std::underlying_type<T>::type>::value,
+        LuaUnsignedTypeMapping<T>,
+        LuaIntegerTypeMapping<T>
+    >::type {};

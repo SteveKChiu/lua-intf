@@ -1278,10 +1278,8 @@ private:
 //---------------------------------------------------------------------------
 
 template <>
-struct LuaValueType <LuaRef>
+struct LuaTypeMapping <LuaRef>
 {
-    using ValueType = LuaRef;
-
     static void push(lua_State* L, const LuaRef& r)
     {
         if (r.isValid()) {
@@ -1301,8 +1299,6 @@ struct LuaValueType <LuaRef>
         return lua_isnone(L, index) ? def : LuaRef(L, index);
     }
 };
-
-LUA_USING_VALUE_TYPE(LuaRef)
 
 //---------------------------------------------------------------------------
 

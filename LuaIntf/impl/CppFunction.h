@@ -54,6 +54,27 @@ private:
     static int gc(lua_State* L);
 };
 
+//---------------------------------------------------------------------------
+
+template <>
+struct LuaTypeMapping <lua_CFunction>
+{
+    static void push(lua_State* L, lua_CFunction f)
+    {
+        lua_pushcfunction(L, f);
+    }
+
+    static lua_CFunction get(lua_State* L, int index)
+    {
+        return lua_tocfunction(L, index);
+    }
+
+    static lua_CFunction opt(lua_State* L, int index, lua_CFunction def)
+    {
+        return lua_isnoneornil(L, index) ? def : lua_tocfunction(L, index);
+    }
+};
+
 //----------------------------------------------------------------------------
 
 template <typename FN>
@@ -66,7 +87,7 @@ struct LuaCppFunctionWrapper
     }
 };
 
-#if LUAINTF_LUA_FUNCTION_WRAPPER
+#if LUAINTF_STD_FUNCTION_WRAPPER
 
 template <typename R, typename... P>
 struct LuaCppFunctionWrapper <std::function<R(P...)>>
@@ -90,15 +111,14 @@ struct LuaCppFunctionWrapper <std::function<R(P...)>>
 template <typename FN>
 struct LuaCppFunction
 {
-    using ValueType = FN;
-    using ReturnType = typename std::conditional<LUAINTF_LUA_FUNCTION_WRAPPER, FN, const FN&>::type;
+    using ReturnType = typename std::conditional<LUAINTF_STD_FUNCTION_WRAPPER, FN, const FN&>::type;
 
-    static void push(lua_State* L, const ValueType& proc)
+    static void push(lua_State* L, const FN& proc)
     {
-        using CppProc = CppBindMethod<ValueType>;
+        using CppProc = CppBindMethod<FN>;
         LuaRef ref = LuaRef::createUserDataFrom(L, proc);
         ref.pushToStack();
-        lua_pushlightuserdata(L, CppSignature<ValueType>::value());
+        lua_pushlightuserdata(L, CppSignature<FN>::value());
         lua_pushcclosure(L, &CppProc::call, 2);
     }
 
@@ -109,8 +129,8 @@ struct LuaCppFunction
             const char* name = lua_getupvalue(L, index, 1);
             if (name && lua_isuserdata(L, -1)) {
                 name = lua_getupvalue(L, index, 2);
-                if (name && lua_touserdata(L, -1) == CppSignature<ValueType>::value()) {
-                    const ValueType& func = *reinterpret_cast<const ValueType*>(lua_touserdata(L, -2));
+                if (name && lua_touserdata(L, -1) == CppSignature<FN>::value()) {
+                    const FN& func = *reinterpret_cast<const FN*>(lua_touserdata(L, -2));
                     assert(func);
                     lua_pop(L, 2);
                     return func;
@@ -120,10 +140,10 @@ struct LuaCppFunction
             lua_pop(L, 1);
         }
 
-        return LuaCppFunctionWrapper<ValueType>::get(L, index);
+        return LuaCppFunctionWrapper<FN>::get(L, index);
     }
 
-    static ReturnType opt(lua_State* L, int index, const ValueType& def)
+    static ReturnType opt(lua_State* L, int index, const FN& def)
     {
         if (lua_isnoneornil(L, index)) {
             return def;
@@ -134,33 +154,10 @@ struct LuaCppFunction
 };
 
 template <typename R, typename... P>
-struct LuaType <R(*)(P...)>
+struct LuaTypeMapping <R(*)(P...)>
     : LuaCppFunction <R(*)(P...)> {};
 
 template <typename R, typename... P>
-struct LuaType <R(* &)(P...)>
-    : LuaCppFunction <R(*)(P...)> {};
-
-template <typename R, typename... P>
-struct LuaType <R(* const)(P...)>
-    : LuaCppFunction <R(*)(P...)> {};
-
-template <typename R, typename... P>
-struct LuaType <R(* const&)(P...)>
-    : LuaCppFunction <R(*)(P...)> {};
-
-template <typename R, typename... P>
-struct LuaType <std::function<R(P...)>>
+struct LuaTypeMapping <std::function<R(P...)>>
     : LuaCppFunction <std::function<R(P...)>> {};
 
-template <typename R, typename... P>
-struct LuaType <std::function<R(P...)> &>
-    : LuaCppFunction <std::function<R(P...)>> {};
-
-template <typename R, typename... P>
-struct LuaType <std::function<R(P...)> const>
-    : LuaCppFunction <std::function<R(P...)>> {};
-
-template <typename R, typename... P>
-struct LuaType <std::function<R(P...)> const&>
-    : LuaCppFunction <std::function<R(P...)>> {};

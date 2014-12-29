@@ -34,7 +34,7 @@
  * otherwise you need to compile some of the .cpp file separately.
  */
 #ifndef LUAINTF_HEADERS_ONLY
-#define LUAINTF_HEADERS_ONLY 1
+    #define LUAINTF_HEADERS_ONLY 1
 #endif
 
 /**
@@ -49,38 +49,47 @@
  * destructor of object on stack will be called as expected.
  */
 #ifndef LUAINTF_LINK_LUA_COMPILED_IN_CXX
-    #ifdef LUAINTF_BUILD_LUA_CXX
-        #define LUAINTF_LINK_LUA_COMPILED_IN_CXX LUAINTF_BUILD_LUA_CXX
-    #else
-        #define LUAINTF_LINK_LUA_COMPILED_IN_CXX 1
-    #endif
+    #define LUAINTF_LINK_LUA_COMPILED_IN_CXX 1
 #endif
 
 /**
  * Set LUAINTF_UNSAFE_INT64 to 1 if you want to include partial int64_t support.
  */
 #ifndef LUAINTF_UNSAFE_INT64
-#define LUAINTF_UNSAFE_INT64 1
+    #define LUAINTF_UNSAFE_INT64 1
 #endif
 
 /**
- * Set LUAINTF_UNSAFE_INT64_CHECK to 1 if you want to check every pushed int64_t is safe,
+ * Set LUAINTF_UNSAFE_INT64_CHECK to 1 if you want to make sure every pushed int64_t is safe,
  * that is, it can be converted from/to lua_Number without loss.
  * This check will throw Lua runtime error if the conversion is not safe.
  */
 #ifndef LUAINTF_UNSAFE_INT64_CHECK
-#define LUAINTF_UNSAFE_INT64_CHECK 0
+    #define LUAINTF_UNSAFE_INT64_CHECK 0
 #endif
 
 /**
- * Set LUAINTF_LUA_FUNCTION_WRAPPER to 1 if you want to automatically create std::function
+ * Set LUAINTF_STD_FUNCTION_WRAPPER to 1 if you want to automatically create std::function
  * wrapper for the Lua function.
  */
-#ifndef LUAINTF_LUA_FUNCTION_WRAPPER
-#define LUAINTF_LUA_FUNCTION_WRAPPER 1
+#ifndef LUAINTF_STD_FUNCTION_WRAPPER
+    #define LUAINTF_STD_FUNCTION_WRAPPER 1
+#endif
+
+/**
+ * Set LUAINTF_STD_WIDE_STRING to 1 if you want to include support for std wide string conversion.
+ */
+#ifndef LUAINTF_STD_WIDE_STRING
+    #define LUAINTF_STD_WIDE_STRING 1
 #endif
 
 //---------------------------------------------------------------------------
+
+#if LUAINTF_HEADERS_ONLY
+    #define LUA_INLINE inline
+#else
+    #define LUA_INLINE
+#endif
 
 #if !LUAINTF_LINK_LUA_COMPILED_IN_CXX
 extern "C"
@@ -94,15 +103,9 @@ extern "C"
 }
 #endif
 
-#if LUAINTF_HEADERS_ONLY
-#define LUA_INLINE inline
-#else
-#define LUA_INLINE
-#endif
-
 //---------------------------------------------------------------------------
 
-#if defined(LUA_VERSION_NUM) && LUA_VERSION_NUM == 501
+#if LUA_VERSION_NUM == 501
 
 #include <stdint.h>
 

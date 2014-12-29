@@ -291,59 +291,21 @@ private:
 template <typename T>
 struct CppObjectTraits
 {
+    using ObjectType = T;
+
     static constexpr bool isSharedPtr = false;
     static constexpr bool isSharedConst = false;
-    using ObjectType = T;
 };
 
-//----------------------------------------------------------------------------
-
-/**
- * Lua conversion for pointer to the class type
- */
-template <typename T, typename PTR, bool IS_CONST>
-struct LuaCppObjectPtr
-{
-    static_assert(std::is_class<T>::value,
-        "type is not class, need template specialization");
-
-    using ValueType = PTR;
-
-    static void push(lua_State* L, const T* p)
-    {
-        if (p == nullptr) {
-            lua_pushnil(L);
-        } else {
-            CppObjectPtr::pushToStack(L, const_cast<T*>(p), IS_CONST);
-        }
-    }
-
-    static PTR get(lua_State* L, int index)
-    {
-        return CppObject::get<T>(L, index, IS_CONST);
-    }
-
-    static PTR opt(lua_State* L, int index, PTR def)
-    {
-        if (lua_isnoneornil(L, index)) {
-            return def;
-        } else {
-            return CppObject::get<T>(L, index, IS_CONST);
-        }
-    }
-};
-
-template <typename T>
-struct LuaType <T*>
-    : LuaCppObjectPtr <typename std::decay<T>::type, T*, std::is_const<T>::value> {};
-
-template <typename T>
-struct LuaType <T* &>
-    : LuaCppObjectPtr <typename std::decay<T>::type, T*, std::is_const<T>::value> {};
-
-template <typename T>
-struct LuaType <T* const&>
-    : LuaCppObjectPtr <typename std::decay<T>::type, T*, std::is_const<T>::value> {};
+#define LUA_USING_SHARED_PTR_TYPE(SP) \
+    template <typename T> \
+    struct CppObjectTraits <SP<T>> \
+    { \
+        using ObjectType = typename std::remove_cv<T>::type; \
+        \
+        static constexpr bool isSharedPtr = true; \
+        static constexpr bool isSharedConst = std::is_const<T>::value; \
+    };
 
 //---------------------------------------------------------------------------
 
@@ -402,15 +364,12 @@ struct LuaCppObjectFactory <SP, T, true, true>
 //---------------------------------------------------------------------------
 
 /**
- * Lua conversion for reference or value to the class type
+ * Lua conversion for reference or value to the class type,
+ * this will catch all C++ class unless LuaTypeMapping<> exists.
  */
-template <typename T, typename VT, bool IS_REF, bool IS_CONST>
-struct LuaCppObject
+template <typename T, bool IS_CONST, bool IS_REF>
+struct LuaClassMapping
 {
-    static_assert(std::is_class<T>::value,
-        "type is not class, need template specialization");
-
-    using ValueType = VT;
     using ObjectType = typename CppObjectTraits<T>::ObjectType;
 
     static constexpr bool isShared = CppObjectTraits<T>::isSharedPtr;
@@ -437,39 +396,39 @@ struct LuaCppObject
     }
 };
 
-//---------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 
 /**
- * Lua conversion for the enum type
+ * Lua conversion for pointer to the class type
  */
 template <typename T>
-struct LuaCppEnum
-    : LuaValueType <
-        T,
-        typename std::conditional<
-            std::is_unsigned<typename std::underlying_type<T>::type>::value,
-            lua_Unsigned,
-            lua_Integer
-        >::type
-    > {};
+struct LuaTypeMapping <T*>
+{
+    using Type = typename std::decay<T>::type;
+    using PtrType = T*;
 
-//---------------------------------------------------------------------------
+    static constexpr bool isConst = std::is_const<T>::value;
 
-template <typename T>
-struct LuaType
-    : std::conditional<
-        std::is_enum<typename std::decay<T>::type>::value,
-        LuaCppEnum<typename std::decay<T>::type>,
-        LuaCppObject<typename std::decay<T>::type, T, std::is_reference<T>::value, std::is_const<T>::value>
-    >::type {};
+    static void push(lua_State* L, const Type* p)
+    {
+        if (p == nullptr) {
+            lua_pushnil(L);
+        } else {
+            CppObjectPtr::pushToStack(L, const_cast<Type*>(p), isConst);
+        }
+    }
 
-//---------------------------------------------------------------------------
+    static PtrType get(lua_State* L, int index)
+    {
+        return CppObject::get<Type>(L, index, isConst);
+    }
 
-#define LUA_USING_SHARED_PTR_TYPE(SP) \
-    template <typename T> \
-    struct CppObjectTraits <SP<T>> \
-    { \
-        static constexpr bool isSharedPtr = true; \
-        static constexpr bool isSharedConst = std::is_const<T>::value; \
-        using ObjectType = typename std::remove_cv<T>::type; \
-    };
+    static PtrType opt(lua_State* L, int index, PtrType def)
+    {
+        if (lua_isnoneornil(L, index)) {
+            return def;
+        } else {
+            return CppObject::get<Type>(L, index, isConst);
+        }
+    }
+};

@@ -95,8 +95,9 @@ template <typename T>
 struct CppArgTraits
 {
     using Type = T;
-    using ValueType = typename LuaType<T>::ValueType;
+    using ValueType = typename std::result_of<decltype(&LuaType<T>::get)(lua_State*, int)>::type;
     using HolderType = CppArgHolder<ValueType>;
+
     static constexpr bool isInput = true;
     static constexpr bool isOutput = false;
     static constexpr bool isOptonal = false;
@@ -165,7 +166,8 @@ struct CppArgTraits <lua_State*>
 {
     using Type = lua_State*;
     using ValueType = lua_State*;
-    using HolderType = CppArgHolder<ValueType>;
+    using HolderType = CppArgHolder<lua_State*>;
+
     static constexpr bool isInput = false;
     static constexpr bool isOutput = false;
     static constexpr bool isOptonal = false;
@@ -177,7 +179,8 @@ struct CppArgTraits <LuaState>
 {
     using Type = LuaState;
     using ValueType = LuaState;
-    using HolderType = CppArgHolder<ValueType>;
+    using HolderType = CppArgHolder<LuaState>;
+
     static constexpr bool isInput = false;
     static constexpr bool isOutput = false;
     static constexpr bool isOptonal = false;
@@ -280,7 +283,6 @@ struct CppArg
 {
     using Traits = CppArgTraits<T>;
     using Type = typename Traits::Type;
-    using ValueType = typename Traits::ValueType;
     using HolderType = typename Traits::HolderType;
 
     static int get(lua_State* L, int index, HolderType& r)
