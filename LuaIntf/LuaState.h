@@ -699,7 +699,7 @@ public:
 // coroutine functions
 
 #if LUA_VERSION_NUM >= 503
-    bool lua_isYieldable() const
+    bool isYieldable() const
         { return lua_isyieldable(L) != 0; }
 #endif
 

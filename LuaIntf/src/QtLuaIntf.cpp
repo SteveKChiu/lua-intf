@@ -77,7 +77,7 @@ LUA_INLINE QVariant Lua::getVariant(lua_State* L, int idx)
     } else if (type == LUA_TNUMBER) {
         return lua_tonumber(L, idx);
     } else if (type == LUA_TBOOLEAN) {
-        return (bool)lua_toboolean(L, idx);
+        return lua_toboolean(L, idx) != 0;
     } else if (luaL_callmeta(L, idx, "__tostring")) {
         size_t l;
         const char* s = lua_tolstring(L, -1, &l);
