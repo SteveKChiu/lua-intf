@@ -35,6 +35,11 @@
 #include <string>
 #include <exception>
 
+#if LUAINTF_STD_WIDE_STRING
+#include <locale>
+#include <codecvt>
+#endif
+
 namespace LuaIntf
 {
 

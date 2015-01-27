@@ -46,20 +46,21 @@ struct LuaClassMapping;
 
 //---------------------------------------------------------------------------
 
-template <typename, typename T>
-struct LuaTypeTest
+struct LuaTypeExists
 {
-    using type = T;
+	template <typename T, typename = decltype(T())>
+    static std::true_type test(int);
+
+	template <typename>
+    static std::false_type test(...);
 };
 
 template <typename T>
-typename LuaTypeTest<decltype(T()), std::true_type>::type LuaTypeExists(T&&);
-
-std::false_type LuaTypeExists(...);
-
-template <typename T>
 struct LuaTypeMappingExists
-    : decltype(LuaTypeExists(std::declval<LuaTypeMapping<T>>())) {};
+{
+    using Type = decltype(LuaTypeExists::test<LuaTypeMapping<T>>(0));
+    static constexpr bool value = Type::value;
+};
 
 template <typename T>
 struct LuaType
@@ -335,14 +336,6 @@ struct LuaTypeMapping <std::string>
 
 #if LUAINTF_STD_WIDE_STRING
 
-} // end namespace LuaIntf
-
-#include <locale>
-#include <codecvt>
-
-namespace LuaIntf
-{
-
 template <typename CH>
 struct LuaTypeMapping <std::basic_string<CH>>
 {
@@ -378,6 +371,10 @@ struct LuaTypeMapping <std::basic_string<CH>>
 
 //---------------------------------------------------------------------------
 
+/**
+ * Transitient string type without copying underlying char values, use with caution.
+ * It works like const char* with length field.
+ */
 struct LuaString
 {
     constexpr LuaString()
@@ -442,7 +439,7 @@ struct LuaTypeMapping <LuaString>
 /**
  * Default type mapping to catch all enum conversion
  */
- #if LUA_VERSION_NUM <= 502
+#if LUA_VERSION_NUM <= 502
 
 template <typename T>
 struct LuaTypeMapping <T, typename std::enable_if<std::is_enum<T>::value>::type>
