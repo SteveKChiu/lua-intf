@@ -73,17 +73,19 @@ LUA_INLINE int CppBindClassMetaMethod::index(lua_State* L)
         lua_pushvalue(L, 2);            // push key
         lua_rawget(L, -2);              // lookup key in getters
 
-        if (lua_iscfunction(L, -1)) {
-            // getter function found, need to test whether it is object (== userdata)
-            int n = 0;
-            if (lua_isuserdata(L, 1)) {
-                lua_pushvalue(L, 1);    // push userdata as object param for class method
-                n++;
-            } else {
-                assert(lua_istable(L, 1));
+        // call the getter if it is function, or leave it as value
+        if (!lua_isnil(L, -1)) {
+            if (lua_iscfunction(L, -1)) {
+                if (lua_isuserdata(L, 1)) {
+                    // if it is userdata, that means instance
+                    lua_pushvalue(L, 1);    // push userdata as object param for member function
+                    lua_call(L, 1, 1);
+                } else {
+                    // otherwise, it is static (class getters)
+                    assert(lua_istable(L, 1));
+                    lua_call(L, 0, 1);
+                }
             }
-
-            lua_call(L, n, 1);
             break;
         }
 
@@ -142,7 +144,7 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
             // setter function found, now need to test whether it is object (== userdata)
             int n = 1;
             if (lua_isuserdata(L, 1)) {
-                lua_pushvalue(L, 1);    // push userdata as object param for class method
+                lua_pushvalue(L, 1);    // push userdata as object param for member function
                 n++;
             } else {
                 assert(lua_istable(L, 1));

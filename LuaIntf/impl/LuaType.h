@@ -48,10 +48,10 @@ struct LuaClassMapping;
 
 struct LuaTypeExists
 {
-	template <typename T, typename = decltype(T())>
+    template <typename T, typename = decltype(T())>
     static std::true_type test(int);
 
-	template <typename>
+    template <typename>
     static std::false_type test(...);
 };
 
