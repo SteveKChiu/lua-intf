@@ -29,7 +29,7 @@
  * This is usually used for iterator function.
  *
  * To use this, user need to inherit CppFunctor, and override run method and optional descructor.
- * Then call pushToStack to create the functor object on lua stack.
+ * Then call make or pushToStack to create the functor object on lua stack.
  */
 class CppFunctor
 {
@@ -45,13 +45,32 @@ public:
     virtual int run(lua_State* L) = 0;
 
     /**
-     * Create the specified functor as lua function on stack
+     * Create the specified functor as callable lua object on stack
      */
-    static void pushToStack(lua_State* L, CppFunctor* f);
+    static int pushToStack(lua_State* L, CppFunctor* f);
+
+    /**
+     * Create the specified functor as callable lua object on stack,
+     * the functor is created inside userdata. This is different from
+     * pushToStack, which only keep the functor pointer. This reduces the
+     * overhead of extra pointer and memory allocation.
+     */
+    template <typename FUNCTOR, typename... ARGS>
+    static int make(lua_State* L, ARGS&&... args)
+    {
+        void* mem = lua_newuserdata(L, sizeof(FUNCTOR));
+        ::new (mem) FUNCTOR(std::forward<ARGS>(args)...);
+        return bind(L, &call, &gc);
+    }
 
 private:
     static int call(lua_State* L);
     static int gc(lua_State* L);
+
+    static int callp(lua_State* L);
+    static int gcp(lua_State* L);
+
+    static int bind(lua_State* L, lua_CFunction call, lua_CFunction gc);
 };
 
 //---------------------------------------------------------------------------

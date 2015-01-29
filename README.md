@@ -463,8 +463,7 @@ Lua for-loop iteration function
 
     int xpairs(lua_State* L)
     {
-        CppFunctor::pushToStack(L, new MyIterator(...));
-        return 1;
+        return CppFunctor::make<MyIterator>(L, ...); // ... is constructor auguments
     }
 ````
 To register the for-loop iteration function:
