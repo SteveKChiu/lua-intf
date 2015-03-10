@@ -143,112 +143,15 @@ struct LuaTypeMapping <QVariant>
 
     static QVariant opt(lua_State* L, int index, const QVariant& def)
     {
-        if (lua_isnoneornil(L, index)) {
-            return def;
-        } else {
-            return Lua::getVariant(L, index);
-        }
+        return lua_isnoneornil(L, index) ? def : Lua::getVariant(L, index);
     }
 };
 
 //---------------------------------------------------------------------------
 
-template <>
-struct LuaTypeMapping <QVariantMap>
-{
-    static void push(lua_State* L, const QVariantMap& v)
-    {
-        if (v.isEmpty()) {
-            lua_newtable(L);
-        } else {
-            Lua::pushMap(L, v);
-        }
-    }
-
-    static QVariantMap get(lua_State* L, int index)
-    {
-        if (lua_isnoneornil(L, index)) {
-            return QVariantMap();
-        } else {
-            return Lua::getMap<QVariantMap>(L, index);
-        }
-    }
-
-    static QVariantMap opt(lua_State* L, int index, const QVariantMap& def)
-    {
-        if (lua_isnoneornil(L, index)) {
-            return def;
-        } else {
-            return Lua::getMap<QVariantMap>(L, index);
-        }
-    }
-};
-
-//---------------------------------------------------------------------------
-
-template <>
-struct LuaTypeMapping <QVariantList>
-{
-    static void push(lua_State* L, const QVariantList& v)
-    {
-        if (v.isEmpty()) {
-            lua_newtable(L);
-        } else {
-            Lua::pushList(L, v);
-        }
-    }
-
-    static QVariantList get(lua_State* L, int index)
-    {
-        if (lua_isnoneornil(L, index)) {
-            return QVariantList();
-        } else {
-            return Lua::getList<QVariantList>(L, index);
-        }
-    }
-
-    static QVariantList opt(lua_State* L, int index, const QVariantList& def)
-    {
-        if (lua_isnoneornil(L, index)) {
-            return def;
-        } else {
-            return Lua::getList<QVariantList>(L, index);
-        }
-    }
-};
-
-//---------------------------------------------------------------------------
-
-template <>
-struct LuaTypeMapping <QStringList>
-{
-    static void push(lua_State* L, const QStringList& v)
-    {
-        if (v.isEmpty()) {
-            lua_newtable(L);
-        } else {
-            Lua::pushList(L, v);
-        }
-    }
-
-    static QStringList get(lua_State* L, int index)
-    {
-        if (lua_isnoneornil(L, index)) {
-            return QStringList();
-        } else {
-            return Lua::getList<QStringList>(L, index);
-        }
-    }
-
-    static QStringList opt(lua_State* L, int index, const QStringList& def)
-    {
-        if (lua_isnoneornil(L, index)) {
-            return def;
-        } else {
-            return Lua::getList<QStringList>(L, index);
-        }
-    }
-};
+LUA_USING_LIST_TYPE_X(QStringList)
+LUA_USING_LIST_TYPE_X(QVariantList)
+LUA_USING_MAP_TYPE_X(QVariantMap)
 
 //---------------------------------------------------------------------------
 

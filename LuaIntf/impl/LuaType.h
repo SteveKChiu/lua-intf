@@ -456,3 +456,69 @@ struct LuaTypeMapping <T, typename std::enable_if<std::is_enum<T>::value>::type>
     : LuaIntegerTypeMapping<T> {};
 
 #endif
+
+//---------------------------------------------------------------------------
+
+/**
+ * Template for list container type
+ */
+#define LUA_USING_LIST_TYPE_X(LIST, ...) \
+    template <__VA_ARGS__> \
+    struct LuaTypeMapping <LIST> \
+    { \
+        static void push(lua_State* L, const LIST& v) \
+        { \
+            if (v.empty()) { \
+                lua_newtable(L); \
+            } else { \
+                Lua::pushList(L, v); \
+            } \
+        } \
+    \
+        static LIST get(lua_State* L, int index) \
+        { \
+            return lua_isnoneornil(L, index) ? LIST() : Lua::getList<LIST>(L, index); \
+        } \
+    \
+        static LIST opt(lua_State* L, int index, const LIST& def) \
+        { \
+            return lua_isnoneornil(L, index) ? def : Lua::getList<LIST>(L, index); \
+        } \
+    };
+
+#define LUA_USING_LIST_TYPE(LIST) \
+    LUA_USING_LIST_TYPE_X(LIST<T>, typename T)
+
+//---------------------------------------------------------------------------
+
+/**
+ * Template for map container type
+ */
+#define LUA_USING_MAP_TYPE_X(MAP, ...) \
+    template <__VA_ARGS__> \
+    struct LuaTypeMapping <MAP> \
+    { \
+        static void push(lua_State* L, const MAP& v) \
+        { \
+            if (v.empty()) { \
+                lua_newtable(L); \
+            } else { \
+                Lua::pushMap(L, v); \
+            } \
+        } \
+    \
+        static MAP get(lua_State* L, int index) \
+        { \
+            return lua_isnoneornil(L, index) ? MAP() : Lua::getMap<MAP>(L, index); \
+        } \
+    \
+        static MAP opt(lua_State* L, int index, const MAP& def) \
+        { \
+            return lua_isnoneornil(L, index) ? def : Lua::getMap<MAP>(L, index); \
+        } \
+    };
+
+#define LUA_COMMA ,
+
+#define LUA_USING_MAP_TYPE(MAP) \
+    LUA_USING_MAP_TYPE_X(MAP<K LUA_COMMA V>, typename K, typename V)
