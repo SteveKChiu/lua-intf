@@ -291,6 +291,32 @@ If custom deleter is needed instead of the destructor, you can register the cons
     .endClass();
 ````
 
+Using STL-style container
+-------------------------
+
+By default `lua-intf` does not add conversion for container types, however, you can enable support for container type with the following:
+
+````c++
+    namespace LuaIntf
+    {
+        LUA_USING_LIST_TYPE(std::vector)
+        LUA_USING_MAP_TYPE(std::map)
+    }
+````
+
+For non-template or non-default template container type, you can use:
+
+````c++
+    namespace LuaIntf
+    {
+        LUA_USING_LIST_TYPE_X(non_template_int_list)
+
+        // you need to use LUA_COMMA for , to workaround macro limitation
+        LUA_USING_LIST_TYPE_X(custom_template_list<T LUA_COMMA A LUA_COMMA S>,
+            typename T, typename A, typename S)
+    }
+````
+
 Function calling convention
 ---------------------------
 
