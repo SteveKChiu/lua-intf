@@ -88,6 +88,14 @@
     #define LUAINTF_STD_WIDE_STRING 0
 #endif
 
+/**
+ * Set LUAINTF_EXTRA_LUA_FIELDS to 1 if you want to include support for adding extra lua fields
+ * for the exported C++ objects. Otherwise setting missing field will raise lua error.
+ */
+#ifndef LUAINTF_EXTRA_LUA_FIELDS
+    #define LUAINTF_EXTRA_LUA_FIELDS 0
+#endif
+
 //---------------------------------------------------------------------------
 
 #if LUAINTF_HEADERS_ONLY

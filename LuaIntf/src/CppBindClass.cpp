@@ -95,7 +95,19 @@ LUA_INLINE int CppBindClassMetaMethod::index(lua_State* L)
         lua_rawget(L, -2);
 
         if (lua_isnil(L, -1)) {
-            // give up, leave nil on top -> <nil>
+
+#if LUAINTF_EXTRA_LUA_FIELDS
+            if (lua_isuserdata(L, 1)) {
+                lua_getuservalue(L, 1);
+                if (!lua_isnil(L, -1)) {
+                    // get extra_fields[key] -> <mt> <nil> <extra_fields> <extra_fields[key]>
+                    lua_pushvalue(L, 2);    // push key
+                    lua_rawget(L, -2);      // lookup key in extra fields
+                }
+            }
+#endif
+
+            // leave value on top -> <nil> or <extra_fields[key]>
             break;
         }
 
@@ -151,7 +163,7 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
             }
 
             lua_pushvalue(L, 3);        // push new value as arg
-            lua_call(L, n, 0); 
+            lua_call(L, n, 0);
             break;
         }
 
@@ -163,6 +175,38 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
 
         // check if there is one
         if (lua_isnil(L, -1)) {
+
+#if LUAINTF_EXTRA_LUA_FIELDS
+            if (lua_isuserdata(L, 1)) {
+                // set instance fields
+                lua_pushliteral(L, "___const");
+                lua_rawget(L, -3);
+                if (!lua_rawequal(L, -1, -3)) {
+                    // set field only if not const
+                    lua_getuservalue(L, 1);
+                    if (lua_isnil(L, -1)) {
+                        lua_newtable(L);
+                        lua_pushvalue(L, 2);
+                        lua_pushvalue(L, 3);
+                        lua_rawset(L, -3);
+                        lua_setuservalue(L, 1);
+                    } else {
+                        lua_pushvalue(L, 2);
+                        lua_pushvalue(L, 3);
+                        lua_rawset(L, -3);
+                    }
+                    break;
+                }
+                lua_pop(L, 1);
+            } else {
+                // set class fields
+                lua_pushvalue(L, 2);
+                lua_pushvalue(L, 3);
+                lua_rawset(L, 1);
+                break;
+            }
+#endif
+
             // give up
             lua_pushliteral(L, "___type");
             lua_rawget(L, -3);
