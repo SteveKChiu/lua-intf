@@ -47,19 +47,22 @@ public:
     /**
      * Create a new Lua state
      *
-     * Keep in mind that this does not import the standard libraries.
-     *
-     * @see importLibs()
+     * @param needImportLibs - true if need to import the standard libraries.
      */
-    LuaContext()
+    LuaContext(bool needImportLibs = true)
         : L(nullptr)
         , m_own(true)
     {
         L = luaL_newstate();
         if (!L) throw LuaException("can not allocate new lua state");
+
 #if LUAINTF_LINK_LUA_COMPILED_IN_CXX
         lua_atpanic(L, panic);
 #endif
+
+        if (needImportLibs) {
+            importLibs();
+        }
     }
 
     /**
@@ -130,7 +133,7 @@ public:
     void doString(const char* code)
     {
         int err = luaL_dostring(L, code);
-        if (err) lua_error(L);
+        if (err) throw LuaException(L);
     }
 
     /**
@@ -142,7 +145,7 @@ public:
     void doFile(const char* path)
     {
         int err = luaL_dofile(L, path);
-        if (err) lua_error(L);
+        if (err) throw LuaException(L);
     }
 
     /**
@@ -188,8 +191,8 @@ public:
         return lua_gc(L, what, data);
     }
 
-private:
 #if LUAINTF_LINK_LUA_COMPILED_IN_CXX
+private:
     static int panic(lua_State* L)
     {
         throw LuaException(L);
