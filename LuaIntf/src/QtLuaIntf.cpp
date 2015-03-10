@@ -32,7 +32,7 @@
 //---------------------------------------------------------------------------
 
 LUA_INLINE void Lua::pushVariant(lua_State* L, const QVariant& v)
-{   
+{
     switch (v.type()) {
     case QVariant::Invalid:
         lua_pushnil(L);

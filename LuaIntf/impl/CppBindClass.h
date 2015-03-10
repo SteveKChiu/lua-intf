@@ -924,7 +924,7 @@ public:
     {
         return CppBindClass<SUB, CppBindClass<T, PARENT>>::extend(m_meta, name, CppSignature<SUPER>::value());
     }
-    
+
     /**
      * Continue registration in the enclosing module or class.
      */

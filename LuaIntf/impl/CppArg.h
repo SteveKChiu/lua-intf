@@ -55,17 +55,17 @@ struct _ref_def {};
 template <typename T>
 struct CppArgHolder
 {
-    T& value() 
+    T& value()
     {
         return holder;
     }
-  
-    const T& value() const 
+
+    const T& value() const
     {
         return holder;
     }
-  
-    void hold(const T& v) 
+
+    void hold(const T& v)
     {
         holder = v;
     }
@@ -80,8 +80,8 @@ struct CppArgHolder <T&>
     {
         return *holder;
     }
-  
-    void hold(T& v) 
+
+    void hold(T& v)
     {
         holder = &v;
     }

@@ -349,7 +349,7 @@ public:
         }
         return *this;
     }
-  
+
     /**
      * Add or replace a const read-only variable.
      * The value return to lua is pass-by-value, that will create a local copy in lua.
@@ -363,7 +363,7 @@ public:
         setReadOnly(name);
         return *this;
     }
-  
+
     /**
      * Add or replace a non-const variable.
      * The value return to lua is pass-by-reference, and allow direct access to the variable.
