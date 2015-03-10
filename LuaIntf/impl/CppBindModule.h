@@ -118,7 +118,7 @@ struct CppBindMethodBase
             const FN& fn = *reinterpret_cast<const FN*>(lua_touserdata(L, lua_upvalueindex(1)));
             assert(fn);
 
-            typename CppArgTuple<P...>::Type args;
+            CppArgTuple<P...> args;
             CppArgTupleInput<P...>::get(L, IARG, args);
 
             int n = CppInvokeMethod<FN, R, typename CppArg<P>::HolderType...>::push(L, fn, args);

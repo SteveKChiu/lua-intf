@@ -36,7 +36,7 @@ struct CppBindClassConstructor <T, T, _arg(*)(P...)>
     static int call(lua_State* L)
     {
         try {
-            typename CppArgTuple<P...>::Type args;
+            CppArgTuple<P...> args;
             CppArgTupleInput<P...>::get(L, 2, args);
             CppObjectValue<T>::pushToStack(L, args, false);
             return 1;
@@ -55,7 +55,7 @@ struct CppBindClassConstructor <SP, T, _arg(*)(P...)>
     static int call(lua_State* L)
     {
         try {
-            typename CppArgTuple<P...>::Type args;
+            CppArgTuple<P...> args;
             CppArgTupleInput<P...>::get(L, 2, args);
             CppObjectSharedPtr<SP, T>::pushToStack(L, args, false);
             return 1;
@@ -163,7 +163,7 @@ struct CppBindClassMethodBase
             const FN& fn = *reinterpret_cast<const FN*>(lua_touserdata(L, lua_upvalueindex(1)));
             assert(fn);
 
-            typename CppArgTuple<P...>::Type args;
+            CppArgTuple<P...> args;
             T* obj = CppObject::get<T>(L, 1, IS_CONST);
             CppArgTupleInput<P...>::get(L, 2, args);
 

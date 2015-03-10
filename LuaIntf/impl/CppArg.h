@@ -297,10 +297,7 @@ struct CppArg
 };
 
 template <typename... P>
-struct CppArgTuple
-{
-    using Type = std::tuple<typename CppArg<P>::HolderType...>;
-};
+using CppArgTuple = std::tuple<typename CppArg<P>::HolderType...>;
 
 //---------------------------------------------------------------------------
 

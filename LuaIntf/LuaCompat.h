@@ -91,6 +91,9 @@
 /**
  * Set LUAINTF_EXTRA_LUA_FIELDS to 1 if you want to include support for adding extra lua fields
  * for the exported C++ objects. Otherwise setting missing field will raise lua error.
+ *
+ * Note the extra fields is attached to Lua object, different Lua objects will have different
+ * set of extra fields even they refer to the same C++ object (in the pointer or reference case).
  */
 #ifndef LUAINTF_EXTRA_LUA_FIELDS
     #define LUAINTF_EXTRA_LUA_FIELDS 0
