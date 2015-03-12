@@ -49,7 +49,7 @@ public:
      *
      * @param needImportLibs - true if need to import the standard libraries.
      */
-    LuaContext(bool needImportLibs = true)
+    explicit LuaContext(bool needImportLibs = true)
         : L(nullptr)
         , m_own(true)
     {
