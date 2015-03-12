@@ -307,6 +307,13 @@ By default `lua-intf` does not add conversion for container types, however, you 
 For non-template or non-default template container type, you can use:
 
 ````c++
+    class non_template_int_list
+    { ... };
+
+    template <typename T, typename A, typename S>
+    class custom_template_list<T, A, S>
+    { ... };
+
     namespace LuaIntf
     {
         LUA_USING_LIST_TYPE_X(non_template_int_list)
