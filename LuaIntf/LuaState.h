@@ -360,13 +360,13 @@ public:
         { return lua_isuserdata(L, idx) != 0; }
 
     bool isFunction(int idx) const
-        { return lua_isfunction(L, idx) != 0; }
+        { return lua_isfunction(L, idx); }
 
     bool isTable(int idx) const
-        { return lua_istable(L, idx) != 0; }
+        { return lua_istable(L, idx); }
 
     bool isLightUserData(int idx) const
-        { return lua_islightuserdata(L, idx) != 0; }
+        { return lua_islightuserdata(L, idx); }
 
     bool isNil(int idx) const
         { return lua_isnil(L, idx); }

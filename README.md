@@ -29,9 +29,9 @@ Compile Lua library in C++
 
 Most distributions of precompiled Lua library are compiled under C, if you need Lua library compiled under C++, you probably need to compile it by yourself. It is actually very easy to build Lua library under C++, first get a copy of source code of the Lua library:
 ````
-curl http://www.lua.org/ftp/lua-5.2.3.tar.gz -o lua-5.2.3.tar.gz
-tar xf lua-5.2.3.tar.gz
-cd lua-5.2.3
+curl http://www.lua.org/ftp/lua-5.3.0.tar.gz -o lua-5.3.0.tar.gz
+tar xf lua-5.3.0.tar.gz
+cd lua-5.3.0
 ````
 
 To compile on Linux:
