@@ -136,17 +136,18 @@ struct CppInvokeMethod <FN, std::tuple<RP...>, P...>
     static int push(lua_State* L, const FN& func, std::tuple<P...>& args)
     {
         std::tuple<RP...> ret = call(func, args);
-        return pushTuple<RP...>(L, ret);
+        return pushTuple<0, RP...>(L, ret);
     }
 
 private:
-    template <typename RV0, typename... RV>
+    template <size_t INDEX, typename RV0, typename... RV>
     static int pushTuple(lua_State* L, const std::tuple<RP...>& ret)
     {
-        LuaType<RV0>::push(L, std::get<sizeof...(RP) - sizeof...(RV) - 1>(ret));
-        return 1 + pushTuple<RV...>(L, ret);
+        LuaType<RV0>::push(L, std::get<INDEX>(ret));
+        return 1 + pushTuple<INDEX + 1, RV...>(L, ret);
     }
 
+    template <size_t INDEX>
     static int pushTuple(lua_State*, const std::tuple<RP...>&)
     {
         return 0;
