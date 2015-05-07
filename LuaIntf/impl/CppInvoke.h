@@ -174,14 +174,16 @@ struct CppDispatchClassConstructor <T, TUPLE, 0, INDEX...>
     }
 };
 
-template <typename T, typename... P>
+template <typename T>
 struct CppInvokeClassConstructor
 {
+    template <typename... P>
     static T* call(std::tuple<P...>& args)
     {
         return CppDispatchClassConstructor<T, std::tuple<P...>, sizeof...(P)>::call(args);
     }
 
+    template <typename... P>
     static T* call(void* mem, std::tuple<P...>& args)
     {
         return CppDispatchClassConstructor<T, std::tuple<P...>, sizeof...(P)>::call(mem, args);
@@ -295,7 +297,6 @@ private:
     template <size_t INDEX>
     static int pushTuple(lua_State*, const std::tuple<RP...>&)
     {
-        // template terminate function
         return 0;
     }
 };

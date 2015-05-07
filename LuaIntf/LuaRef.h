@@ -383,7 +383,7 @@ public:
      * @param meta the name of meta table
      * @return empty table
      */
-    static LuaRef createObject(lua_State* L, const char* meta)
+    static LuaRef createTableWithMeta(lua_State* L, const char* meta)
     {
         lua_newtable(L);
         Lua::pushGlobal(L, meta);
@@ -1321,6 +1321,24 @@ namespace Lua
         lua_pop(table.state(), 1);
         return map;
     }
+}
+
+/**
+ * Create LuaRef from value.
+ */
+template <typename T>
+inline LuaRef LuaRefValue(lua_State* L, T&& v)
+{
+    Lua::push(L, std::forward<T>(v));
+    return LuaRef::popFromStack(L);
+}
+
+/**
+ * Create LuaRef from nullptr.
+ */
+inline LuaRef LuaRefValue(lua_State* L, std::nullptr_t)
+{
+    return LuaRef(L, nullptr);
 }
 
 #if LUAINTF_HEADERS_ONLY

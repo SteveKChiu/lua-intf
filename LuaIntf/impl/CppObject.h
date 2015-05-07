@@ -174,11 +174,19 @@ public:
     }
 
     template <typename... P>
+    static void pushToStack(lua_State* L, bool is_const, P&&... args)
+    {
+        void* mem = allocate<CppObjectValue<T>, T>(L, is_const);
+        CppObjectValue<T>* v = ::new (mem) CppObjectValue<T>();
+        ::new (v->objectPtr()) T(std::forward<P>(args)...);
+    }
+
+    template <typename... P>
     static void pushToStack(lua_State* L, std::tuple<P...>& args, bool is_const)
     {
         void* mem = allocate<CppObjectValue<T>, T>(L, is_const);
         CppObjectValue<T>* v = ::new (mem) CppObjectValue<T>();
-        CppInvokeClassConstructor<T, P...>::call(v->objectPtr(), args);
+        CppInvokeClassConstructor<T>::call(v->objectPtr(), args);
     }
 
     static void pushToStack(lua_State* L, const T& obj, bool is_const)
@@ -260,14 +268,6 @@ public:
     SP& sharedPtr()
     {
         return m_sp;
-    }
-
-    template <typename... P>
-    static void pushToStack(lua_State* L, std::tuple<P...>& args, bool is_const)
-    {
-        void* mem = allocate<CppObjectSharedPtr<SP, T>, T>(L, is_const);
-        T* obj = CppInvokeClassConstructor<T, P...>::call(args);
-        ::new (mem) CppObjectSharedPtr<SP, T>(obj);
     }
 
     static void pushToStack(lua_State* L, T* obj, bool is_const)
@@ -432,3 +432,27 @@ struct LuaTypeMapping <T*>
         }
     }
 };
+
+//----------------------------------------------------------------------------
+
+namespace Lua
+{
+    /**
+     * Create new object inside userdata directly and push onto Lua stack.
+     */
+    template <typename T, typename... P>
+    inline void pushNew(lua_State* L, P&&... args)
+    {
+        CppObjectValue<typename std::remove_cv<T>::type>::pushToStack(L, std::is_const<T>::value, std::forward<P>(args)...);
+    }
+}
+
+/**
+ * Create LuaRef for cpp class, the object is created inside userdata directly.
+ */
+template <typename T, typename... P>
+inline LuaRef LuaRefObject(lua_State* L, P&&... args)
+{
+    Lua::pushNew<T>(L, std::forward<P>(args)...);
+    return LuaRef::popFromStack(L);
+}

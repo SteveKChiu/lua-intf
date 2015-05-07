@@ -50,14 +50,15 @@ template <typename SP, typename T, typename... P>
 struct CppBindClassConstructor <SP, T, _arg(*)(P...)>
 {
     /**
-     * lua_CFunction to call a class constructor (stored via smart pointer)
+     * lua_CFunction to call a class constructor (stored via shared pointer)
      */
     static int call(lua_State* L)
     {
         try {
             CppArgTuple<P...> args;
             CppArgTupleInput<P...>::get(L, 2, args);
-            CppObjectSharedPtr<SP, T>::pushToStack(L, args, false);
+            T* obj = CppInvokeClassConstructor<T>::call(args);
+            CppObjectSharedPtr<SP, T>::pushToStack(L, obj, false);
             return 1;
         } catch (std::exception& e) {
             return luaL_error(L, e.what());
