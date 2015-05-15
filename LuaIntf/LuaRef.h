@@ -1222,7 +1222,7 @@ private:
             lua_pushcfunction(L, &LuaException::traceback);
             f.pushToStack();
             pushArg(L, std::forward<P>(args)...);
-            if (lua_pcall(L, sizeof...(P), sizeof...(R), -int(sizeof...(P) + sizeof...(R) + 2)) != LUA_OK) {
+            if (lua_pcall(L, sizeof...(P), sizeof...(R), -int(sizeof...(P) + 2)) != LUA_OK) {
                 lua_remove(L, -2);
                 throw LuaException(L);
             }
