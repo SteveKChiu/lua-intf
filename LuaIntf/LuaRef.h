@@ -1227,30 +1227,25 @@ private:
                 throw LuaException(L);
             }
             std::tuple<R...> ret;
-            Result<sizeof...(R), R...>::fill(L, ret);
+            TupleResult<sizeof...(R), R...>::fill(L, ret);
             lua_pop(L, int(sizeof...(R) + 1));
             return ret;
         }
     };
 
-    template <typename T>
-    static void fillResult(lua_State* L, int idx, T& r)
-    {
-        r = Lua::get<T>(L, idx);
-    }
-
     template <size_t N, typename... P>
-    struct Result
+    struct TupleResult
     {
         static void fill(lua_State* L, std::tuple<P...>& args)
         {
-            fillResult(L, sizeof...(P) - N + 1, std::get<sizeof...(P) - N>(args));
-            Result<N - 1, P...>::fill(L, args);
+            using T = typename std::tuple_element<sizeof...(P) - N, std::tuple<P...>>::type;
+            std::get<sizeof...(P) - N>(args) = Lua::get<T>(L, -int(N));
+            TupleResult<N - 1, P...>::fill(L, args);
         }
     };
 
     template <typename... P>
-    struct Result <0, P...>
+    struct TupleResult <0, P...>
     {
         static void fill(lua_State*, std::tuple<P...>&)
         {
