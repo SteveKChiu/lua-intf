@@ -158,6 +158,7 @@ namespace Lua
     template <typename MAP>
     inline MAP getMap(lua_State* L, int index)
     {
+        index = lua_absindex(L, index);
         luaL_checktype(L, index, LUA_TTABLE);
         MAP map;
         lua_pushnil(L);
