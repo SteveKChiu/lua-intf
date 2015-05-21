@@ -47,7 +47,11 @@ LUA_INLINE void Lua::pushVariant(lua_State* L, const QVariant& v)
         lua_pushunsigned(L, v.toUInt());
         break;
     case QVariant::LongLong:
+        push(L, v.toLongLong());
+        break;
     case QVariant::ULongLong:
+        push(L, v.toULongLong());
+        break;
     case QVariant::Double:
         lua_pushnumber(L, v.toDouble());
         break;
@@ -78,6 +82,10 @@ LUA_INLINE QVariant Lua::getVariant(lua_State* L, int idx)
         return lua_tonumber(L, idx);
     } else if (type == LUA_TBOOLEAN) {
         return lua_toboolean(L, idx) != 0;
+    } else if (type == LUA_TSTRING) {
+        size_t l;
+        const char* s = lua_tolstring(L, idx, &l);
+        return QByteArray(s, l);
     } else if (luaL_callmeta(L, idx, "__tostring")) {
         size_t l;
         const char* s = lua_tolstring(L, -1, &l);
