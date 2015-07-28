@@ -124,7 +124,8 @@ template <typename T>
 struct CppArgTraits <_out<T>>
     : CppArgTraits <T>
 {
-    static_assert(!std::is_const<T>::value && std::is_lvalue_reference<T>::value,
+    static_assert(std::is_lvalue_reference<T>::value
+        && !std::is_const<typename std::remove_reference<T>::type>::value,
         "argument with out spec must be non-const reference type");
     static constexpr bool isInput = false;
     static constexpr bool isOutput = true;
@@ -134,7 +135,8 @@ template <typename T>
 struct CppArgTraits <_ref<T>>
     : CppArgTraits <T>
 {
-    static_assert(!std::is_const<T>::value && std::is_lvalue_reference<T>::value,
+    static_assert(std::is_lvalue_reference<T>::value
+        && !std::is_const<typename std::remove_reference<T>::type>::value,
         "argument with ref spec must be non-const reference type");
     static constexpr bool isOutput = true;
 };
@@ -143,7 +145,8 @@ template <typename T>
 struct CppArgTraits <_ref_opt<T>>
     : CppArgTraits <T>
 {
-    static_assert(!std::is_const<T>::value && std::is_lvalue_reference<T>::value,
+    static_assert(std::is_lvalue_reference<T>::value
+        && !std::is_const<typename std::remove_reference<T>::type>::value,
         "argument with ref spec must be non-const reference type");
     static constexpr bool isOptonal = true;
     static constexpr bool isOutput = true;
@@ -153,7 +156,8 @@ template <typename T, std::intmax_t NUM, std::intmax_t DEN>
 struct CppArgTraits <_ref_def<T, NUM, DEN>>
     : CppArgTraits <T>
 {
-    static_assert(!std::is_const<T>::value && std::is_lvalue_reference<T>::value,
+    static_assert(std::is_lvalue_reference<T>::value
+        && !std::is_const<typename std::remove_reference<T>::type>::value,
         "argument with ref spec must be non-const reference type");
     static constexpr bool isOptonal = true;
     static constexpr bool isOutput = true;

@@ -67,7 +67,9 @@ struct LuaType
     : std::conditional<
         std::is_class<typename std::decay<T>::type>::value
             && !LuaTypeMappingExists<typename std::decay<T>::type>::value,
-        LuaClassMapping<typename std::decay<T>::type, std::is_const<T>::value, std::is_reference<T>::value>,
+        LuaClassMapping<typename std::decay<T>::type,
+            std::is_const<typename std::remove_reference<T>::type>::value,
+            std::is_reference<T>::value>,
         LuaTypeMapping<typename std::decay<T>::type>
     >::type {};
 
