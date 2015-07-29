@@ -99,6 +99,14 @@
     #define LUAINTF_EXTRA_LUA_FIELDS 0
 #endif
 
+/**
+ * Set LUAINTF_AUTO_DOWNCAST to 1 if you want to include support for auto downcast.
+ * This will allow Lua object to access the correct class even the C++ function returns the base class.
+ */
+#ifndef LUAINTF_AUTO_DOWNCAST
+    #define LUAINTF_AUTO_DOWNCAST 1
+#endif
+
 //---------------------------------------------------------------------------
 
 #if LUAINTF_HEADERS_ONLY

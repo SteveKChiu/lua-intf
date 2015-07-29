@@ -445,14 +445,19 @@ private:
      * @param super_type_id the super class id
      * @return new or existing class
      */
-    static CppBindClass<T, PARENT> extend(LuaRef& parent_meta, const char* name, void* super_type_id)
+    template <typename SUPER>
+    static CppBindClass<T, PARENT> extend(LuaRef& parent_meta, const char* name)
     {
         LuaRef meta;
         if (buildMetaTable(meta, parent_meta, name,
-            CppSignature<T>::value(), CppClassSignature<T>::value(), CppConstSignature<T>::value(), super_type_id))
+            CppSignature<T>::value(), CppClassSignature<T>::value(), CppConstSignature<T>::value(), CppSignature<SUPER>::value()))
         {
             meta.rawget("___class").rawset("__gc", &CppBindClassDestructor<T, false>::call);
             meta.rawget("___const").rawset("__gc", &CppBindClassDestructor<T, true>::call);
+
+#if LUAINTF_AUTO_DOWNCAST
+            CppAutoDowncast::add<T, SUPER>(meta.state());
+#endif
         }
         return CppBindClass<T, PARENT>(meta);
     }
@@ -923,7 +928,7 @@ public:
     template <typename SUB, typename SUPER>
     CppBindClass<SUB, CppBindClass<T, PARENT>> beginExtendClass(const char* name)
     {
-        return CppBindClass<SUB, CppBindClass<T, PARENT>>::extend(m_meta, name, CppSignature<SUPER>::value());
+        return CppBindClass<SUB, CppBindClass<T, PARENT>>::template extend<SUPER>(m_meta, name);
     }
 
     /**

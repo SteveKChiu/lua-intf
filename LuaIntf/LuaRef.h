@@ -887,7 +887,7 @@ public:
      * @return field value
      */
     template <typename V = LuaRef>
-    V rawget(void* p) const
+    V rawgetp(void* p) const
     {
         pushToStack();
         lua_rawgetp(L, -1, p);
@@ -899,6 +899,39 @@ public:
     /**
      * Look up field in table in raw mode (not via metatable).
      * This may raise Lua error or throw LuaException if V is not convertible.
+     * This is the same as rawgetp, just for convienence.
+     *
+     * @param p field key
+     * @return field value
+     */
+    template <typename V = LuaRef>
+    V rawget(void* p) const
+    {
+        return rawgetp<V>(p);
+    }
+
+    /**
+     * Look up field in table in raw mode (not via metatable).
+     * This may raise Lua error or throw LuaException if V is not convertible.
+     *
+     * @param p field key
+     * @param def default value if the field is missing
+     * @return field value
+     */
+    template <typename V>
+    V rawgetp(void* p, const V& def) const
+    {
+        pushToStack();
+        lua_rawgetp(L, -1, p);
+        V v = Lua::opt<V>(L, -1, def);
+        lua_pop(L, 2);
+        return v;
+    }
+
+    /**
+     * Look up field in table in raw mode (not via metatable).
+     * This may raise Lua error or throw LuaException if V is not convertible.
+     * This is the same as rawgetp, just for convienence.
      *
      * @param p field key
      * @param def default value if the field is missing
@@ -907,11 +940,7 @@ public:
     template <typename V>
     V rawget(void* p, const V& def) const
     {
-        pushToStack();
-        lua_rawgetp(L, -1, p);
-        V v = Lua::opt<V>(L, -1, def);
-        lua_pop(L, 2);
-        return v;
+        return rawgetp(p, def);
     }
 
     /**
@@ -922,12 +951,26 @@ public:
      * @param value field value
      */
     template <typename V>
-    void rawset(void* p, const V& value)
+    void rawsetp(void* p, const V& value)
     {
         pushToStack();
         Lua::push(L, value);
         lua_rawsetp(L, -2, p);
         lua_pop(L, 1);
+    }
+
+    /**
+     * Set field in table in raw mode (not via metatable).
+     * This may raise Lua error or throw LuaException if V is not convertible.
+     * This is the same as rawsetp, just for convienence.
+     *
+     * @param p field key
+     * @param value field value
+     */
+    template <typename V>
+    void rawset(void* p, const V& value)
+    {
+        rawsetp(p, value);
     }
 
     /**

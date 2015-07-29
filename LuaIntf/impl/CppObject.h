@@ -34,7 +34,7 @@ struct CppSignature
      */
     static void* value()
     {
-        static char v;
+        static bool v = false;
         return &v;
     }
 };
@@ -69,11 +69,11 @@ protected:
         return is_const ? CppConstSignature<T>::value() : CppClassSignature<T>::value();
     }
 
-    template <typename OBJ, typename T>
-    static void* allocate(lua_State* L, bool is_const)
+    template <typename OBJ>
+    static void* allocate(lua_State* L, void* class_id)
     {
         void* mem = lua_newuserdata(L, sizeof(OBJ));
-        lua_rawgetp(L, LUA_REGISTRYINDEX, getClassID<T>(is_const));
+        lua_rawgetp(L, LUA_REGISTRYINDEX, class_id);
         luaL_checktype(L, -1, LUA_TTABLE);
         lua_setmetatable(L, -2);
         return mem;
@@ -137,6 +137,98 @@ private:
 
 //----------------------------------------------------------------------------
 
+class CppAutoDowncast
+{
+#if LUAINTF_AUTO_DOWNCAST
+
+private:
+    template <typename T, typename SUPER, bool IS_CONST>
+    static void* tryDowncast(SUPER* obj) {
+        if (dynamic_cast<T*>(obj)) {
+            return IS_CONST ? CppConstSignature<T>::value() : CppClassSignature<T>::value();
+        } else {
+            return nullptr;
+        }
+    }
+
+    template <typename T, typename SUPER, bool IS_CONST>
+    static void addDowncast(LuaRef super) {
+        lua_State* L = super.state();
+        LuaRef downcast = LuaRef::createUserDataFrom(L, &tryDowncast<T, SUPER, IS_CONST>);
+
+        void* class_id = IS_CONST ? CppConstSignature<SUPER>::value() : CppClassSignature<SUPER>::value();
+        bool* class_may_downcast = static_cast<bool*>(class_id);
+        *class_may_downcast = true;
+
+        LuaRef list = super.rawget("__downcast");
+        if (list == nullptr) {
+            list = LuaRef::createTable(L);
+            super.rawset("__downcast", list);
+        }
+        list.rawset(list.rawlen() + 1, downcast);
+    }
+
+    static void* findClassID(lua_State* L, void* obj, void* class_id) {
+        bool class_may_downcast = *static_cast<bool*>(class_id);
+        if (!class_may_downcast) return class_id;
+
+        // <class_meta>
+        lua_rawgetp(L, LUA_REGISTRYINDEX, class_id);
+        luaL_checktype(L, -1, LUA_TTABLE);
+
+        // <class_meta> <downcast>
+        lua_pushliteral(L, "__downcast");
+        lua_rawget(L, -2);
+
+        if (!lua_isnil(L, -1)) {
+            int len = lua_rawlen(L, -1);
+            for (int i = 1; i <= len; i++) {
+                // <class_meta> <downcast> <cast_func>
+                lua_rawgeti(L, -1, i);
+                auto downcast = *reinterpret_cast<void*(**)(void*)>(lua_touserdata(L, -1));
+
+                void* cast_class_id = downcast(obj);
+                if (cast_class_id) {
+                    lua_pop(L, 3);
+                    return findClassID(L, obj, cast_class_id);
+                }
+
+                lua_pop(L, 1);
+            }
+        }
+
+        lua_pop(L, 2);
+        return class_id;
+    }
+
+public:
+    template <typename T, typename SUPER>
+    static void add(lua_State* L) {
+        LuaRef registry(L, LUA_REGISTRYINDEX);
+        LuaRef super = registry.rawgetp(CppSignature<SUPER>::value());
+        addDowncast<T, SUPER, false>(super.rawget("___class"));
+        addDowncast<T, SUPER, true>(super.rawget("___const"));
+    }
+
+    template <typename T>
+    static void* getClassID(lua_State* L, T* obj, bool is_const) {
+        void* class_id = is_const ? CppConstSignature<T>::value() : CppClassSignature<T>::value();
+        return findClassID(L, obj, class_id);
+    }
+
+#else
+
+public:
+    template <typename T>
+    static void* getClassID(lua_State*, T*, bool is_const) {
+        return is_const ? CppConstSignature<T>::value() : CppClassSignature<T>::value();
+    }
+
+#endif
+};
+
+//----------------------------------------------------------------------------
+
 /**
  * Wraps a class object stored in a Lua userdata.
  *
@@ -176,7 +268,7 @@ public:
     template <typename... P>
     static void pushToStack(lua_State* L, bool is_const, P&&... args)
     {
-        void* mem = allocate<CppObjectValue<T>, T>(L, is_const);
+        void* mem = allocate<CppObjectValue<T>>(L, getClassID<T>(is_const));
         CppObjectValue<T>* v = ::new (mem) CppObjectValue<T>();
         ::new (v->objectPtr()) T(std::forward<P>(args)...);
     }
@@ -184,14 +276,14 @@ public:
     template <typename... P>
     static void pushToStack(lua_State* L, std::tuple<P...>& args, bool is_const)
     {
-        void* mem = allocate<CppObjectValue<T>, T>(L, is_const);
+        void* mem = allocate<CppObjectValue<T>>(L, getClassID<T>(is_const));
         CppObjectValue<T>* v = ::new (mem) CppObjectValue<T>();
         CppInvokeClassConstructor<T>::call(v->objectPtr(), args);
     }
 
     static void pushToStack(lua_State* L, const T& obj, bool is_const)
     {
-        void* mem = allocate<CppObjectValue<T>, T>(L, is_const);
+        void* mem = allocate<CppObjectValue<T>>(L, getClassID<T>(is_const));
         CppObjectValue<T>* v = ::new (mem) CppObjectValue<T>();
         ::new (v->objectPtr()) T(obj);
     }
@@ -227,7 +319,7 @@ public:
     template <typename T>
     static void pushToStack(lua_State* L, T* obj, bool is_const)
     {
-        void* mem = allocate<CppObjectPtr, T>(L, is_const);
+        void* mem = allocate<CppObjectPtr>(L, CppAutoDowncast::getClassID(L, obj, is_const));
         ::new (mem) CppObjectPtr(obj);
     }
 
@@ -272,13 +364,15 @@ public:
 
     static void pushToStack(lua_State* L, T* obj, bool is_const)
     {
-        void* mem = allocate<CppObjectSharedPtr<SP, T>, T>(L, is_const);
+        void* mem = allocate<CppObjectSharedPtr<SP, T>>(L,
+            CppAutoDowncast::getClassID(L, obj, is_const));
         ::new (mem) CppObjectSharedPtr<SP, T>(obj);
     }
 
     static void pushToStack(lua_State* L, const SP& sp, bool is_const)
     {
-        void* mem = allocate<CppObjectSharedPtr<SP, T>, T>(L, is_const);
+        void* mem = allocate<CppObjectSharedPtr<SP, T>>(L,
+            CppAutoDowncast::getClassID(L, const_cast<T*>(&*sp), is_const));
         ::new (mem) CppObjectSharedPtr<SP, T>(sp);
     }
 

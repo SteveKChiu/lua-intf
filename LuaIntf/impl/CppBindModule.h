@@ -505,7 +505,7 @@ public:
     template <typename T, typename SUPER>
     CppBindClass<T, CppBindModule> beginExtendClass(const char* name)
     {
-        return CppBindClass<T, CppBindModule>::extend(m_meta, name, CppSignature<SUPER>::value());
+        return CppBindClass<T, CppBindModule>::template extend<SUPER>(m_meta, name);
     }
 
 private:
