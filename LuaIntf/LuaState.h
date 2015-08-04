@@ -56,9 +56,9 @@ namespace Lua
      * Push value onto Lua stack
      */
     template <typename T>
-    inline void push(lua_State* L, T&& v)
+    inline void push(lua_State* L, const T& v)
     {
-        LuaType<T>::push(L, std::forward<T>(v));
+        LuaType<T>::push(L, v);
     }
 
     /**
@@ -199,9 +199,9 @@ namespace Lua
      * Set the named global to the specified value, the Lua stack is not changed
      */
     template <typename T>
-    inline void setGlobal(lua_State* L, const char* name, T&& v)
+    inline void setGlobal(lua_State* L, const char* name, const T& v)
     {
-        LuaType<T>::push(L, std::forward<T>(v));
+        LuaType<T>::push(L, v);
         popToGlobal(L, name);
     }
 
