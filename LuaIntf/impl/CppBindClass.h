@@ -914,6 +914,36 @@ public:
     }
 
     /**
+     * Add or replace a meta function, meta function is static function attached to object.
+     * It is usually used to implement infix operator for the class, that the first operand may
+     * or may not be the object.
+     *
+     * If the first operand is always the object itself, it is better to use addFunction instead.
+     */
+    template <typename FN>
+    CppBindClass<T, PARENT>& addMetaFunction(const char* name, const FN& proc)
+    {
+        using CppProc = CppBindMethod<FN>;
+        setMemberFunction(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)), true);
+        return *this;
+    }
+
+    /**
+     * Add or replace a meta function, meta function is static function attached to object.
+     * It is usually used to implement infix operator for the class, that the first operand may
+     * or may not be the object.
+     *
+     * If the first operand is always the object itself, it is better to use addFunction instead.
+     */
+    template <typename FN, typename ARGS>
+    CppBindClass<T, PARENT>& addMetaFunction(const char* name, const FN& proc, ARGS)
+    {
+        using CppProc = CppBindMethod<FN, ARGS>;
+        setMemberFunction(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)), true);
+        return *this;
+    }
+
+    /**
      * Open a new or existing class for registrations.
      */
     template <typename SUB>

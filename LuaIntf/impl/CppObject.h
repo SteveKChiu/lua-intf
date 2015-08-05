@@ -105,7 +105,7 @@ public:
     template <typename T>
     static CppObject* getExactObject(lua_State* L, int index, bool is_const)
     {
-        return getExactObject(L, index, getClassID<T>(is_const));
+        return getObject(L, index, getClassID<T>(is_const), is_const, true, true);
     }
 
     /**
@@ -115,7 +115,19 @@ public:
     template <typename T>
     static CppObject* getObject(lua_State* L, int index, bool is_const)
     {
-        return getObject(L, index, getClassID<T>(is_const), is_const);
+        return getObject(L, index, getClassID<T>(is_const), is_const, false, true);
+    }
+
+    /**
+     * Get a pointer to the class from the Lua stack.
+     *
+     * If the object is not the class or a subclass, return nullptr.
+     */
+    template <typename T>
+    static T* cast(lua_State* L, int index, bool is_const)
+    {
+        CppObject* object = getObject(L, index, getClassID<T>(is_const), is_const, false, true);
+        return object ? static_cast<T*>(object->objectPtr()) : nullptr;
     }
 
     /**
@@ -131,8 +143,8 @@ public:
 
 private:
     static void typeMismatchError(lua_State* L, int index);
-    static CppObject* getExactObject(lua_State* L, int index, void* classid);
-    static CppObject* getObject(lua_State* L, int index, void* base_classid, bool is_const);
+    static CppObject* getObject(lua_State* L, int index, void* class_id,
+        bool is_const, bool is_exact, bool raise_error);
 };
 
 //----------------------------------------------------------------------------
@@ -538,6 +550,27 @@ namespace Lua
     inline void pushNew(lua_State* L, P&&... args)
     {
         CppObjectValue<typename std::remove_cv<T>::type>::pushToStack(L, std::is_const<T>::value, std::forward<P>(args)...);
+    }
+
+    /**
+     * Cast stack value at the index to the given class, return nullptr if it is not.
+     */
+    template <typename T>
+    inline T* objectCast(lua_State* L, int index)
+    {
+        return CppObject::cast<typename std::remove_cv<T>::type>(L, index, std::is_const<T>::value);
+    }
+
+    /**
+     * Cast LuaRef to the given class, return nullptr if it is not.
+     */
+    template <typename T>
+    inline T* objectCast(const LuaRef& ref)
+    {
+        ref.pushToStack();
+        T* object = objectCast<T>(ref.state(), -1);
+        lua_pop(ref.state(), 1);
+        return object;
     }
 }
 

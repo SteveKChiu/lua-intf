@@ -57,37 +57,13 @@ LUA_INLINE void CppObject::typeMismatchError(lua_State* L, int index)
     lua_error(L);
 }
 
-LUA_INLINE CppObject* CppObject::getExactObject(lua_State* L, int index, void* class_id)
+LUA_INLINE CppObject* CppObject::getObject(lua_State* L, int index, void* class_id,
+    bool is_const, bool is_exact, bool raise_error)
 {
     if (!lua_isuserdata(L, index)) {
-        luaL_error(L, "expect userdata, got %s", lua_typename(L, lua_type(L, index)));
-        return nullptr;
-    }
-
-    // <SP: index> = <obj>
-    index = lua_absindex(L, index);
-
-    // get object class metatable and registry class metatable -> <reg_mt> <obj_mt>
-    lua_rawgetp(L, LUA_REGISTRYINDEX, class_id);
-    assert(lua_istable(L, -1));
-    lua_getmetatable(L, index);
-
-    // check if <obj_mt> and <reg_mt> are equal
-    if (lua_rawequal(L, -1, -2)) {
-        // matched, return this object
-        lua_pop(L, 2);
-        return static_cast<CppObject*>(lua_touserdata(L, index));
-    } else {
-        // show error -> <reg_mt> <obj_mt>
-        typeMismatchError(L, index);
-        return nullptr;
-    }
-}
-
-LUA_INLINE CppObject* CppObject::getObject(lua_State* L, int index, void* base_id, bool is_const)
-{
-    if (!lua_isuserdata(L, index)) {
-        luaL_error(L, "expect userdata, got %s", lua_typename(L, lua_type(L, index)));
+        if (raise_error) {
+            luaL_error(L, "expect userdata, got %s", lua_typename(L, lua_type(L, index)));
+        }
         return nullptr;
     }
 
@@ -95,17 +71,22 @@ LUA_INLINE CppObject* CppObject::getObject(lua_State* L, int index, void* base_i
     index = lua_absindex(L, index);
 
     // get registry base class metatable -> <base_mt>
-    lua_rawgetp(L, LUA_REGISTRYINDEX, base_id);
+    lua_rawgetp(L, LUA_REGISTRYINDEX, class_id);
 
     // report error if no metatable
     if (!lua_istable(L, -1)) {
-        luaL_error(L, "unknown class (null metatable)");
+        if (raise_error) {
+            luaL_error(L, "unknown class (null metatable)");
+        } else {
+            lua_pop(L, 1);
+        }
         return nullptr;
     }
 
     // get the object metatable -> <base_mt> <obj_mt>
     lua_getmetatable(L, index);
 
+    // use const metatable if needed
     if (is_const) {
         // get the const metatable -> <base_mt> <const_obj_mt>
         lua_pushliteral(L, "___const");
@@ -127,16 +108,28 @@ LUA_INLINE CppObject* CppObject::getObject(lua_State* L, int index, void* base_i
             break;
         }
 
+        // give up if exact match is needed
+        if (is_exact) {
+            if (raise_error) {
+                typeMismatchError(L, index);
+            } else {
+                lua_pop(L, 2);
+            }
+            return nullptr;
+        }
+
         // now try super class -> <base_mt> <obj_mt> <obj_super_mt>
         lua_pushliteral(L, "___super");
         lua_rawget(L, -2);
 
         if (lua_isnil(L, -1)) {
-            // pop nil
-            lua_pop(L, 1);
-
-            // show error -> <reg_mt> <obj_mt>
-            typeMismatchError(L, index);
+            // no super class
+            if (raise_error) {
+                lua_pop(L, 1); // pop nil
+                typeMismatchError(L, index);
+            } else {
+                lua_pop(L, 3);
+            }
             return nullptr;
         } else {
             // continue with <obj_super_mt> -> <base_mt> <obj_super_mt>
