@@ -126,7 +126,7 @@ public:
     template <typename T>
     static T* cast(lua_State* L, int index, bool is_const)
     {
-        CppObject* object = getObject(L, index, getClassID<T>(is_const), is_const, false, true);
+        CppObject* object = getObject(L, index, getClassID<T>(is_const), is_const, false, false);
         return object ? static_cast<T*>(object->objectPtr()) : nullptr;
     }
 
