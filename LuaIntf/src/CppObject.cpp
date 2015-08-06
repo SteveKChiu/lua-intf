@@ -95,7 +95,11 @@ LUA_INLINE CppObject* CppObject::getObject(lua_State* L, int index, void* class_
 
         // report error if no const metatable
         if (!lua_istable(L, -1)) {
-            luaL_error(L, "unknown class, you need to register this class with lua-intf first by using LuaBinding");
+            if (raise_error) {
+                luaL_error(L, "unknown class, you need to register this class with lua-intf first by using LuaBinding");
+            } else {
+                lua_pop(L, 2);
+            }
             return nullptr;
         }
     }
