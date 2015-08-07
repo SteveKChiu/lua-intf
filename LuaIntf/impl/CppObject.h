@@ -156,7 +156,8 @@ class CppAutoDowncast
 private:
     template <typename T, typename SUPER, bool IS_CONST>
     static void* tryDowncast(SUPER* obj) {
-        if (dynamic_cast<T*>(obj)) {
+        void* casted = dynamic_cast<T*>(obj);
+        if (casted == obj) {
             return IS_CONST ? CppConstSignature<T>::value() : CppClassSignature<T>::value();
         } else {
             return nullptr;
