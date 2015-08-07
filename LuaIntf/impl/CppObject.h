@@ -63,12 +63,6 @@ class CppObject
 protected:
     CppObject() {}
 
-    template <typename T>
-    static void* getClassID(bool is_const)
-    {
-        return is_const ? CppConstSignature<T>::value() : CppClassSignature<T>::value();
-    }
-
     template <typename OBJ>
     static void* allocate(lua_State* L, void* class_id)
     {
@@ -97,6 +91,15 @@ public:
      * The object pointer
      */
     virtual void* objectPtr() = 0;
+
+    /**
+     * Get internal class id of the given class
+     */
+    template <typename T>
+    static void* getClassID(bool is_const)
+    {
+        return is_const ? CppConstSignature<T>::value() : CppClassSignature<T>::value();
+    }
 
     /**
      * Returns the CppObject* if the class on the Lua stack is exact the same class (not one of the subclass).
@@ -158,7 +161,7 @@ private:
     static void* tryDowncast(SUPER* obj) {
         void* casted = dynamic_cast<T*>(obj);
         if (casted == obj) {
-            return IS_CONST ? CppConstSignature<T>::value() : CppClassSignature<T>::value();
+            return CppObject::getClassID<T>(IS_CONST);
         } else {
             return nullptr;
         }
@@ -169,7 +172,7 @@ private:
         lua_State* L = super.state();
         LuaRef downcast = LuaRef::createUserDataFrom(L, &tryDowncast<T, SUPER, IS_CONST>);
 
-        void* class_id = IS_CONST ? CppConstSignature<SUPER>::value() : CppClassSignature<SUPER>::value();
+        void* class_id = CppObject::getClassID<SUPER>(IS_CONST);
         bool* class_may_downcast = static_cast<bool*>(class_id);
         *class_may_downcast = true;
 
@@ -225,7 +228,7 @@ public:
 
     template <typename T>
     static void* getClassID(lua_State* L, T* obj, bool is_const) {
-        void* class_id = is_const ? CppConstSignature<T>::value() : CppClassSignature<T>::value();
+        void* class_id = CppObject::getClassID<T>(is_const);
         return findClassID(L, obj, class_id);
     }
 
@@ -234,7 +237,7 @@ public:
 public:
     template <typename T>
     static void* getClassID(lua_State*, T*, bool is_const) {
-        return is_const ? CppConstSignature<T>::value() : CppClassSignature<T>::value();
+        return CppObject::getClassID<T>(is_const);
     }
 
 #endif
