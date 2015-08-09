@@ -775,15 +775,15 @@ public:
      *
      * local a, b = ref:memberFunction(arg1, arg2)
      *
-     * @param member the name of member function
+     * @param func the name of member function
      * @param args arguments to pass to function
      * @return values of function
      */
     template <typename R = void, typename... P>
-    R dispatch(const char* member, P&&... args)
+    R dispatch(const char* func, P&&... args)
     {
         assert(L);
-        return Call<R, const LuaRef&, P...>::invoke(L, get(member), *this, std::forward<P>(args)...);
+        return Call<R, const LuaRef&, P...>::invoke(L, get(func), *this, std::forward<P>(args)...);
     }
 
     /**
@@ -794,21 +794,21 @@ public:
      * To return multiple values from Lua function, use std::tuple as return type:
      *
      * int a, b;
-     * std::tie(a, b) = ref.dispatchStatic<std::tuple<int, int>>("memberFunction", arg1, arg2);
+     * std::tie(a, b) = ref.dispatchStatic<std::tuple<int, int>>("staticFunction", arg1, arg2);
      *
      * The above code works like the following in Lua, please note the '.' syntax:
      *
-     * local a, b = ref.memberFunction(arg1, arg2)
+     * local a, b = ref.staticFunction(arg1, arg2)
      *
-     * @param member the name of member function
+     * @param func the name of static function
      * @param args arguments to pass to function
      * @return values of function
      */
     template <typename R = void, typename... P>
-    R dispatchStatic(const char* member, P&&... args)
+    R dispatchStatic(const char* func, P&&... args)
     {
         assert(L);
-        return Call<R, P...>::invoke(L, get(member), std::forward<P>(args)...);
+        return Call<R, P...>::invoke(L, get(func), std::forward<P>(args)...);
     }
 
     /**
