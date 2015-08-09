@@ -284,6 +284,9 @@ LUA_INLINE bool CppBindClassBase::buildMetaTable(LuaRef& meta, LuaRef& parent, c
     clazz_static.rawset("___parent", parent);
     clazz_static.rawsetp(CppSignature<CppObject>::value(), type_static);
 
+    clazz_const.rawset("class", clazz_static);
+    clazz.rawset("class", clazz_static);
+
     LuaRef registry(L, LUA_REGISTRYINDEX);
     registry.rawset(type_clazz, clazz);
     registry.rawset(type_const, clazz_const);
