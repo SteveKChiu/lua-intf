@@ -197,7 +197,7 @@ private:
         lua_rawget(L, -2);
 
         if (!lua_isnil(L, -1)) {
-            int len = lua_rawlen(L, -1);
+            int len = int(lua_rawlen(L, -1));
             for (int i = 1; i <= len; i++) {
                 // <class_meta> <downcast> <cast_func>
                 lua_rawgeti(L, -1, i);

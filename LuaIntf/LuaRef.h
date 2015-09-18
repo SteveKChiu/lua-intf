@@ -1030,7 +1030,7 @@ public:
     int rawlen() const
     {
         pushToStack();
-        int n = lua_rawlen(L, -1);
+        int n = int(lua_rawlen(L, -1));
         lua_pop(L, 1);
         return n;
     }
@@ -1129,7 +1129,7 @@ public:
     int len() const
     {
         pushToStack();
-        int n = luaL_len(L, -1);
+        int n = int(luaL_len(L, -1));
         lua_pop(L, 1);
         return n;
     }
