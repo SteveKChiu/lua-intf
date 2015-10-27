@@ -499,7 +499,7 @@ struct LuaClassMapping
 
     static T& opt(lua_State* L, int index, const T&)
     {
-        if (!lua_isnoneornil(L, index)) {
+        if (lua_isnoneornil(L, index)) {
             luaL_error(L, "nil passed to reference");
         }
         return get(L, index);
