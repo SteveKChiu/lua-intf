@@ -108,14 +108,17 @@ template <typename T>
 struct CppArgTraits <_opt<T>>
     : CppArgTraits <T>
 {
+    using Type = T;
+    using ValueType = typename std::decay<T>::type;
+    using HolderType = CppArgHolder<ValueType>;
+
     static constexpr bool isOptonal = true;
 };
 
 template <typename T, std::intmax_t NUM, std::intmax_t DEN>
 struct CppArgTraits <_def<T, NUM, DEN>>
-    : CppArgTraits <T>
+    : CppArgTraits <_opt<T>>
 {
-    static constexpr bool isOptonal = true;
     static constexpr bool hasDefault = true;
     static constexpr T defaultValue = T(T(NUM) / DEN);
 };
@@ -143,26 +146,22 @@ struct CppArgTraits <_ref<T>>
 
 template <typename T>
 struct CppArgTraits <_ref_opt<T>>
-    : CppArgTraits <T>
+    : CppArgTraits <_opt<T>>
 {
     static_assert(std::is_lvalue_reference<T>::value
         && !std::is_const<typename std::remove_reference<T>::type>::value,
         "argument with ref spec must be non-const reference type");
-    static constexpr bool isOptonal = true;
     static constexpr bool isOutput = true;
 };
 
 template <typename T, std::intmax_t NUM, std::intmax_t DEN>
 struct CppArgTraits <_ref_def<T, NUM, DEN>>
-    : CppArgTraits <T>
+    : CppArgTraits <_def<T, NUM, DEN>>
 {
     static_assert(std::is_lvalue_reference<T>::value
         && !std::is_const<typename std::remove_reference<T>::type>::value,
         "argument with ref spec must be non-const reference type");
-    static constexpr bool isOptonal = true;
     static constexpr bool isOutput = true;
-    static constexpr bool hasDefault = true;
-    static constexpr T defaultValue = T(T(NUM) / DEN);
 };
 
 template <>

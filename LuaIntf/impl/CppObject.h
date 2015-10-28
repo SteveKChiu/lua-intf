@@ -497,12 +497,13 @@ struct LuaClassMapping
         return LuaCppObjectFactory<T, ObjectType, isShared, isRef>::cast(L, obj);
     }
 
-    static T& opt(lua_State* L, int index, const T&)
+    static T opt(lua_State* L, int index, const T& def)
     {
         if (lua_isnoneornil(L, index)) {
-            luaL_error(L, "nil passed to reference");
+            return def;
+        } else {
+            return get(L, index);
         }
-        return get(L, index);
     }
 };
 
