@@ -307,10 +307,6 @@ struct LuaTypeMapping <const char*>
     }
 };
 
-template <>
-struct LuaTypeMapping <char*>
-    : LuaTypeMapping <const char*> {};
-
 //---------------------------------------------------------------------------
 
 template <>
