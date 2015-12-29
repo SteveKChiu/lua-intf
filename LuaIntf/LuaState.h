@@ -64,6 +64,14 @@ namespace Lua
     /**
      * Push string value onto Lua stack
      */
+    inline void push(lua_State* L, const char* v)
+    {
+        lua_pushstring(L, v);
+    }
+
+    /**
+     * Push string value onto Lua stack
+     */
     inline void push(lua_State* L, const char* v, int len)
     {
         lua_pushlstring(L, v, len);
