@@ -246,7 +246,7 @@ LUA_INLINE bool CppBindClassBase::buildMetaTable(LuaRef& meta, LuaRef& parent, c
     }
 
     auto L = parent.state();
-    std::string type_name = "class<" + CppBindModule::getFullName(parent, name) + ">";
+    std::string type_name = "class<" + CppBindModuleBase::getFullName(parent, name) + ">";
 
     LuaRef type_const = LuaRef::fromPtr(L, const_id);
     LuaRef type_clazz = LuaRef::fromPtr(L, clazz_id);
@@ -323,7 +323,7 @@ LUA_INLINE void CppBindClassBase::setStaticSetter(const char* name, const LuaRef
 
 LUA_INLINE void CppBindClassBase::setStaticReadOnly(const char* name)
 {
-    std::string full_name = CppBindModule::getMemberName(m_meta, name);
+    std::string full_name = CppBindModuleBase::getMemberName(m_meta, name);
     setStaticSetter(name, LuaRef::createFunctionWith(state(), &CppBindClassMetaMethod::errorReadOnly, full_name));
 }
 
@@ -342,7 +342,7 @@ LUA_INLINE void CppBindClassBase::setMemberSetter(const char* name, const LuaRef
 {
     LuaRef meta_class = m_meta.rawget("___class");
     LuaRef meta_const = m_meta.rawget("___const");
-    std::string full_name = CppBindModule::getMemberName(meta_class, name);
+    std::string full_name = CppBindModuleBase::getMemberName(meta_class, name);
     LuaRef err = LuaRef::createFunctionWith(state(), &CppBindClassMetaMethod::errorConstMismatch, full_name);
     meta_class.rawget("___setters").rawset(name, setter);
     meta_const.rawget("___setters").rawset(name, err);
@@ -352,7 +352,7 @@ LUA_INLINE void CppBindClassBase::setMemberReadOnly(const char* name)
 {
     LuaRef meta_class = m_meta.rawget("___class");
     LuaRef meta_const = m_meta.rawget("___const");
-    std::string full_name = CppBindModule::getMemberName(meta_class, name);
+    std::string full_name = CppBindModuleBase::getMemberName(meta_class, name);
     LuaRef err = LuaRef::createFunctionWith(state(), &CppBindClassMetaMethod::errorReadOnly, full_name);
     meta_class.rawget("___setters").rawset(name, err);
     meta_const.rawget("___setters").rawset(name, err);
@@ -366,7 +366,7 @@ LUA_INLINE void CppBindClassBase::setMemberFunction(const char* name, const LuaR
     if (is_const) {
         meta_const.rawset(name, proc);
     } else {
-        std::string full_name = CppBindModule::getMemberName(meta_class, name);
+        std::string full_name = CppBindModuleBase::getMemberName(meta_class, name);
         LuaRef err = LuaRef::createFunctionWith(state(), &CppBindClassMetaMethod::errorConstMismatch, full_name);
         meta_const.rawset(name, err);
     }

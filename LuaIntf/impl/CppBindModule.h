@@ -218,26 +218,18 @@ struct CppBindModuleMetaMethod
 
 //----------------------------------------------------------------------------
 
-template <typename T, typename PARENT>
-class CppBindClass;
-
-/**
- * Provides C++ to Lua registration capabilities.
- *
- * This class is not instantiated directly, call LuaBinding(L) to start
- * the registration process.
- */
-class CppBindModule
+class CppBindModuleBase
 {
     friend class CppBindClassBase;
-    template <typename T, typename P> friend class CppBindClass;
 
-private:
-    explicit CppBindModule(const LuaRef& module)
-        : m_meta(module)
+protected:
+    explicit CppBindModuleBase(const LuaRef& meta)
+        : m_meta(meta)
     {
         m_meta.checkTable();
     }
+
+    CppBindModuleBase(LuaRef& meta, const char* module);
 
     static std::string getFullName(const LuaRef& parent, const char* name);
     static std::string getMemberName(const LuaRef& parent, const char* name);
@@ -250,21 +242,21 @@ public:
     /**
      * Copy constructor.
      */
-    CppBindModule(const CppBindModule& that)
+    CppBindModuleBase(const CppBindModuleBase& that)
         : m_meta(that.m_meta)
         {}
 
     /**
      * Move constructor for temporaries.
      */
-    CppBindModule(CppBindModule&& that)
+    CppBindModuleBase(CppBindModuleBase&& that)
         : m_meta(std::move(that.m_meta))
         {}
 
     /**
      * Copy assignment.
      */
-    CppBindModule& operator = (const CppBindModule& that)
+    CppBindModuleBase& operator = (const CppBindModuleBase& that)
     {
         m_meta = that.m_meta;
         return *this;
@@ -273,21 +265,11 @@ public:
     /**
      * Move assignment for temporaries.
      */
-    CppBindModule& operator = (CppBindModule&& that)
+    CppBindModuleBase& operator = (CppBindModuleBase&& that)
     {
         m_meta = std::move(that.m_meta);
         return *this;
     }
-
-    /**
-     * Open the global CppBindModule. Bind it to a global variable.
-     */
-    static CppBindModule bind(lua_State* L);
-
-    /**
-     * Open the global CppBindModule. Bind it to a local variable.
-     */
-    static CppBindModule bind(LuaRef& mod);
 
     /**
      * The underlying lua state.
@@ -305,23 +287,74 @@ public:
         return m_meta;
     }
 
+protected:
+    LuaRef m_meta;
+};
+
+//----------------------------------------------------------------------------
+
+template <typename T, typename PARENT>
+class CppBindClass;
+
+/**
+ * Provides C++ to Lua registration capabilities.
+ *
+ * This class is not instantiated directly, call LuaBinding(L) to start
+ * the registration process.
+ */
+template <typename PARENT>
+class CppBindModule : public CppBindModuleBase
+{
+    friend class LuaBinding;
+    template <typename T, typename P> friend class CppBindClass;
+    template <typename P> friend class CppBindModule;
+
+    explicit CppBindModule(const LuaRef& meta)
+        : CppBindModuleBase(meta)
+        {}
+
+    CppBindModule(LuaRef& meta, const char* module)
+        : CppBindModuleBase(meta, module)
+        {}
+
+public:
     /**
-     * Open a new or existing CppBindModule for registrations.
+     * Copy constructor.
      */
-    CppBindModule beginModule(const char* name);
+    CppBindModule(const CppBindModule<PARENT>& that)
+        : CppBindModuleBase(that)
+        {}
 
     /**
-     * Continue CppBindModule registration in the parent.
-     *
-     * Do not use this on the global CppBindModule.
+     * Move constructor for temporaries.
      */
-    CppBindModule endModule();
+    CppBindModule(CppBindModule<PARENT>&& that)
+        : CppBindModuleBase(std::move(that))
+        {}
+
+    /**
+     * Copy assignment.
+     */
+    CppBindModule<PARENT>& operator = (const CppBindModule<PARENT>& that)
+    {
+        m_meta = that.m_meta;
+        return *this;
+    }
+
+    /**
+     * Move assignment for temporaries.
+     */
+    CppBindModule<PARENT>& operator = (CppBindModule<PARENT>&& that)
+    {
+        m_meta = std::move(that.m_meta);
+        return *this;
+    }
 
     /**
      * Add or replace a constant value.
      */
     template <typename V>
-    CppBindModule& addConstant(const char* name, const V& v)
+    CppBindModule<PARENT>& addConstant(const char* name, const V& v)
     {
         LuaRef r = LuaRef::fromValue(state(), v);
         if (r.isFunction()) {
@@ -339,7 +372,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    CppBindModule& addVariable(const char* name, V* v, bool writable = true)
+    CppBindModule<PARENT>& addVariable(const char* name, V* v, bool writable = true)
     {
         setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, v));
         if (writable) {
@@ -357,7 +390,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    CppBindModule& addVariable(const char* name, const V* v)
+    CppBindModule<PARENT>& addVariable(const char* name, const V* v)
     {
         setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V>::call, v));
         setReadOnly(name);
@@ -371,7 +404,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindModule&>::type
+    typename std::enable_if<std::is_copy_assignable<V>::value, CppBindModule<PARENT>&>::type
         addVariableRef(const char* name, V* v, bool writable = true)
     {
         setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, V&>::call, v));
@@ -390,7 +423,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindModule&>::type
+    typename std::enable_if<!std::is_copy_assignable<V>::value, CppBindModule<PARENT>&>::type
         addVariableRef(const char* name, V* v)
     {
         setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, V&>::call, v));
@@ -405,7 +438,7 @@ public:
      * This apply only to the class type, the primitive types are always pass-by-value.
      */
     template <typename V>
-    CppBindModule& addVariableRef(const char* name, const V* v)
+    CppBindModule<PARENT>& addVariableRef(const char* name, const V* v)
     {
         setGetter(name, LuaRef::createFunctionWithPtr(state(), &CppBindVariableGetter<V, const V&>::call, v));
         setReadOnly(name);
@@ -416,7 +449,7 @@ public:
      * Add or replace a read-write property.
      */
     template <typename FG, typename FS>
-    CppBindModule& addProperty(const char* name, const FG& get, const FS& set)
+    CppBindModule<PARENT>& addProperty(const char* name, const FG& get, const FS& set)
     {
         using CppGetter = CppBindMethod<FG, FG, 1, CHK_GETTER>;
         using CppSetter = CppBindMethod<FS, FS, 1, CHK_SETTER>;
@@ -429,7 +462,7 @@ public:
      * Add or replace a read-only property.
      */
     template <typename FN>
-    CppBindModule& addProperty(const char* name, const FN& get)
+    CppBindModule<PARENT>& addProperty(const char* name, const FN& get)
     {
         using CppGetter = CppBindMethod<FN, FN, 1, CHK_GETTER>;
         setGetter(name, LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)));
@@ -441,7 +474,7 @@ public:
      * Add or replace a function.
      */
     template <typename FN>
-    CppBindModule& addFunction(const char* name, const FN& proc)
+    CppBindModule<PARENT>& addFunction(const char* name, const FN& proc)
     {
         using CppProc = CppBindMethod<FN>;
         m_meta.rawset(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
@@ -452,7 +485,7 @@ public:
      * Add or replace a function, user can specify augument spec.
      */
     template <typename FN, typename ARGS>
-    CppBindModule& addFunction(const char* name, const FN& proc, ARGS)
+    CppBindModule<PARENT>& addFunction(const char* name, const FN& proc, ARGS)
     {
         using CppProc = CppBindMethod<FN, ARGS>;
         m_meta.rawset(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
@@ -463,7 +496,7 @@ public:
      * Add or replace a factory function.
      */
     template <typename FN>
-    CppBindModule& addFactory(const FN& proc)
+    CppBindModule<PARENT>& addFactory(const FN& proc)
     {
         using CppProc = CppBindMethod<FN, FN, 2>;
         m_meta.rawset("__call", LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
@@ -474,7 +507,7 @@ public:
      * Add or replace a factory function, user can specify augument spec.
      */
     template <typename FN, typename ARGS>
-    CppBindModule& addFactory(const FN& proc, ARGS)
+    CppBindModule<PARENT>& addFactory(const FN& proc, ARGS)
     {
         using CppProc = CppBindMethod<FN, ARGS, 2>;
         m_meta.rawset("__call", LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
@@ -484,65 +517,169 @@ public:
     /**
      * Add or replace a factory function, that forward call to sub module factory (or class constructor).
      */
-    CppBindModule& addFactory(const char* name)
+    CppBindModule<PARENT>& addFactory(const char* name)
     {
         m_meta.rawset("__call", LuaRef::createFunctionWith(state(), &CppBindModuleMetaMethod::forwardCall, name));
         return *this;
     }
 
     /**
+     * Open a new or existing CppBindModule for registrations.
+     */
+    CppBindModule<CppBindModule<PARENT>> beginModule(const char* name)
+    {
+        return CppBindModule<CppBindModule<PARENT>>(m_meta, name);
+    }
+
+    /**
+     * Continue CppBindModule registration in the parent.
+     */
+    PARENT endModule()
+    {
+        return PARENT(m_meta.rawget("___parent"));
+    }
+
+    /**
      * Open a new or existing class for registrations.
      */
     template <typename T>
-    CppBindClass<T, CppBindModule> beginClass(const char* name)
+    CppBindClass<T, CppBindModule<PARENT>> beginClass(const char* name)
     {
-        return CppBindClass<T, CppBindModule>::bind(m_meta, name);
+        return CppBindClass<T, CppBindModule<PARENT>>::bind(m_meta, name);
     }
 
     /**
      * Open a new class to extend the base class.
      */
     template <typename T, typename SUPER>
-    CppBindClass<T, CppBindModule> beginExtendClass(const char* name)
+    CppBindClass<T, CppBindModule<PARENT>> beginExtendClass(const char* name)
     {
-        return CppBindClass<T, CppBindModule>::template extend<SUPER>(m_meta, name);
+        return CppBindClass<T, CppBindModule<PARENT>>::template extend<SUPER>(m_meta, name);
+    }
+};
+
+//---------------------------------------------------------------------------
+
+class LuaBinding
+{
+public:
+    /**
+     * Module binds to a global variable (lua 5.0 style)
+     *
+     * It is recommended to put your module inside the global, and
+     * then add your classes and functions to it, rather than adding many classes
+     * and functions directly to the global.
+     */
+    explicit LuaBinding(lua_State* L)
+        : m_meta(LuaRef::globals(L))
+        {}
+
+    /**
+     * Module binds to a local LuaRef value.
+     *
+     * This can be used to implement Lua 5.1 module style:
+     *
+     *     extern "C" int luaopen_modname(lua_State* L)
+     *     {
+     *         LuaRef mod = LuaRef::createTable(L);
+     *         LuaBinding(mod)
+     *             ...;
+     *         mod.pushToStack();
+     *         return 1;
+     *     }
+     */
+    explicit LuaBinding(const LuaRef& mod)
+        : m_meta(mod)
+        {}
+
+    /**
+     * Copy constructor.
+     */
+    LuaBinding(const LuaBinding& that)
+        : m_meta(that.m_meta)
+        {}
+
+    /**
+     * Move constructor for temporaries.
+     */
+    LuaBinding(LuaBinding&& that)
+        : m_meta(std::move(that.m_meta))
+        {}
+
+    /**
+     * Copy assignment.
+     */
+    LuaBinding& operator = (const LuaBinding& that)
+    {
+        m_meta = that.m_meta;
+        return *this;
+    }
+
+    /**
+     * Move assignment for temporaries.
+     */
+    LuaBinding& operator = (LuaBinding&& that)
+    {
+        m_meta = std::move(that.m_meta);
+        return *this;
+    }
+
+    /**
+     * The underlying lua state.
+     */
+    lua_State* state() const
+    {
+        return m_meta.state();
+    }
+
+    /**
+     * Add or replace a function.
+     */
+    template <typename FN>
+    LuaBinding& addFunction(const char* name, const FN& proc)
+    {
+        using CppProc = CppBindMethod<FN>;
+        m_meta.rawset(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
+        return *this;
+    }
+
+    /**
+     * Add or replace a function, user can specify augument spec.
+     */
+    template <typename FN, typename ARGS>
+    LuaBinding& addFunction(const char* name, const FN& proc, ARGS)
+    {
+        using CppProc = CppBindMethod<FN, ARGS>;
+        m_meta.rawset(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)));
+        return *this;
+    }
+
+    /**
+     * Open a new or existing CppBindModule for registrations.
+     */
+    CppBindModule<LuaBinding> beginModule(const char* name)
+    {
+        return CppBindModule<LuaBinding>(m_meta, name);
+    }
+
+    /**
+     * Open a new or existing class for registrations.
+     */
+    template <typename T>
+    CppBindClass<T, LuaBinding> beginClass(const char* name)
+    {
+        return CppBindClass<T, LuaBinding>::bind(m_meta, name);
+    }
+
+    /**
+     * Open a new class to extend the base class.
+     */
+    template <typename T, typename SUPER>
+    CppBindClass<T, LuaBinding> beginExtendClass(const char* name)
+    {
+        return CppBindClass<T, LuaBinding>::template extend<SUPER>(m_meta, name);
     }
 
 private:
     LuaRef m_meta;
 };
-
-//---------------------------------------------------------------------------
-
-/**
- * Retrieve the root CppBindModule. Module binds to a global variable (lua
- * 5.0 style)
- *
- * It is recommended to put your module inside the global, and
- * then add your classes and functions to it, rather than adding many classes
- * and functions directly to the global.
- */
-inline CppBindModule LuaBinding(lua_State* L)
-{
-    return CppBindModule::bind(L);
-}
-
-/**
- * Retrieve the root CppBindModule. Module binds to a local LuaRef value.
- *
- * This can be used to implement Lua 5.1 module style:
- *
- *     extern "C" int luaopen_modname(lua_State* L)
- *     {
- *         LuaRef mod = LuaRef::createTable(L);
- *         LuaBinding(mod)
- *             ...;
- *         mod.pushToStack();
- *         return 1;
- *     }
- */
-inline CppBindModule LuaBinding(LuaRef& mod)
-{
-    return CppBindModule::bind(mod);
-}
-
