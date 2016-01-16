@@ -585,7 +585,7 @@ public:
         { lua_len(L, table_idx); }
 
     int tableLen(int table_idx) const
-        { return luaL_len(L, table_idx); }
+        { return int(luaL_len(L, table_idx)); }
 
 // set functions (stack -> Lua)
 
