@@ -37,7 +37,7 @@ LUA_INLINE int CppFunctor::call(lua_State* L)
         CppFunctor* f = static_cast<CppFunctor*>(lua_touserdata(L, 1));
         return f->run(L);
     } catch (std::exception& e) {
-        return luaL_error(L, e.what());
+        return luaL_error(L, "%s", e.what());
     }
 }
 
@@ -48,7 +48,7 @@ LUA_INLINE int CppFunctor::gc(lua_State* L)
         f->~CppFunctor();
         return 0;
     } catch (std::exception& e) {
-        return luaL_error(L, e.what());
+        return luaL_error(L, "%s", e.what());
     }
 }
 
@@ -58,7 +58,7 @@ LUA_INLINE int CppFunctor::callp(lua_State* L)
         CppFunctor* f = *static_cast<CppFunctor**>(lua_touserdata(L, 1));
         return f->run(L);
     } catch (std::exception& e) {
-        return luaL_error(L, e.what());
+        return luaL_error(L, "%s", e.what());
     }
 }
 
@@ -69,7 +69,7 @@ LUA_INLINE int CppFunctor::gcp(lua_State* L)
         delete f;
         return 0;
     } catch (std::exception& e) {
-        return luaL_error(L, e.what());
+        return luaL_error(L, "%s", e.what());
     }
 }
 
