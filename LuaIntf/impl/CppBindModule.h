@@ -58,7 +58,7 @@ struct CppBindVariableGetter
             LuaType<PT>::push(L, *ptr);
             return 1;
         } catch (std::exception& e) {
-            return luaL_error(L, e.what());
+            return luaL_error(L, "%s", e.what());
         }
     }
 };
@@ -83,7 +83,7 @@ struct CppBindVariableSetter
             *ptr = LuaType<T>::get(L, 1);
             return 0;
         } catch (std::exception& e) {
-            return luaL_error(L, e.what());
+            return luaL_error(L, "%s", e.what());
         }
     }
 };
@@ -124,7 +124,7 @@ struct CppBindMethodBase
             int n = CppInvokeMethod<FN, R, typename CppArg<P>::HolderType...>::push(L, fn, args);
             return n + CppArgTupleOutput<P...>::push(L, args);
         } catch (std::exception& e) {
-            return luaL_error(L, e.what());
+            return luaL_error(L, "%s", e.what());
         }
     }
 
