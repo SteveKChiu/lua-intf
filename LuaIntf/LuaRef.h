@@ -1219,7 +1219,7 @@ private:
             obj->~T();
             return 0;
         } catch (std::exception& e) {
-            return luaL_error(L, e.what());
+            return luaL_error(L, "%s", e.what());
         }
     }
 

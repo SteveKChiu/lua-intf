@@ -41,7 +41,7 @@ struct CppBindClassConstructor <T, T, _arg(*)(P...)>
             CppObjectValue<T>::pushToStack(L, args, false);
             return 1;
         } catch (std::exception& e) {
-            return luaL_error(L, e.what());
+            return luaL_error(L, "%s", e.what());
         }
     }
 };
@@ -61,7 +61,7 @@ struct CppBindClassConstructor <SP, T, _arg(*)(P...)>
             CppObjectSharedPtr<SP, T>::pushToStack(L, obj, false);
             return 1;
         } catch (std::exception& e) {
-            return luaL_error(L, e.what());
+            return luaL_error(L, "%s", e.what());
         }
     }
 };
@@ -81,7 +81,7 @@ struct CppBindClassDestructor
             obj->~CppObject();
             return 0;
         } catch (std::exception& e) {
-            return luaL_error(L, e.what());
+            return luaL_error(L, "%s", e.what());
         }
     }
 };
@@ -108,7 +108,7 @@ struct CppBindClassVariableGetter
             LuaType<PV>::push(L, obj->**mp);
             return 1;
         } catch (std::exception& e) {
-            return luaL_error(L, e.what());
+            return luaL_error(L, "%s", e.what());
         }
     }
 };
@@ -133,7 +133,7 @@ struct CppBindClassVariableSetter
             obj->**mp = LuaType<V>::get(L, 2);
             return 0;
         } catch (std::exception& e) {
-            return luaL_error(L, e.what());
+            return luaL_error(L, "%s", e.what());
         }
     }
 };
@@ -171,7 +171,7 @@ struct CppBindClassMethodBase
             int n = CppInvokeClassMethod<T, IS_PROXY, FN, R, typename CppArg<P>::HolderType...>::push(L, obj, fn, args);
             return n + CppArgTupleOutput<P...>::push(L, args);
         } catch (std::exception& e) {
-            return luaL_error(L, e.what());
+            return luaL_error(L, "%s", e.what());
         }
     }
 
