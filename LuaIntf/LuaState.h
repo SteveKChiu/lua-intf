@@ -130,8 +130,8 @@ namespace Lua
     {
         luaL_checktype(L, index, LUA_TTABLE);
         LIST list;
-        int n = luaL_len(L, index);
-        for (int i = 1; i <= n; i++) {
+        auto n = luaL_len(L, index);
+        for (auto i = 1; i <= n; i++) {
             lua_rawgeti(L, index, i);
             list.push_back(pop<typename LIST::value_type>(L));
         }
