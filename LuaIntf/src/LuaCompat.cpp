@@ -270,7 +270,7 @@ LUA_INLINE int luaL_len(lua_State* L, int i)
     luaL_checkstack(L, 1, "not enough stack slots");
     lua_len(L, i);
     int is_num = 0;
-    int res = (int)lua_tointegerx(L, -1, &is_num);
+    int res = int(lua_tointegerx(L, -1, &is_num));
     lua_pop(L, 1);
     if (!is_num) {
         luaL_error(L, "object length is not a number");
