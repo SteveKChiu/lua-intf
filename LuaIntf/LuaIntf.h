@@ -30,6 +30,7 @@
 //---------------------------------------------------------------------------
 
 #include "LuaContext.h"
+#include "impl/FunctionTraits.h"
 
 namespace LuaIntf
 {

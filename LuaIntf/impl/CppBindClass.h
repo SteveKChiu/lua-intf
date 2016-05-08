@@ -916,6 +916,33 @@ public:
     }
 
     /**
+    * Add or replace a operator [] for accessing by index.
+    */
+    template <typename FGet, typename FSet>
+    CppBindClass<T, PARENT>& addIndexer(const FGet& get, const FSet& set) {
+        static_assert(function_traits<FGet>::arity == 2, "Argument count on a getter function must be 2");
+        static_assert(std::is_same<function_traits<FGet>::argument<1>::type, int>::value, "Second argument of a getter function must be of <int> type");
+
+        static_assert(function_traits<FSet>::arity == 3, "Argument count on a setter function must be 3");
+        static_assert(std::is_same<function_traits<FSet>::argument<1>::type, int>::value, "Second argument of a setter function must be of <int> type");
+
+
+        this->addFunction("___get_indexed", get);
+        this->addFunction("___set_indexed", set);
+        return *this;
+    }
+
+    /**
+    * Add or replace a readonly operator [] for accessing by index.
+    */
+    template <typename FN>
+    CppBindClass<T, PARENT>& addIndexer(const FN& get) {
+        static_assert(function_traits<FGet>::arity == 2, "Argument count on a getter function must be 2");
+        static_assert(std::is_same<function_traits<FGet>::argument<1>::type, int>::value, "Second argument of a getter function must be of <int> type");
+        this->addFunction("___get_indexed", get);
+    }
+
+    /**
      * Add or replace a meta function, meta function is static function attached to object.
      * It is usually used to implement infix operator for the class, that the first operand may
      * or may not be the object.
