@@ -925,13 +925,13 @@ public:
     * Add or replace a operator [] for accessing by index.
     */
     template <typename FG, typename FS>
-    CppBindClass<T, PARENT>& addIndexer(const FG& get, const FS& set) {
+    CppBindClass<T, PARENT>& addIndexer(const FG& get, const FS& set)
+    {
 
-        using CppGetter = CppBindClassMethod<T, FG, FG, CHK_GETTER>;
-        using CppSetter = CppBindClassMethod<T, FS, FS, CHK_SETTER>;
-
+        using CppGetter = CppBindClassMethod<T, FG, FG, CHK_GETTER_INDEXED>;
+        using CppSetter = CppBindClassMethod<T, FS, FS, CHK_SETTER_INDEXED>;
         setMemberFunction("___get_indexed", LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)), CppGetter::isConst);
-        setMemberFunction("___set_indexed", LuaRef::createFunction(state(), &CppSetter::call, CppSetter::function(get)), CppSetter::isConst);
+        setMemberFunction("___set_indexed", LuaRef::createFunction(state(), &CppSetter::call, CppSetter::function(set)), CppSetter::isConst);
         return *this;
     }
 
@@ -939,9 +939,11 @@ public:
     * Add or replace a readonly operator [] for accessing by index.
     */
     template <typename FN>
-    CppBindClass<T, PARENT>& addIndexer(const FN& get) {
-        using CppGetter = CppBindClassMethod<T, FN, FN, CHK_GETTER>;
+    CppBindClass<T, PARENT>& addIndexer(const FN& get)
+    {
+        using CppGetter = CppBindClassMethod<T, FN, FN, CHK_GETTER_INDEXED>;
         setMemberFunction("___get_indexed", LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)), CppGetter::isConst);
+        return *this;
     }
 
     /**

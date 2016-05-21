@@ -76,10 +76,10 @@ LUA_INLINE int CppBindClassMetaMethod::index(lua_State* L)
                 lua_pushvalue(L, 1);
                 lua_pushvalue(L, 2);
                 lua_call(L, 2, 1);
-
                 break;
-            } else
+            } else {
                 lua_pop(L, 1);
+            }
         }
 
         lua_pushliteral(L, "___getters");
@@ -170,11 +170,10 @@ LUA_INLINE int CppBindClassMetaMethod::newIndex(lua_State* L)
                 lua_pushvalue(L, 2);
                 lua_pushvalue(L, 3);
                 lua_call(L, 3, 0);
-
                 break;
-            }
-            else
+            } else {
                 lua_pop(L, 1);
+            }
         }
 
         // get setters subtable of metatable -> <mt> <setters>
