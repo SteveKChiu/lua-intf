@@ -149,6 +149,12 @@ struct CppBindClassMethodBase
     static_assert(CHK != CHK_SETTER || (std::is_same<R, void>::value && sizeof...(P) == 1),
         "the specified function is not setter function");
 
+    static_assert(CHK != CHK_GETTER_INDEXED || (!std::is_same<R, void>::value && sizeof...(P) == 1),
+        "the specified function is not indexed getter function");
+
+    static_assert(CHK != CHK_SETTER_INDEXED || (std::is_same<R, void>::value && sizeof...(P) == 2),
+        "the specified function is not indexed setter function");
+
     static constexpr bool isConst = IS_CONST;
 
     /**
@@ -918,17 +924,14 @@ public:
     /**
     * Add or replace a operator [] for accessing by index.
     */
-    template <typename FGet, typename FSet>
-    CppBindClass<T, PARENT>& addIndexer(const FGet& get, const FSet& set) {
-        static_assert(function_traits<FGet>::arity == 2, "Argument count on a getter function must be 2");
-        static_assert(std::is_same<function_traits<FGet>::argument<1>::type, int>::value, "Second argument of a getter function must be of <int> type");
+    template <typename FG, typename FS>
+    CppBindClass<T, PARENT>& addIndexer(const FG& get, const FS& set) {
 
-        static_assert(function_traits<FSet>::arity == 3, "Argument count on a setter function must be 3");
-        static_assert(std::is_same<function_traits<FSet>::argument<1>::type, int>::value, "Second argument of a setter function must be of <int> type");
+        using CppGetter = CppBindClassMethod<T, FG, FG, CHK_GETTER>;
+        using CppSetter = CppBindClassMethod<T, FS, FS, CHK_SETTER>;
 
-
-        this->addFunction("___get_indexed", get);
-        this->addFunction("___set_indexed", set);
+        setMemberFunction("___get_indexed", LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)), CppGetter::isConst);
+        setMemberFunction("___set_indexed", LuaRef::createFunction(state(), &CppSetter::call, CppSetter::function(get)), CppSetter::isConst);
         return *this;
     }
 
@@ -937,9 +940,8 @@ public:
     */
     template <typename FN>
     CppBindClass<T, PARENT>& addIndexer(const FN& get) {
-        static_assert(function_traits<FGet>::arity == 2, "Argument count on a getter function must be 2");
-        static_assert(std::is_same<function_traits<FGet>::argument<1>::type, int>::value, "Second argument of a getter function must be of <int> type");
-        this->addFunction("___get_indexed", get);
+        using CppGetter = CppBindClassMethod<T, FN, FN, CHK_GETTER>;
+        setMemberFunction("___get_indexed", LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)), CppGetter::isConst);
     }
 
     /**
