@@ -584,7 +584,7 @@ public:
      *         LuaRef mod = LuaRef::createTable(L);
      *         LuaBinding(mod)
      *             ...;
-     *         mod.pushToStack();
+     *         mod.pushToStack(L);
      *         return 1;
      *     }
      */
