@@ -668,10 +668,15 @@ public:
     /**
      * Push value of this reference to Lua stack.
      */
-    void pushToStack() const
+    void pushToStack(lua_State* L1=nullptr) const
     {
-        assert(L);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, m_ref);
+        if (L1) {
+            lua_rawgeti(L1, LUA_REGISTRYINDEX, m_ref);
+        }
+        else {
+            assert(L);
+            lua_rawgeti(L, LUA_REGISTRYINDEX, m_ref);
+        }
     }
 
     /**
@@ -1321,7 +1326,7 @@ struct LuaTypeMapping <LuaRef>
     static void push(lua_State* L, const LuaRef& r)
     {
         if (r.isValid()) {
-            r.pushToStack();
+            r.pushToStack(L);
         } else {
             lua_pushnil(L);
         }
