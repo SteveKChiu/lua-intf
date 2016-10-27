@@ -149,6 +149,12 @@ struct CppBindClassMethodBase
     static_assert(CHK != CHK_SETTER || (std::is_same<R, void>::value && sizeof...(P) == 1),
         "the specified function is not setter function");
 
+    static_assert(CHK != CHK_GETTER_INDEXED || (!std::is_same<R, void>::value && sizeof...(P) == 1),
+        "the specified function is not indexed getter function");
+
+    static_assert(CHK != CHK_SETTER_INDEXED || (std::is_same<R, void>::value && sizeof...(P) == 2),
+        "the specified function is not indexed setter function");
+
     static constexpr bool isConst = IS_CONST;
 
     /**
@@ -912,6 +918,31 @@ public:
     {
         using CppProc = CppBindClassMethod<T, FN, ARGS>;
         setMemberFunction(name, LuaRef::createFunction(state(), &CppProc::call, CppProc::function(proc)), CppProc::isConst);
+        return *this;
+    }
+
+    /**
+    * Add or replace a operator [] for accessing by index.
+    */
+    template <typename FG, typename FS>
+    CppBindClass<T, PARENT>& addIndexer(const FG& get, const FS& set)
+    {
+
+        using CppGetter = CppBindClassMethod<T, FG, FG, CHK_GETTER_INDEXED>;
+        using CppSetter = CppBindClassMethod<T, FS, FS, CHK_SETTER_INDEXED>;
+        setMemberFunction("___get_indexed", LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)), CppGetter::isConst);
+        setMemberFunction("___set_indexed", LuaRef::createFunction(state(), &CppSetter::call, CppSetter::function(set)), CppSetter::isConst);
+        return *this;
+    }
+
+    /**
+    * Add or replace a readonly operator [] for accessing by index.
+    */
+    template <typename FN>
+    CppBindClass<T, PARENT>& addIndexer(const FN& get)
+    {
+        using CppGetter = CppBindClassMethod<T, FN, FN, CHK_GETTER_INDEXED>;
+        setMemberFunction("___get_indexed", LuaRef::createFunction(state(), &CppGetter::call, CppGetter::function(get)), CppGetter::isConst);
         return *this;
     }
 
