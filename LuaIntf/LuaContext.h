@@ -175,6 +175,14 @@ public:
     }
 
     /**
+     * Access Lua garbage collection.  Defaults to collecting all garbage.
+     */
+	int gc(int what = LUA_GCCOLLECT, int data = 0) const
+	{
+		return lua_gc(L, what, data);
+	}
+
+    /**
      * Get registry table
      */
     LuaRef registry() const
