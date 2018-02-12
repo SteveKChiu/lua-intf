@@ -664,7 +664,7 @@ public:
 
     /**
      * Add or replace a constructor function, the object is stored via the given SP container.
-     * The SP class is ususally a shared pointer class. Argument spec is needed to match the constructor:
+     * The SP class is usually a shared pointer class. Argument spec is needed to match the constructor:
      *
      * addConstructor(LUA_SP(std::shared_ptr<OBJ>), LUA_ARGS(int, int))
      *
@@ -847,7 +847,7 @@ public:
 
     /**
      * Add or replace a property member.
-     * This overrided function allow you to specify non-const and const version of getter.
+     * This overridden function allow you to specify non-const and const version of getter.
      */
     template <typename FG, typename FGC, typename FS>
     CppBindClass<T, PARENT>& addProperty(const char* name, const FG& get, const FGC& get_const, const FS& set)
@@ -885,7 +885,7 @@ public:
 
     /**
      * Add or replace a read-only property member.
-     * This overrided function allow you to specify non-const and const version of getter.
+     * This overridden function allow you to specify non-const and const version of getter.
      */
     template <typename FN, typename FNC>
     CppBindClass<T, PARENT>& addPropertyReadOnly(const char* name, const FN& get, const FNC& get_const)
