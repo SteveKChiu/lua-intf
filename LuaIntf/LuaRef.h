@@ -444,7 +444,7 @@ public:
      * Create reference to Lua global.
      *
      * @param L Lua state
-     * @param name the global name, may contains '.' to access sub obejct
+     * @param name the global name, may contain '.' to access sub object
      */
     LuaRef(lua_State* state, const char* name)
         : L(state)
