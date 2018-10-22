@@ -847,7 +847,7 @@ public:
 
     /**
      * Add or replace a property member.
-     * This overridden function allow you to specify non-const and const version of getter.
+     * This overridden function allows you to specify non-const and const version of getter.
      */
     template <typename FG, typename FGC, typename FS>
     CppBindClass<T, PARENT>& addProperty(const char* name, const FG& get, const FGC& get_const, const FS& set)
@@ -885,7 +885,7 @@ public:
 
     /**
      * Add or replace a read-only property member.
-     * This overridden function allow you to specify non-const and const version of getter.
+     * This overridden function allows you to specify non-const and const version of getter.
      */
     template <typename FN, typename FNC>
     CppBindClass<T, PARENT>& addPropertyReadOnly(const char* name, const FN& get, const FNC& get_const)
