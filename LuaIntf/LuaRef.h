@@ -899,7 +899,7 @@ public:
     /**
      * Look up field in table in raw mode (not via metatable).
      * This may raise Lua error or throw LuaException if V is not convertible.
-     * This is the same as rawgetp, just for convienence.
+     * This is the same as rawgetp, just for convenience.
      *
      * @param p field key
      * @return field value
@@ -931,7 +931,7 @@ public:
     /**
      * Look up field in table in raw mode (not via metatable).
      * This may raise Lua error or throw LuaException if V is not convertible.
-     * This is the same as rawgetp, just for convienence.
+     * This is the same as rawgetp, just for convenience.
      *
      * @param p field key
      * @param def default value if the field is missing
@@ -962,7 +962,7 @@ public:
     /**
      * Set field in table in raw mode (not via metatable).
      * This may raise Lua error or throw LuaException if V is not convertible.
-     * This is the same as rawsetp, just for convienence.
+     * This is the same as rawsetp, just for convenience.
      *
      * @param p field key
      * @param value field value
