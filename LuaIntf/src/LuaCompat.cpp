@@ -38,6 +38,7 @@
 #include <errno.h>
 #include <string.h>
 #include <limits.h>
+#include <assert.h>
 
 #define LUA_PACKAGE_KEY "_LUAINTF_COMPAT"
 
@@ -458,6 +459,33 @@ LUA_INLINE int luaL_fileresult(lua_State* L, int stat, const char* fname)
         lua_pushnumber(L, (lua_Number)err);
         return 3;
     }
+}
+
+#if LUA_VERSION_NUM <= 501
+#define LUA_RIDX_MAINTHREAD -3
+#endif
+
+void lua_register_mainthread(lua_State* L) {
+#if LUA_VERSION_NUM <= 501
+    if (lua_pushthread(L) == 1)
+        lua_rawseti(L, LUA_REGISTRYINDEX, LUA_RIDX_MAINTHREAD);
+    else
+        lua_pop(L, 1);
+#endif
+}
+
+lua_State* lua_get_mainthread(lua_State* L) {
+    assert(L);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_MAINTHREAD);
+    lua_State* L1 = lua_tothread(L, -1);
+    lua_pop(L, 1);
+    if (!L1) {
+        lua_register_mainthread(L);
+        lua_rawgeti(L, LUA_REGISTRYINDEX, LUA_RIDX_MAINTHREAD);
+        L1 = lua_tothread(L, -1);
+        lua_pop(L, 1);
+    }
+    return L1 ? L1 : L;
 }
 
 //---------------------------------------------------------------------------
