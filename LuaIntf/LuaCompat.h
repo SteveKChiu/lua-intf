@@ -222,6 +222,9 @@ int luaL_fileresult(lua_State* L, int stat, const char* fname);
 
 #endif
 
+void lua_register_mainthread(lua_State* L);
+lua_State* lua_get_mainthread(lua_State* L);
+
 //---------------------------------------------------------------------------
 
 #if LUAINTF_HEADERS_ONLY

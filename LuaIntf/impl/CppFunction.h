@@ -136,7 +136,7 @@ struct LuaCppFunction
     {
         using CppProc = CppBindMethod<FN>;
         LuaRef ref = LuaRef::createUserDataFrom(L, proc);
-        ref.pushToStack();
+        ref.pushToStack(L);
         lua_pushlightuserdata(L, CppSignature<FN>::value());
         lua_pushcclosure(L, &CppProc::call, 2);
     }
